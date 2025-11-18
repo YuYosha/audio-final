@@ -78,26 +78,27 @@ const overlayVideoEl = document.getElementById("overlay-video");
 
 const overlayVideos = [
   "asgore.mp4",
-  "benson.mp4",
-  "dante.mp4",
+ // "benson.mp4",
+  //"dante.mp4",
   "eggman.mp4",
   "eggsax.mp4",
-  "goku.mp4",
-  "jojo.mp4",
+ // "goku.mp4",
+  //"jojo.mp4",
   "metal.mp4",
-  "metroman.mp4",
+  //"metroman.mp4",
   "mez.mp4",
   "p3.mp4",
-  "pbj.mp4",
+  //"pbj.mp4",
   "ratdance.mp4",
   "rewrite.mp4",
-  "springtrap.mp4",
+  //"springtrap.mp4",
   "teto.mp4",
-  "tf2.mp4",
+  //"tf2.mp4",
   "cream.mp4",
+  "DC.mp4", 
 ];
 const VIDEO_CHECK_INTERVAL = 12000;
-const VIDEO_APPEAR_CHANCE = 0.38; // ~38% chance per interval -> more common
+const VIDEO_APPEAR_CHANCE = 1.00; // ~38% chance per interval -> more common
 let videoIntervalId = null;
 let overlayIsActive = false;
 let glitchTimeoutId = null;
@@ -263,6 +264,14 @@ function startOverlayVideoLoop() {
     overlayVideoEl.removeAttribute("src");
     overlayVideoEl.load();
     
+    // Remove active glitch effect
+    videoOverlayEl.classList.remove("active-glitch");
+    
+    // Reset video transform
+    if (videoOverlayEl) {
+      videoOverlayEl.style.transform = "scale(1.0)";
+    }
+    
     // Restore original palette based on current track
     applyColorPalette(currentTrackIndex);
     
@@ -293,6 +302,21 @@ function startOverlayVideoLoop() {
     triggerOverlayGlitch(650); // Longer glitch duration for more visibility
     overlayVideoEl.src = `./video/${choice}`;
     overlayVideoEl.currentTime = 0;
+    
+    overlayVideoEl.onplaying = () => {
+      // Add subtle continuous glitch when video starts playing
+      if (videoOverlayEl) {
+        videoOverlayEl.classList.add("active-glitch");
+      }
+    };
+    
+    overlayVideoEl.onpause = () => {
+      // Remove subtle glitch if video is paused
+      if (videoOverlayEl) {
+        videoOverlayEl.classList.remove("active-glitch");
+      }
+    };
+    
     overlayVideoEl.play().catch((error) => {
       console.warn("Overlay video failed to play:", error);
       concludeOverlay();
@@ -763,6 +787,14 @@ function animate() {
   const avg2 = data.reduce((a, b) => a + b, 0) / data.length;
   outlinePass.edgeStrength = 6 + (avg2 / 255) * 3;
   outlinePass.pulsePeriod = 2 + (avg2 / 255) * 2;
+
+  // Make video overlay "bop" with the beat
+  if (videoOverlayEl && overlayIsActive) {
+    const beatIntensity = avg; // normalized 0-1
+    const scale = 1.0 + beatIntensity * 0.12; // Scale from 1.0 to 1.12 (more noticeable)
+    videoOverlayEl.style.transform = `scale(${scale})`;
+    videoOverlayEl.style.transition = "transform 0.08s ease-out"; // Slightly faster for more snappy feel
+  }
 
   composer.render();
 }

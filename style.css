@@ -25,10 +25,11 @@ body {
   opacity: 0;
   transition: opacity 0.4s ease;
   overflow: hidden;
+  transform-origin: center center;
 }
 
 #video-overlay.visible {
-  opacity: 0.28;
+  opacity: 0.22;
 }
 
 #overlay-video {
@@ -37,7 +38,7 @@ body {
   object-fit: cover;
   filter: saturate(1.2) contrast(1.1);
   mix-blend-mode: screen;
-  opacity: 0.85;
+  opacity: 0.82;
 }
 
 #video-overlay::before,
@@ -51,17 +52,32 @@ body {
 }
 
 #video-overlay.glitching::before {
-  background: linear-gradient(90deg, rgba(255, 0, 150, 0.95) 0%, rgba(255, 50, 120, 0.85) 20%, rgba(255, 0, 100, 0.75) 35%, rgba(255, 20, 80, 0.5) 50%, rgba(0, 0, 0, 0) 65%);
+  background: linear-gradient(90deg, rgba(255, 0, 150, 1.0) 0%, rgba(255, 50, 120, 1.0) 20%, rgba(255, 0, 100, 0.95) 35%, rgba(255, 20, 80, 0.85) 50%, rgba(0, 0, 0, 0) 65%);
   animation: glitchSlices 0.6s steps(10, end);
   opacity: 1;
   filter: brightness(1.3);
 }
 
 #video-overlay.glitching::after {
-  background: linear-gradient(270deg, rgba(0, 255, 255, 0.95) 0%, rgba(50, 200, 255, 0.85) 25%, rgba(0, 180, 255, 0.75) 45%, rgba(0, 150, 255, 0.5) 60%, rgba(0, 0, 0, 0) 75%);
+  background: linear-gradient(270deg, rgba(0, 255, 255, 1.0) 0%, rgba(50, 200, 255, 1.0) 25%, rgba(0, 180, 255, 0.95) 45%, rgba(0, 150, 255, 0.85) 60%, rgba(0, 0, 0, 0) 75%);
   animation: glitchSlicesAlt 0.7s steps(9, end);
   opacity: 1;
   filter: brightness(1.3);
+}
+
+/* Subtle continuous glitch while video is playing */
+#video-overlay.active-glitch::before {
+  background: linear-gradient(90deg, rgba(255, 0, 150, 0.45) 0%, rgba(255, 50, 120, 0.3) 25%, rgba(255, 0, 100, 0.2) 45%, rgba(255, 20, 80, 0.1) 60%, rgba(0, 0, 0, 0) 75%);
+  animation: subtleGlitchSlices 2.5s steps(8, end) infinite;
+  opacity: 0.6;
+  filter: brightness(1.2);
+}
+
+#video-overlay.active-glitch::after {
+  background: linear-gradient(270deg, rgba(0, 255, 255, 0.45) 0%, rgba(50, 200, 255, 0.3) 30%, rgba(0, 180, 255, 0.2) 50%, rgba(0, 150, 255, 0.1) 65%, rgba(0, 0, 0, 0) 80%);
+  animation: subtleGlitchSlicesAlt 3s steps(9, end) infinite;
+  opacity: 0.55;
+  filter: brightness(1.2);
 }
 
 @keyframes glitchSlices {
@@ -172,6 +188,92 @@ body {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
     filter: brightness(1.3);
+  }
+}
+
+@keyframes subtleGlitchSlices {
+  0%, 100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+    filter: brightness(1.2);
+  }
+  12% {
+    clip-path: inset(8% 0 72% 0);
+    transform: translate(-4px, -3px);
+    filter: brightness(1.25);
+  }
+  24% {
+    clip-path: inset(45% 0 40% 0);
+    transform: translate(4px, 3px);
+    filter: brightness(1.2);
+  }
+  36% {
+    clip-path: inset(12% 0 68% 0);
+    transform: translate(-3px, 3px);
+    filter: brightness(1.22);
+  }
+  48% {
+    clip-path: inset(68% 0 12% 0);
+    transform: translate(3px, -3px);
+    filter: brightness(1.2);
+  }
+  60% {
+    clip-path: inset(28% 0 55% 0);
+    transform: translate(-3px, 2px);
+    filter: brightness(1.23);
+  }
+  72% {
+    clip-path: inset(55% 0 25% 0);
+    transform: translate(3px, 2px);
+    filter: brightness(1.2);
+  }
+  84% {
+    clip-path: inset(18% 0 65% 0);
+    transform: translate(-2px, 1px);
+    filter: brightness(1.21);
+  }
+}
+
+@keyframes subtleGlitchSlicesAlt {
+  0%, 100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+    filter: brightness(1.2);
+  }
+  14% {
+    clip-path: inset(10% 0 70% 0);
+    transform: translate(4px, -3px);
+    filter: brightness(1.22);
+  }
+  28% {
+    clip-path: inset(48% 0 32% 0);
+    transform: translate(-4px, 3px);
+    filter: brightness(1.2);
+  }
+  42% {
+    clip-path: inset(72% 0 8% 0);
+    transform: translate(3px, -3px);
+    filter: brightness(1.21);
+  }
+  56% {
+    clip-path: inset(22% 0 62% 0);
+    transform: translate(-3px, 3px);
+    filter: brightness(1.22);
+  }
+  70% {
+    clip-path: inset(58% 0 22% 0);
+    transform: translate(3px, 2px);
+    filter: brightness(1.2);
+  }
+  84% {
+    clip-path: inset(15% 0 58% 0);
+    transform: translate(-2px, 1px);
+    filter: brightness(1.21);
+  }
+  96% {
+    clip-path: inset(35% 0 42% 0);
+    transform: translate(2px, 2px);
+    filter: brightness(1.2);
   }
 }
 
