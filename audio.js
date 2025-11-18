@@ -61,6 +61,7 @@ const tracks = [
   { label: "Tea", file: "Tea.mp3" },
   { label: "Tou", file: "Tou.mp3" },
   { label: "Way", file: "Way.mp3" },
+  { label: "LoveF", file: "LoveF.mp3" },
 ];
 
 let currentTrackIndex = 0; // default to "Nikke"
@@ -98,7 +99,7 @@ const overlayVideos = [
   "DC.mp4", 
 ];
 const VIDEO_CHECK_INTERVAL = 12000;
-const VIDEO_APPEAR_CHANCE = 1.00; // ~38% chance per interval -> more common
+const VIDEO_APPEAR_CHANCE = 0.38; // ~38% chance per interval -> more common
 let videoIntervalId = null;
 let overlayIsActive = false;
 let glitchTimeoutId = null;
@@ -835,7 +836,7 @@ for (let i = 0; i < radialCount; i++) {
   for (let j = 0; j < layers; j++) {
     const t = j / layers;
     const r = THREE.MathUtils.lerp(minRadius, maxRadius, t);
-    const h = THREE.MathUtils.lerp(1.5, 0.1, t);
+    const h = THREE.MathUtils.lerp(2.2, 0.1, t);
     const w = THREE.MathUtils.lerp(0.16, 0.05, t);
 
     const geometry = new THREE.BoxGeometry(w, h, w);
@@ -969,42 +970,42 @@ function animate() {
   const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
   const midAvg = data.reduce((a, b, idx) => idx > 4 && idx < data.length * 0.5 ? a + b : a, 0) / (Math.floor(data.length * 0.5) - 5) / 255;
   
-  // Enhance sensitivity to beats (slightly boost when beats are present)
-  const beatBoost = bassAvg > 0.25 ? 1.0 + bassAvg * 0.4 : 1.0;
+  // Moderate beat sensitivity enhancement - more noticeable but not extreme
+  const beatBoost = bassAvg > 0.22 ? 1.0 + bassAvg * 0.5 : 1.0;
 
   skyUniforms.uTime.value = clock.getElapsedTime();
   skyUniforms.uAudio.value = avg;
 
-  // Bars animation - better rhythm response
+  // Bars animation - moderate rhythm response enhancement
   for (let i = 0; i < bars.length; i++) {
     const freq = data[i % data.length];
     const normalized = freq / 255;
-    // Slightly boosted multiplier and better beat response
-    const scale = normalized * 9.5 * beatBoost + 0.5;
+    // Moderate boost for more noticeable beats
+    const scale = normalized * 10.0 * beatBoost + 0.5;
     bars[i].scale.y = scale;
     bars[i].position.y = scale / 2;
-    bars[i].material.emissiveIntensity = 0.3 + normalized * 0.85 * beatBoost;
+    bars[i].material.emissiveIntensity = 0.3 + normalized * 0.9 * beatBoost;
   }
 
   for (let i = 0; i < bars2.length; i++) {
     const freq = data[(i * 2) % data.length];
     const inverted = 1.0 - freq / 255;
-    // Better response to rhythm changes
-    const scale = inverted * 9.5 * beatBoost + 0.5;
+    // Moderate response enhancement to rhythm changes
+    const scale = inverted * 10.0 * beatBoost + 0.5;
     bars2[i].scale.y = scale;
     bars2[i].position.y = scale / 2;
-    bars2[i].material.emissiveIntensity = 0.3 + inverted * 0.85 * beatBoost;
+    bars2[i].material.emissiveIntensity = 0.3 + inverted * 0.9 * beatBoost;
   }
 
   for (let i = 0; i < bars3.length; i++) {
     const freq = data[(i * 3) % data.length];
     const normalized = freq / 255;
     const smooth = (Math.sin(Date.now() * 0.002 + i * 0.1) + 1) / 2;
-    // Better mid-frequency response for rhythm
-    const scale = (normalized * 7.5 * beatBoost + 0.5) * (0.8 + 0.2 * smooth);
+    // Moderate mid-frequency response enhancement
+    const scale = (normalized * 8.0 * beatBoost + 0.5) * (0.8 + 0.2 * smooth);
     bars3[i].scale.y = scale;
     bars3[i].position.y = scale / 2;
-    bars3[i].material.emissiveIntensity = 0.3 + normalized * 0.65 * beatBoost;
+    bars3[i].material.emissiveIntensity = 0.3 + normalized * 0.7 * beatBoost;
   }
 
   // Ring 4 - Reacts strongly to bass frequencies with pulse effect
@@ -1014,10 +1015,10 @@ function animate() {
     const normalized = bassFreq / 255;
     // Pulse effect that syncs with bass
     const pulse = (Math.sin(Date.now() * 0.003 + i * 0.15) + 1) / 2;
-    const scale = normalized * 8.5 * beatBoost * (0.9 + 0.2 * pulse) + 0.5;
+    const scale = normalized * 9.0 * beatBoost * (0.9 + 0.2 * pulse) + 0.5;
     bars4[i].scale.y = scale;
     bars4[i].position.y = scale / 2;
-    bars4[i].material.emissiveIntensity = 0.3 + normalized * 0.9 * beatBoost * (0.8 + 0.3 * pulse);
+    bars4[i].material.emissiveIntensity = 0.3 + normalized * 0.95 * beatBoost * (0.8 + 0.3 * pulse);
   }
 
   // Ring 5 - Reacts to high frequencies with inverted wave
@@ -1028,10 +1029,10 @@ function animate() {
     const inverted = 1.0 - normalized;
     // Wave pattern that moves opposite to frequency
     const wave = (Math.cos(Date.now() * 0.004 + i * 0.12) + 1) / 2;
-    const scale = inverted * 7.8 * beatBoost * (0.85 + 0.25 * wave) + 0.5;
+    const scale = inverted * 8.2 * beatBoost * (0.85 + 0.25 * wave) + 0.5;
     bars5[i].scale.y = scale;
     bars5[i].position.y = scale / 2;
-    bars5[i].material.emissiveIntensity = 0.3 + inverted * 0.8 * beatBoost * (0.9 + 0.2 * wave);
+    bars5[i].material.emissiveIntensity = 0.3 + inverted * 0.85 * beatBoost * (0.9 + 0.2 * wave);
   }
 
   // Ring 6 - Wave reaction that travels around the circle
@@ -1041,60 +1042,135 @@ function animate() {
     // Traveling wave effect
     const wavePhase = (i / bars6.length) * Math.PI * 2 + Date.now() * 0.001;
     const wave = (Math.sin(wavePhase * 3) + 1) / 2;
-    // Combines frequency with traveling wave
-    const scale = normalized * 8.0 * beatBoost * (0.7 + 0.4 * wave) + 0.5;
+    // Combines frequency with traveling wave - moderate enhancement
+    const scale = normalized * 8.5 * beatBoost * (0.7 + 0.4 * wave) + 0.5;
     bars6[i].scale.y = scale;
     bars6[i].position.y = scale / 2;
-    bars6[i].material.emissiveIntensity = 0.3 + normalized * 0.85 * beatBoost * (0.8 + 0.3 * wave);
+    bars6[i].material.emissiveIntensity = 0.3 + normalized * 0.9 * beatBoost * (0.8 + 0.3 * wave);
   }
 
-  // Ring 7 - Rotating chase with spinning bars (cool dynamic effect)
+  // Ring 7 - Complex 3D tumbling with mid-frequency response and wobble effect
   for (let i = 0; i < bars7.length; i++) {
-    const freq = data[(i * 3) % data.length];
+    // Focus on mid frequencies for this ring
+    const midIndex = Math.floor(data.length * 0.3) + (i % Math.floor(data.length * 0.4));
+    const freq = data[midIndex] || 0;
     const normalized = freq / 255;
-    // Rotating chase pattern that moves around the circle
-    const chasePhase = (i / bars7.length) * Math.PI * 2 + Date.now() * 0.002;
-    const chase = (Math.sin(chasePhase * 2.5) + 1) / 2;
-    // Dynamic scaling with chase effect
-    const scale = normalized * 7.0 * beatBoost * (0.75 + 0.3 * chase) + 0.55;
+    
+    // Complex multi-layered phase for tumbling motion
+    const time = Date.now() * 0.002;
+    const angle = (i / bars7.length) * Math.PI * 2;
+    const tumblingPhase = angle + time * 1.8;
+    
+    // Multi-layered wave pattern creating complex motion
+    const wave1 = Math.sin(tumblingPhase * 2.5) * 0.5;
+    const wave2 = Math.cos(tumblingPhase * 1.7 + time * 2) * 0.3;
+    const wave3 = Math.sin(tumblingPhase * 3.3 - time * 1.5) * 0.2;
+    const combinedWave = (wave1 + wave2 + wave3 + 1) / 2;
+    
+    // Dynamic scaling with complex wave modulation - moderate enhancement
+    const baseScale = normalized * 8.0 * beatBoost;
+    const scale = baseScale * (0.7 + 0.4 * combinedWave) + 0.5;
     bars7[i].scale.y = scale;
     bars7[i].position.y = scale / 2;
-    // Bars rotate on their axis for cool spinning effect
-    bars7[i].rotation.x = Math.sin(chasePhase * 1.5) * 0.3;
-    bars7[i].rotation.z = Math.cos(chasePhase * 1.5) * 0.2;
-    bars7[i].material.emissiveIntensity = 0.25 + normalized * 0.65 * beatBoost * (0.85 + 0.2 * chase);
+    
+    // Complex 3D rotation creating tumbling effect
+    bars7[i].rotation.x = Math.sin(tumblingPhase * 1.5 + time) * 0.45 + Math.cos(time * 1.2) * 0.15;
+    bars7[i].rotation.y = -angle + Math.sin(tumblingPhase * 2.1) * 0.3;
+    bars7[i].rotation.z = Math.cos(tumblingPhase * 1.8 - time * 1.3) * 0.35 + Math.sin(time * 0.9) * 0.2;
+    
+    // Wobble effect on position for extra dynamism
+    const wobbleX = Math.sin(time * 2.1 + angle * 3) * 0.08 * (1 + normalized);
+    const wobbleZ = Math.cos(time * 1.7 + angle * 2.5) * 0.08 * (1 + normalized);
+    const originalAngle = angle + rotationOffset6;
+    bars7[i].position.x = Math.cos(originalAngle) * outerRadius7 + wobbleX;
+    bars7[i].position.z = Math.sin(originalAngle) * outerRadius7 + wobbleZ;
+    
+    bars7[i].material.emissiveIntensity = 0.3 + normalized * 0.8 * beatBoost * (0.8 + 0.3 * combinedWave);
   }
 
-  // Ring 8 - Spiral flow effect (cool dynamic spiral)
+  // Ring 8 - Enhanced multi-layered spiral with radial expansion/contraction and high-frequency response
   for (let i = 0; i < bars8.length; i++) {
-    const freq = data[(i * 4) % data.length];
+    // Focus on high frequencies for this ring
+    const highIndex = Math.max(0, data.length - 1 - (i % 20));
+    const freq = data[highIndex] || 0;
     const normalized = freq / 255;
-    // Spiral pattern that flows outward/inward
-    const spiralPhase = (i / bars8.length) * Math.PI * 8 + Date.now() * 0.0015;
-    const spiral = (Math.sin(spiralPhase) * Math.cos(spiralPhase * 0.7) + 1) / 2;
-    // Creates flowing spiral wave
-    const scale = normalized * 6.8 * beatBoost * (0.8 + 0.25 * spiral) + 0.6;
+    
+    const time = Date.now() * 0.0018;
+    const angle = (i / bars8.length) * Math.PI * 2;
+    // Multi-turn spiral phase for complex flow
+    const spiralPhase = angle * 6 + time * 2.2;
+    
+    // Multi-layered spiral wave pattern
+    const spiral1 = Math.sin(spiralPhase);
+    const spiral2 = Math.cos(spiralPhase * 0.65 + time * 1.8);
+    const spiral3 = Math.sin(spiralPhase * 1.3 - time * 1.2);
+    const layeredSpiral = ((spiral1 + spiral2 * 0.6 + spiral3 * 0.4) / 2 + 1) / 2;
+    
+    // Radial expansion/contraction effect
+    const radialPhase = (i / bars8.length) * Math.PI * 4 + time * 1.5;
+    const radialExpand = (Math.sin(radialPhase) + 1) / 2;
+    const radiusMod = outerRadius8 * (0.96 + 0.08 * radialExpand * (0.5 + normalized));
+    
+    // Strong beat response - audio directly affects scale, spiral adds variation - moderate enhancement
+    const beatScale = normalized * 8.0 * beatBoost; // Direct beat response - moderate boost
+    const spiralMod = 0.7 + 0.3 * layeredSpiral; // Spiral adds gentle variation
+    const scale = beatScale * spiralMod + 0.5; // Beat is primary, spiral is secondary
     bars8[i].scale.y = scale;
     bars8[i].position.y = scale / 2;
-    // Add slight tilt for spiral visual effect
-    bars8[i].rotation.y = -((i / bars8.length) * Math.PI * 2 + rotationOffset7) + Math.sin(spiralPhase) * 0.25;
-    bars8[i].material.emissiveIntensity = 0.25 + normalized * 0.7 * beatBoost * (0.8 + 0.25 * spiral);
+    
+    // Enhanced spiral rotation with radial variation
+    const originalAngle = angle + rotationOffset7;
+    const baseYRot = -originalAngle;
+    const spiralRot = Math.sin(spiralPhase * 1.2) * 0.4;
+    const radialTilt = Math.cos(radialPhase * 1.5) * 0.2;
+    bars8[i].rotation.y = baseYRot + spiralRot + radialTilt;
+    bars8[i].rotation.x = Math.sin(spiralPhase * 0.9) * 0.25 * (0.8 + normalized * beatBoost);
+    bars8[i].rotation.z = Math.cos(spiralPhase * 1.1 + time) * 0.2;
+    
+    // Apply radial expansion to position using original angle - enhanced with beat
+    const beatRadiusMod = 1.0 + (normalized * beatBoost * 0.06); // Beat affects radius moderately
+    bars8[i].position.x = Math.cos(originalAngle) * radiusMod * beatRadiusMod;
+    bars8[i].position.z = Math.sin(originalAngle) * radiusMod * beatRadiusMod;
+    
+    bars8[i].material.emissiveIntensity = 0.28 + normalized * 0.9 * beatBoost * (0.85 + 0.25 * layeredSpiral);
   }
 
-  // Ring 9 - Radial pulse with phase offset (cool expanding pulse)
+  // Ring 9 - Smooth traveling wave pattern with beat response
   for (let i = 0; i < bars9.length; i++) {
-    const freq = data[(i * 5) % data.length];
-    const normalized = freq / 255;
-    // Radial pulse that expands outward in waves
-    const pulsePhase = (i / bars9.length) * Math.PI * 2 + Date.now() * 0.0018;
-    const pulseWave = (Math.sin(pulsePhase * 3) + 1) / 2;
-    // Creates expanding/contracting pulse effect
-    const scale = normalized * 6.5 * beatBoost * (0.82 + 0.28 * pulseWave) + 0.58;
+    // Beat response using bass frequencies
+    const bassIndex = Math.floor((i / bars9.length) * 12);
+    const bassFreq = data[bassIndex] || 0;
+    const normalized = bassFreq / 255;
+    
+    const time = Date.now() * 0.0015; // Smooth wave speed
+    const angle = (i / bars9.length) * Math.PI * 2;
+    
+    // Smooth traveling wave that moves around the circle
+    const wavePhase = angle + time * 1.8; // Wave travels around the circle
+    const wave = (Math.sin(wavePhase * 2) + 1) / 2; // Smooth sine wave 0-1
+    
+    // Beat response affects the wave amplitude - moderate enhancement
+    const beatWave = normalized * beatBoost;
+    
+    // Wave-like scaling - moderate enhancement for more noticeable beats
+    const baseScale = beatWave * 5.5; // Moderate increase for noticeable beats
+    const waveModulation = 0.6 + 0.4 * wave; // Wave varies from 0.6 to 1.0
+    const scale = baseScale * waveModulation + 0.4; // Lower minimum scale (lower overall height)
     bars9[i].scale.y = scale;
     bars9[i].position.y = scale / 2;
-    // Add pulsing rotation for extra visual interest
-    bars9[i].rotation.z = Math.sin(pulsePhase * 2) * 0.15;
-    bars9[i].material.emissiveIntensity = 0.25 + normalized * 0.68 * beatBoost * (0.83 + 0.22 * pulseWave);
+    
+    // Gentle wave rotation for smooth visual effect
+    bars9[i].rotation.z = Math.sin(wavePhase * 1.5) * 0.08; // Subtle wave rotation
+    bars9[i].rotation.x = Math.cos(wavePhase * 0.8) * 0.06; // Gentle tilt
+    bars9[i].rotation.y = -angle - rotationOffset8; // Maintain base rotation
+    
+    // Keep position stable (no radial expansion)
+    const baseAngle = angle + rotationOffset8;
+    bars9[i].position.x = Math.cos(baseAngle) * outerRadius9;
+    bars9[i].position.z = Math.sin(baseAngle) * outerRadius9;
+    
+    // Wave-like emissive intensity - moderate enhancement
+    bars9[i].material.emissiveIntensity = 0.25 + beatWave * 0.65 * (0.8 + 0.2 * wave); // Moderate increase
   }
 
   for (let k = 0; k < innerBuildings.length; k++) {
@@ -1102,23 +1178,23 @@ function animate() {
     const index = Math.floor((i / radialCount) * data.length);
     const freq = data[index];
     const intensity = freq / 255;
-    const baseHeight = THREE.MathUtils.lerp(1.5, 0.1, t);
-    // Better beat response with slight boost
-    mesh.scale.y = baseHeight + intensity * (4.5 - t * 2.2) * beatBoost;
+    const baseHeight = THREE.MathUtils.lerp(2.2, 0.1, t);
+    // Moderate beat response enhancement - taller buildings, more noticeable beats
+    mesh.scale.y = baseHeight + intensity * (6.0 - t * 2.7) * beatBoost;
     mesh.position.y = mesh.scale.y / 2;
-    mesh.material.emissiveIntensity = 0.3 + intensity * 1.05 * beatBoost;
+    mesh.material.emissiveIntensity = 0.3 + intensity * 1.1 * beatBoost;
   }
 
   const avg2 = data.reduce((a, b) => a + b, 0) / data.length;
   const normalizedAvg2 = avg2 / 255;
-  // Better outline response to rhythm
-  outlinePass.edgeStrength = 6 + normalizedAvg2 * 3.5 * beatBoost;
-  outlinePass.pulsePeriod = 2 + normalizedAvg2 * 2.2;
+  // Moderate outline response enhancement to rhythm
+  outlinePass.edgeStrength = 6 + normalizedAvg2 * 4.0 * beatBoost;
+  outlinePass.pulsePeriod = 2 + normalizedAvg2 * 2.3;
 
-  // Make video overlay "bop" with the beat
+  // Make video overlay "bop" with the beat - moderate enhancement
   if (videoOverlayEl && overlayIsActive) {
-    const beatIntensity = avg; // normalized 0-1
-    const scale = 1.0 + beatIntensity * 0.12; // Scale from 1.0 to 1.12 (more noticeable)
+    const beatIntensity = avg * beatBoost; // normalized 0-1 with beat boost
+    const scale = 1.0 + beatIntensity * 0.13; // Slightly more noticeable with beat boost
     videoOverlayEl.style.transform = `scale(${scale})`;
     videoOverlayEl.style.transition = "transform 0.08s ease-out"; // Slightly faster for more snappy feel
   }
