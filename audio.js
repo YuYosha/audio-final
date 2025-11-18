@@ -78,11 +78,17 @@ const overlayVideoEl = document.getElementById("overlay-video");
 
 const overlayVideos = [
   "asgore.mp4",
-  "bpj.mp4",
+  "benson.mp4",
+  "dante.mp4",
   "eggman.mp4",
+  "eggsax.mp4",
   "goku.mp4",
+  "jojo.mp4",
+  "metal.mp4",
   "metroman.mp4",
   "mez.mp4",
+  "p3.mp4",
+  "pbj.mp4",
   "ratdance.mp4",
   "rewrite.mp4",
   "springtrap.mp4",
@@ -234,6 +240,20 @@ function startOverlayVideoLoop() {
     glitchTimeoutId = window.setTimeout(() => {
       videoOverlayEl.classList.remove("glitching");
     }, duration);
+    
+    // Add extra flicker effect for more visibility
+    let flickerCount = 0;
+    const flickerInterval = setInterval(() => {
+      if (flickerCount >= 6 || !videoOverlayEl.classList.contains("glitching")) {
+        clearInterval(flickerInterval);
+        return;
+      }
+      videoOverlayEl.classList.toggle("glitching");
+      setTimeout(() => {
+        if (flickerCount < 6) videoOverlayEl.classList.add("glitching");
+      }, 20);
+      flickerCount++;
+    }, 80);
   };
 
   const concludeOverlay = () => {
@@ -241,7 +261,11 @@ function startOverlayVideoLoop() {
     overlayVideoEl.pause();
     overlayVideoEl.removeAttribute("src");
     overlayVideoEl.load();
-    triggerOverlayGlitch(360);
+    
+    // Restore original palette based on current track
+    applyColorPalette(currentTrackIndex);
+    
+    triggerOverlayGlitch(400);
     window.setTimeout(() => {
       videoOverlayEl.classList.remove("visible");
       overlayIsActive = false;
@@ -258,9 +282,14 @@ function startOverlayVideoLoop() {
     const choice =
       overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
     if (!choice) return;
+    
+    // Randomly pick a color palette when video loads
+    const randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
+    applyColorPalette(randomPaletteIndex);
+    
     overlayIsActive = true;
     videoOverlayEl.classList.add("visible");
-    triggerOverlayGlitch(520);
+    triggerOverlayGlitch(650); // Longer glitch duration for more visibility
     overlayVideoEl.src = `./video/${choice}`;
     overlayVideoEl.currentTime = 0;
     overlayVideoEl.play().catch((error) => {
@@ -368,21 +397,21 @@ const colorPalettes = [
     inner: { color: 0xffff44, emissive: 0xffff88 },
     outline: { visible: "#ffff00", hidden: "#00ffff" },
   },
-  // Palette 6: Forest/Green/Yellow
+  // Palette 6: Mint/Teal/Cyan
   {
-    name: "Nature",
+    name: "Aqua",
     skybox: {
-      baseColor1: { x: 0.0, y: 0.05, z: 0.02 },
-      baseColor2: { x: 0.0, y: 0.09, z: 0.05 },
-      pulseTint1: { x: 0.0, y: 0.5, z: 0.2 },
-      pulseTint2: { x: 0.2, y: 0.9, z: 0.4 },
-      toneShift: { x: 0.7, y: 1.3, z: 0.8 },
+      baseColor1: { x: 0.0, y: 0.05, z: 0.06 },
+      baseColor2: { x: 0.0, y: 0.08, z: 0.1 },
+      pulseTint1: { x: 0.0, y: 0.4, z: 0.5 },
+      pulseTint2: { x: 0.0, y: 0.7, z: 0.9 },
+      toneShift: { x: 0.7, y: 1.2, z: 1.4 },
     },
-    ring1: { color: 0x00ff66, emissive: 0x00ff66 },
-    ring2: { color: 0x88ff00, emissive: 0xaaee00 },
-    ring3: { color: 0xffff88, emissive: 0xffff88 },
-    inner: { color: 0x44ff88, emissive: 0x66ffaa },
-    outline: { visible: "#00ff66", hidden: "#88ff00" },
+    ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
+    ring2: { color: 0x00aaff, emissive: 0x44ccff },
+    ring3: { color: 0x88ffff, emissive: 0x88ffff },
+    inner: { color: 0x44ffdd, emissive: 0x66ffee },
+    outline: { visible: "#00ffcc", hidden: "#00aaff" },
   },
   // Palette 7: Sunset/Orange/Pink
   {

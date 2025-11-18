@@ -51,53 +51,74 @@ body {
 }
 
 #video-overlay.glitching::before {
-  background: linear-gradient(90deg, rgba(255, 20, 95, 0.55) 0%, rgba(255, 0, 100, 0.3) 35%, rgba(0, 0, 0, 0) 50%);
-  animation: glitchSlices 0.5s steps(8, end);
-  opacity: 0.95;
+  background: linear-gradient(90deg, rgba(255, 0, 150, 0.95) 0%, rgba(255, 50, 120, 0.85) 20%, rgba(255, 0, 100, 0.75) 35%, rgba(255, 20, 80, 0.5) 50%, rgba(0, 0, 0, 0) 65%);
+  animation: glitchSlices 0.6s steps(10, end);
+  opacity: 1;
+  filter: brightness(1.3);
 }
 
 #video-overlay.glitching::after {
-  background: linear-gradient(270deg, rgba(0, 195, 255, 0.5) 0%, rgba(0, 150, 255, 0.3) 45%, rgba(0, 0, 0, 0) 60%);
-  animation: glitchSlicesAlt 0.6s steps(7, end);
-  opacity: 0.9;
+  background: linear-gradient(270deg, rgba(0, 255, 255, 0.95) 0%, rgba(50, 200, 255, 0.85) 25%, rgba(0, 180, 255, 0.75) 45%, rgba(0, 150, 255, 0.5) 60%, rgba(0, 0, 0, 0) 75%);
+  animation: glitchSlicesAlt 0.7s steps(9, end);
+  opacity: 1;
+  filter: brightness(1.3);
 }
 
 @keyframes glitchSlices {
   0% {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
+    filter: brightness(1.3);
   }
-  12% {
-    clip-path: inset(12% 0 58% 0);
-    transform: translate(-5px, -4px);
+  8% {
+    clip-path: inset(10% 0 60% 0);
+    transform: translate(-8px, -6px);
+    filter: brightness(1.6);
   }
-  25% {
-    clip-path: inset(55% 0 15% 0);
-    transform: translate(5px, 3px);
+  18% {
+    clip-path: inset(60% 0 10% 0);
+    transform: translate(8px, 6px);
+    filter: brightness(1.4);
+  }
+  28% {
+    clip-path: inset(20% 0 50% 0);
+    transform: translate(-7px, 5px);
+    filter: brightness(1.5);
   }
   38% {
-    clip-path: inset(25% 0 45% 0);
-    transform: translate(-4px, 2px);
+    clip-path: inset(5% 0 70% 0);
+    transform: translate(7px, -6px);
+    filter: brightness(1.6);
   }
-  50% {
-    clip-path: inset(8% 0 62% 0);
-    transform: translate(4px, -3px);
+  48% {
+    clip-path: inset(70% 0 5% 0);
+    transform: translate(-6px, 7px);
+    filter: brightness(1.4);
   }
-  62% {
-    clip-path: inset(65% 0 8% 0);
-    transform: translate(-3px, 4px);
+  58% {
+    clip-path: inset(15% 0 55% 0);
+    transform: translate(6px, -5px);
+    filter: brightness(1.5);
   }
-  75% {
-    clip-path: inset(18% 0 52% 0);
-    transform: translate(3px, -2px);
+  68% {
+    clip-path: inset(50% 0 15% 0);
+    transform: translate(-5px, 4px);
+    filter: brightness(1.4);
+  }
+  78% {
+    clip-path: inset(8% 0 65% 0);
+    transform: translate(5px, -4px);
+    filter: brightness(1.5);
   }
   88% {
-    clip-path: inset(45% 0 20% 0);
-    transform: translate(-2px, 1px);
+    clip-path: inset(40% 0 25% 0);
+    transform: translate(-3px, 2px);
+    filter: brightness(1.3);
   }
   100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
+    filter: brightness(1.3);
   }
 }
 
@@ -105,34 +126,52 @@ body {
   0% {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
+    filter: brightness(1.3);
   }
-  15% {
-    clip-path: inset(8% 0 67% 0);
-    transform: translate(4px, -3px);
+  12% {
+    clip-path: inset(5% 0 75% 0);
+    transform: translate(7px, -5px);
+    filter: brightness(1.6);
   }
-  30% {
-    clip-path: inset(50% 0 22% 0);
-    transform: translate(-5px, 3px);
+  24% {
+    clip-path: inset(55% 0 18% 0);
+    transform: translate(-8px, 6px);
+    filter: brightness(1.4);
   }
-  45% {
-    clip-path: inset(68% 0 7% 0);
-    transform: translate(5px, -4px);
+  36% {
+    clip-path: inset(72% 0 5% 0);
+    transform: translate(8px, -7px);
+    filter: brightness(1.5);
+  }
+  48% {
+    clip-path: inset(18% 0 48% 0);
+    transform: translate(-7px, 5px);
+    filter: brightness(1.4);
   }
   60% {
-    clip-path: inset(20% 0 42% 0);
-    transform: translate(-4px, 3px);
+    clip-path: inset(45% 0 25% 0);
+    transform: translate(6px, -5px);
+    filter: brightness(1.5);
   }
-  75% {
-    clip-path: inset(42% 0 28% 0);
-    transform: translate(3px, -2px);
+  72% {
+    clip-path: inset(12% 0 55% 0);
+    transform: translate(-5px, 4px);
+    filter: brightness(1.4);
   }
-  90% {
-    clip-path: inset(15% 0 50% 0);
-    transform: translate(-2px, 2px);
+  84% {
+    clip-path: inset(35% 0 35% 0);
+    transform: translate(4px, -3px);
+    filter: brightness(1.5);
+  }
+  96% {
+    clip-path: inset(22% 0 48% 0);
+    transform: translate(-3px, 2px);
+    filter: brightness(1.3);
   }
   100% {
     clip-path: inset(0 0 0 0);
     transform: translate(0, 0);
+    filter: brightness(1.3);
   }
 }
 
