@@ -1,24 +1,250 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    background-color: black;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  position: relative;
+}
+
+#container {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#video-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  overflow: hidden;
+}
+
+#video-overlay.visible {
+  opacity: 0.28;
+}
+
+#overlay-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.2) contrast(1.1);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
+#video-overlay::before,
+#video-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#video-overlay.glitching::before {
+  background: linear-gradient(90deg, rgba(255, 20, 95, 0.55) 0%, rgba(255, 0, 100, 0.3) 35%, rgba(0, 0, 0, 0) 50%);
+  animation: glitchSlices 0.5s steps(8, end);
+  opacity: 0.95;
+}
+
+#video-overlay.glitching::after {
+  background: linear-gradient(270deg, rgba(0, 195, 255, 0.5) 0%, rgba(0, 150, 255, 0.3) 45%, rgba(0, 0, 0, 0) 60%);
+  animation: glitchSlicesAlt 0.6s steps(7, end);
+  opacity: 0.9;
+}
+
+@keyframes glitchSlices {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
   }
-  
-  #audio {
-    position: absolute;
-    bottom: 20px;
-    width: 300px;
-    z-index: 2;
+  12% {
+    clip-path: inset(12% 0 58% 0);
+    transform: translate(-5px, -4px);
   }
-  
-  #container {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  25% {
+    clip-path: inset(55% 0 15% 0);
+    transform: translate(5px, 3px);
   }
-  
+  38% {
+    clip-path: inset(25% 0 45% 0);
+    transform: translate(-4px, 2px);
+  }
+  50% {
+    clip-path: inset(8% 0 62% 0);
+    transform: translate(4px, -3px);
+  }
+  62% {
+    clip-path: inset(65% 0 8% 0);
+    transform: translate(-3px, 4px);
+  }
+  75% {
+    clip-path: inset(18% 0 52% 0);
+    transform: translate(3px, -2px);
+  }
+  88% {
+    clip-path: inset(45% 0 20% 0);
+    transform: translate(-2px, 1px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes glitchSlicesAlt {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+  15% {
+    clip-path: inset(8% 0 67% 0);
+    transform: translate(4px, -3px);
+  }
+  30% {
+    clip-path: inset(50% 0 22% 0);
+    transform: translate(-5px, 3px);
+  }
+  45% {
+    clip-path: inset(68% 0 7% 0);
+    transform: translate(5px, -4px);
+  }
+  60% {
+    clip-path: inset(20% 0 42% 0);
+    transform: translate(-4px, 3px);
+  }
+  75% {
+    clip-path: inset(42% 0 28% 0);
+    transform: translate(3px, -2px);
+  }
+  90% {
+    clip-path: inset(15% 0 50% 0);
+    transform: translate(-2px, 2px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+}
+
+#controls {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 22px;
+  background: radial-gradient(
+    circle at top,
+    rgba(0, 120, 255, 0.35),
+    rgba(0, 0, 0, 0.85)
+  );
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  color: #eaf9ff;
+  z-index: 5;
+  min-width: 320px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.65), 0 0 60px rgba(0, 180, 255, 0.25);
+}
+
+#track-name {
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(90deg, #00f0ff, #ff2bd9);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.button-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.button-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 120, 150, 0.95), rgba(120, 0, 0, 0.85));
+  transform: translate(-12px, -9px) scaleX(1.05);
+  filter: blur(0.3px);
+  box-shadow: 0 25px 45px rgba(255, 40, 60, 0.35), 0 0 35px rgba(255, 0, 51, 0.6);
+  z-index: 0;
+}
+
+#controls button {
+  padding: 14px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(140deg, rgba(1, 8, 26, 0.9), rgba(30, 2, 36, 0.85));
+  color: #e9f9ff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  position: relative;
+  overflow: visible;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.05),
+    0 0 25px rgba(0, 200, 255, 0.35);
+  width: 100%;
+}
+
+#controls button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(120deg, rgba(0, 255, 255, 0.3), rgba(255, 0, 153, 0.3));
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: -1;
+}
+
+#controls button span {
+  position: relative;
+  z-index: 1;
+}
+
+#controls button:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.35));
+}
+
+#controls button:hover::before {
+  opacity: 1;
+}
+
+#controls button:active {
+  transform: translateY(0);
+}
+
+#controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+}

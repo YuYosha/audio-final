@@ -16,7 +16,26 @@
 </head>
 <body>
   <div id="container"></div>
-  <!-- <audio id="audio" src="./music/Way.mp3" controls></audio> -->
+  <div id="controls">
+    <div id="track-name"></div>
+    <div class="button-row">
+      <div class="button-wrap">
+        <button id="prev-btn" aria-label="Previous track"><span>Prev</span></button>
+      </div>
+      <div class="button-wrap">
+        <button id="play-btn" aria-label="Play audio"><span>Play</span></button>
+      </div>
+      <div class="button-wrap">
+        <button id="stop-btn" aria-label="Stop audio"><span>Stop</span></button>
+      </div>
+      <div class="button-wrap">
+        <button id="next-btn" aria-label="Next track"><span>Next</span></button>
+      </div>
+    </div>
+  </div>
+  <div id="video-overlay" aria-hidden="true">
+    <video id="overlay-video" muted playsinline></video>
+  </div>
   <script type="module" src="./audio.js"></script>
 </body>
 </html>
