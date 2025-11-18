@@ -339,6 +339,12 @@ const colorPalettes = [
     ring1: { color: 0xff00cc, emissive: 0xff00cc },
     ring2: { color: 0xff9900, emissive: 0xff5500 },
     ring3: { color: 0xffffff, emissive: 0xffffff },
+    ring4: { color: 0x00ccff, emissive: 0x00ccff },
+    ring5: { color: 0xcc00ff, emissive: 0xcc00ff },
+    ring6: { color: 0x00ffaa, emissive: 0x00ffaa },
+    ring7: { color: 0xffcc00, emissive: 0xffcc00 },
+    ring8: { color: 0xff00aa, emissive: 0xff00aa },
+    ring9: { color: 0x00ccff, emissive: 0x00ccff },
     inner: { color: 0x00aaff, emissive: 0x00ffff },
     outline: { visible: "#00ffff", hidden: "#ff0088" },
   },
@@ -355,6 +361,12 @@ const colorPalettes = [
     ring1: { color: 0x00ff88, emissive: 0x00ff88 },
     ring2: { color: 0xaa00ff, emissive: 0xcc44ff },
     ring3: { color: 0xffff00, emissive: 0xffff00 },
+    ring4: { color: 0x44ffdd, emissive: 0x44ffdd },
+    ring5: { color: 0xff44aa, emissive: 0xff44aa },
+    ring6: { color: 0x88ff44, emissive: 0x88ff44 },
+    ring7: { color: 0xffff00, emissive: 0xffff00 },
+    ring8: { color: 0xff00cc, emissive: 0xff00cc },
+    ring9: { color: 0x44ffff, emissive: 0x44ffff },
     inner: { color: 0x00ffaa, emissive: 0x44ffdd },
     outline: { visible: "#00ff88", hidden: "#ff00aa" },
   },
@@ -371,6 +383,12 @@ const colorPalettes = [
     ring1: { color: 0xff4400, emissive: 0xff4400 },
     ring2: { color: 0xffaa00, emissive: 0xff8800 },
     ring3: { color: 0xffff44, emissive: 0xffff44 },
+    ring4: { color: 0xff6600, emissive: 0xff6600 },
+    ring5: { color: 0xff0088, emissive: 0xff0088 },
+    ring6: { color: 0xffcc44, emissive: 0xffcc44 },
+    ring7: { color: 0xffaa00, emissive: 0xffaa00 },
+    ring8: { color: 0xff0088, emissive: 0xff0088 },
+    ring9: { color: 0xff6600, emissive: 0xff6600 },
     inner: { color: 0xff6600, emissive: 0xff8844 },
     outline: { visible: "#ff4400", hidden: "#ff0088" },
   },
@@ -387,6 +405,12 @@ const colorPalettes = [
     ring1: { color: 0x0099ff, emissive: 0x0099ff },
     ring2: { color: 0x00ccff, emissive: 0x44ddff },
     ring3: { color: 0x88ffff, emissive: 0x88ffff },
+    ring4: { color: 0x0066ff, emissive: 0x0066ff },
+    ring5: { color: 0x44aaff, emissive: 0x44aaff },
+    ring6: { color: 0x66ddff, emissive: 0x66ddff },
+    ring7: { color: 0x0099ff, emissive: 0x0099ff },
+    ring8: { color: 0x00aaff, emissive: 0x00aaff },
+    ring9: { color: 0x66ddff, emissive: 0x66ddff },
     inner: { color: 0x00aaff, emissive: 0x66ddff },
     outline: { visible: "#00ccff", hidden: "#0066ff" },
   },
@@ -403,6 +427,12 @@ const colorPalettes = [
     ring1: { color: 0xaa00ff, emissive: 0xaa00ff },
     ring2: { color: 0xff00cc, emissive: 0xff44dd },
     ring3: { color: 0xff88ff, emissive: 0xff88ff },
+    ring4: { color: 0xcc00ff, emissive: 0xcc00ff },
+    ring5: { color: 0xff44ff, emissive: 0xff44ff },
+    ring6: { color: 0xdd88ff, emissive: 0xdd88ff },
+    ring7: { color: 0xaa00ff, emissive: 0xaa00ff },
+    ring8: { color: 0xff00aa, emissive: 0xff00aa },
+    ring9: { color: 0xff44ff, emissive: 0xff44ff },
     inner: { color: 0xcc44ff, emissive: 0xdd66ff },
     outline: { visible: "#aa00ff", hidden: "#ff00aa" },
   },
@@ -419,6 +449,12 @@ const colorPalettes = [
     ring1: { color: 0xffff00, emissive: 0xffff00 },
     ring2: { color: 0x00ffff, emissive: 0x44ffff },
     ring3: { color: 0xffffff, emissive: 0xffffff },
+    ring4: { color: 0xffff44, emissive: 0xffff44 },
+    ring5: { color: 0x44ffff, emissive: 0x44ffff },
+    ring6: { color: 0xffff88, emissive: 0xffff88 },
+    ring7: { color: 0xffff00, emissive: 0xffff00 },
+    ring8: { color: 0xff00ff, emissive: 0xff00ff },
+    ring9: { color: 0x00ffff, emissive: 0x00ffff },
     inner: { color: 0xffff44, emissive: 0xffff88 },
     outline: { visible: "#ffff00", hidden: "#00ffff" },
   },
@@ -435,6 +471,12 @@ const colorPalettes = [
     ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
     ring2: { color: 0x00aaff, emissive: 0x44ccff },
     ring3: { color: 0x88ffff, emissive: 0x88ffff },
+    ring4: { color: 0x00ffaa, emissive: 0x00ffaa },
+    ring5: { color: 0x66ffdd, emissive: 0x66ffdd },
+    ring6: { color: 0x44ffee, emissive: 0x44ffee },
+    ring7: { color: 0x00ffcc, emissive: 0x00ffcc },
+    ring8: { color: 0x00ff88, emissive: 0x00ff88 },
+    ring9: { color: 0x44ffff, emissive: 0x44ffff },
     inner: { color: 0x44ffdd, emissive: 0x66ffee },
     outline: { visible: "#00ffcc", hidden: "#00aaff" },
   },
@@ -451,6 +493,12 @@ const colorPalettes = [
     ring1: { color: 0xff6600, emissive: 0xff6600 },
     ring2: { color: 0xff0088, emissive: 0xff4488 },
     ring3: { color: 0xffaa44, emissive: 0xffaa44 },
+    ring4: { color: 0xff8844, emissive: 0xff8844 },
+    ring5: { color: 0xffaa66, emissive: 0xffaa66 },
+    ring6: { color: 0xffcc88, emissive: 0xffcc88 },
+    ring7: { color: 0xff9900, emissive: 0xff9900 },
+    ring8: { color: 0xff6688, emissive: 0xff6688 },
+    ring9: { color: 0xff8844, emissive: 0xff8844 },
     inner: { color: 0xff8844, emissive: 0xffaa66 },
     outline: { visible: "#ff6600", hidden: "#ff0088" },
   },
@@ -467,6 +515,12 @@ const colorPalettes = [
     ring1: { color: 0x88ddff, emissive: 0x88ddff },
     ring2: { color: 0xccffff, emissive: 0xddeeff },
     ring3: { color: 0xffffff, emissive: 0xffffff },
+    ring4: { color: 0x44aaff, emissive: 0x44aaff },
+    ring5: { color: 0x88ccff, emissive: 0x88ccff },
+    ring6: { color: 0xaaddff, emissive: 0xaaddff },
+    ring7: { color: 0x88ddff, emissive: 0x88ddff },
+    ring8: { color: 0xaaeeff, emissive: 0xaaeeff },
+    ring9: { color: 0xccffff, emissive: 0xccffff },
     inner: { color: 0xaaffff, emissive: 0xccffff },
     outline: { visible: "#88ddff", hidden: "#44aaff" },
   },
@@ -483,6 +537,12 @@ const colorPalettes = [
     ring1: { color: 0x6600ff, emissive: 0x6600ff },
     ring2: { color: 0x4400ff, emissive: 0x6644ff },
     ring3: { color: 0xaa88ff, emissive: 0xaa88ff },
+    ring4: { color: 0x8844ff, emissive: 0x8844ff },
+    ring5: { color: 0xaa66ff, emissive: 0xaa66ff },
+    ring6: { color: 0xcc88ff, emissive: 0xcc88ff },
+    ring7: { color: 0x6600ff, emissive: 0x6600ff },
+    ring8: { color: 0x9900ff, emissive: 0x9900ff },
+    ring9: { color: 0xaa66ff, emissive: 0xaa66ff },
     inner: { color: 0x8844ff, emissive: 0xaa66ff },
     outline: { visible: "#6600ff", hidden: "#4400ff" },
   },
@@ -630,6 +690,138 @@ for (let i = 0; i < outerCount; i++) {
   bars3.push(bar);
 }
 
+// === Fourth Ring (cyan/blue) - Pulse with bass ===
+const bars4 = [];
+const outerRadius4 = outerRadius3 + 1.2;
+const rotationOffset3 = rotationOffset2 * 1.5;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x00ccff,
+    emissive: 0x00ccff,
+    emissiveIntensity: 0.4,
+    metalness: 0.85,
+    roughness: 0.2,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset3;
+  bar.position.x = Math.cos(angle) * outerRadius4;
+  bar.position.z = Math.sin(angle) * outerRadius4;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars4.push(bar);
+}
+
+// === Fifth Ring (purple/violet) - Reacts to high frequencies ===
+const bars5 = [];
+const outerRadius5 = outerRadius4 + 1.2;
+const rotationOffset4 = rotationOffset3 * 1.3;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xcc00ff,
+    emissive: 0xcc00ff,
+    emissiveIntensity: 0.4,
+    metalness: 0.9,
+    roughness: 0.18,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset4;
+  bar.position.x = Math.cos(angle) * outerRadius5;
+  bar.position.z = Math.sin(angle) * outerRadius5;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars5.push(bar);
+}
+
+// === Sixth Ring (green/teal) - Wave-like reaction ===
+const bars6 = [];
+const outerRadius6 = outerRadius5 + 1.2;
+const rotationOffset5 = rotationOffset4 * 1.4;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x00ffaa,
+    emissive: 0x00ffaa,
+    emissiveIntensity: 0.4,
+    metalness: 0.8,
+    roughness: 0.22,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset5;
+  bar.position.x = Math.cos(angle) * outerRadius6;
+  bar.position.z = Math.sin(angle) * outerRadius6;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars6.push(bar);
+}
+
+// === Seventh Ring (golden yellow) - Rotating chase with spinning bars ===
+const bars7 = [];
+const outerRadius7 = outerRadius6 + 1.2;
+const rotationOffset6 = rotationOffset5 * 1.15;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffcc00,
+    emissive: 0xffcc00,
+    emissiveIntensity: 0.35,
+    metalness: 0.9,
+    roughness: 0.18,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset6;
+  bar.position.x = Math.cos(angle) * outerRadius7;
+  bar.position.z = Math.sin(angle) * outerRadius7;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars7.push(bar);
+}
+
+// === Eighth Ring (magenta/pink) - Spiral flow effect ===
+const bars8 = [];
+const outerRadius8 = outerRadius7 + 1.2;
+const rotationOffset7 = rotationOffset6 * 1.25;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xff00aa,
+    emissive: 0xff00aa,
+    emissiveIntensity: 0.35,
+    metalness: 0.88,
+    roughness: 0.2,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset7;
+  bar.position.x = Math.cos(angle) * outerRadius8;
+  bar.position.z = Math.sin(angle) * outerRadius8;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars8.push(bar);
+}
+
+// === Ninth Ring (cyan/blue) - Radial pulse with phase offset ===
+const bars9 = [];
+const outerRadius9 = outerRadius8 + 1.2;
+const rotationOffset8 = rotationOffset7 * 1.2;
+for (let i = 0; i < outerCount; i++) {
+  const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0x00ccff,
+    emissive: 0x00ccff,
+    emissiveIntensity: 0.35,
+    metalness: 0.85,
+    roughness: 0.22,
+  });
+  const bar = new THREE.Mesh(geometry, material);
+  const angle = (i / outerCount) * Math.PI * 2 + rotationOffset8;
+  bar.position.x = Math.cos(angle) * outerRadius9;
+  bar.position.z = Math.sin(angle) * outerRadius9;
+  bar.rotation.y = -angle;
+  scene.add(bar);
+  bars9.push(bar);
+}
+
 // === Inner "city" ===
 const innerBuildings = [];
 const radialCount = 128;
@@ -720,6 +912,36 @@ function applyColorPalette(paletteIndex) {
     bar.material.emissive.setHex(palette.ring3.emissive);
   });
   
+  bars4.forEach(bar => {
+    bar.material.color.setHex(palette.ring4.color);
+    bar.material.emissive.setHex(palette.ring4.emissive);
+  });
+  
+  bars5.forEach(bar => {
+    bar.material.color.setHex(palette.ring5.color);
+    bar.material.emissive.setHex(palette.ring5.emissive);
+  });
+  
+  bars6.forEach(bar => {
+    bar.material.color.setHex(palette.ring6.color);
+    bar.material.emissive.setHex(palette.ring6.emissive);
+  });
+  
+  bars7.forEach(bar => {
+    bar.material.color.setHex(palette.ring7.color);
+    bar.material.emissive.setHex(palette.ring7.emissive);
+  });
+  
+  bars8.forEach(bar => {
+    bar.material.color.setHex(palette.ring8.color);
+    bar.material.emissive.setHex(palette.ring8.emissive);
+  });
+  
+  bars9.forEach(bar => {
+    bar.material.color.setHex(palette.ring9.color);
+    bar.material.emissive.setHex(palette.ring9.emissive);
+  });
+  
   // Update inner buildings
   innerBuildings.forEach(({ mesh }) => {
     mesh.material.color.setHex(palette.inner.color);
@@ -742,35 +964,137 @@ function animate() {
 
   const data = analyser.getFrequencyData();
   const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+  
+  // Better beat detection using bass frequencies (better for rhythm)
+  const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
+  const midAvg = data.reduce((a, b, idx) => idx > 4 && idx < data.length * 0.5 ? a + b : a, 0) / (Math.floor(data.length * 0.5) - 5) / 255;
+  
+  // Enhance sensitivity to beats (slightly boost when beats are present)
+  const beatBoost = bassAvg > 0.25 ? 1.0 + bassAvg * 0.4 : 1.0;
 
   skyUniforms.uTime.value = clock.getElapsedTime();
   skyUniforms.uAudio.value = avg;
 
-  // Bars animation
+  // Bars animation - better rhythm response
   for (let i = 0; i < bars.length; i++) {
     const freq = data[i % data.length];
-    const scale = (freq / 255) * 8 + 0.5;
+    const normalized = freq / 255;
+    // Slightly boosted multiplier and better beat response
+    const scale = normalized * 9.5 * beatBoost + 0.5;
     bars[i].scale.y = scale;
     bars[i].position.y = scale / 2;
-    bars[i].material.emissiveIntensity = 0.3 + (freq / 255) * 0.7;
+    bars[i].material.emissiveIntensity = 0.3 + normalized * 0.85 * beatBoost;
   }
 
   for (let i = 0; i < bars2.length; i++) {
     const freq = data[(i * 2) % data.length];
     const inverted = 1.0 - freq / 255;
-    const scale = inverted * 8 + 0.5;
+    // Better response to rhythm changes
+    const scale = inverted * 9.5 * beatBoost + 0.5;
     bars2[i].scale.y = scale;
     bars2[i].position.y = scale / 2;
-    bars2[i].material.emissiveIntensity = 0.3 + inverted * 0.7;
+    bars2[i].material.emissiveIntensity = 0.3 + inverted * 0.85 * beatBoost;
   }
 
   for (let i = 0; i < bars3.length; i++) {
     const freq = data[(i * 3) % data.length];
+    const normalized = freq / 255;
     const smooth = (Math.sin(Date.now() * 0.002 + i * 0.1) + 1) / 2;
-    const scale = ((freq / 255) * 6 + 0.5) * (0.8 + 0.2 * smooth);
+    // Better mid-frequency response for rhythm
+    const scale = (normalized * 7.5 * beatBoost + 0.5) * (0.8 + 0.2 * smooth);
     bars3[i].scale.y = scale;
     bars3[i].position.y = scale / 2;
-    bars3[i].material.emissiveIntensity = 0.3 + (freq / 255) * 0.5;
+    bars3[i].material.emissiveIntensity = 0.3 + normalized * 0.65 * beatBoost;
+  }
+
+  // Ring 4 - Reacts strongly to bass frequencies with pulse effect
+  for (let i = 0; i < bars4.length; i++) {
+    const bassIndex = Math.floor((i / bars4.length) * 8); // Use first 8 frequencies for bass
+    const bassFreq = data[bassIndex] || 0;
+    const normalized = bassFreq / 255;
+    // Pulse effect that syncs with bass
+    const pulse = (Math.sin(Date.now() * 0.003 + i * 0.15) + 1) / 2;
+    const scale = normalized * 8.5 * beatBoost * (0.9 + 0.2 * pulse) + 0.5;
+    bars4[i].scale.y = scale;
+    bars4[i].position.y = scale / 2;
+    bars4[i].material.emissiveIntensity = 0.3 + normalized * 0.9 * beatBoost * (0.8 + 0.3 * pulse);
+  }
+
+  // Ring 5 - Reacts to high frequencies with inverted wave
+  for (let i = 0; i < bars5.length; i++) {
+    const highIndex = data.length - 1 - (i % 16); // Use last 16 frequencies
+    const highFreq = data[Math.max(0, highIndex)] || 0;
+    const normalized = highFreq / 255;
+    const inverted = 1.0 - normalized;
+    // Wave pattern that moves opposite to frequency
+    const wave = (Math.cos(Date.now() * 0.004 + i * 0.12) + 1) / 2;
+    const scale = inverted * 7.8 * beatBoost * (0.85 + 0.25 * wave) + 0.5;
+    bars5[i].scale.y = scale;
+    bars5[i].position.y = scale / 2;
+    bars5[i].material.emissiveIntensity = 0.3 + inverted * 0.8 * beatBoost * (0.9 + 0.2 * wave);
+  }
+
+  // Ring 6 - Wave reaction that travels around the circle
+  for (let i = 0; i < bars6.length; i++) {
+    const freq = data[(i * 4) % data.length];
+    const normalized = freq / 255;
+    // Traveling wave effect
+    const wavePhase = (i / bars6.length) * Math.PI * 2 + Date.now() * 0.001;
+    const wave = (Math.sin(wavePhase * 3) + 1) / 2;
+    // Combines frequency with traveling wave
+    const scale = normalized * 8.0 * beatBoost * (0.7 + 0.4 * wave) + 0.5;
+    bars6[i].scale.y = scale;
+    bars6[i].position.y = scale / 2;
+    bars6[i].material.emissiveIntensity = 0.3 + normalized * 0.85 * beatBoost * (0.8 + 0.3 * wave);
+  }
+
+  // Ring 7 - Rotating chase with spinning bars (cool dynamic effect)
+  for (let i = 0; i < bars7.length; i++) {
+    const freq = data[(i * 3) % data.length];
+    const normalized = freq / 255;
+    // Rotating chase pattern that moves around the circle
+    const chasePhase = (i / bars7.length) * Math.PI * 2 + Date.now() * 0.002;
+    const chase = (Math.sin(chasePhase * 2.5) + 1) / 2;
+    // Dynamic scaling with chase effect
+    const scale = normalized * 7.0 * beatBoost * (0.75 + 0.3 * chase) + 0.55;
+    bars7[i].scale.y = scale;
+    bars7[i].position.y = scale / 2;
+    // Bars rotate on their axis for cool spinning effect
+    bars7[i].rotation.x = Math.sin(chasePhase * 1.5) * 0.3;
+    bars7[i].rotation.z = Math.cos(chasePhase * 1.5) * 0.2;
+    bars7[i].material.emissiveIntensity = 0.25 + normalized * 0.65 * beatBoost * (0.85 + 0.2 * chase);
+  }
+
+  // Ring 8 - Spiral flow effect (cool dynamic spiral)
+  for (let i = 0; i < bars8.length; i++) {
+    const freq = data[(i * 4) % data.length];
+    const normalized = freq / 255;
+    // Spiral pattern that flows outward/inward
+    const spiralPhase = (i / bars8.length) * Math.PI * 8 + Date.now() * 0.0015;
+    const spiral = (Math.sin(spiralPhase) * Math.cos(spiralPhase * 0.7) + 1) / 2;
+    // Creates flowing spiral wave
+    const scale = normalized * 6.8 * beatBoost * (0.8 + 0.25 * spiral) + 0.6;
+    bars8[i].scale.y = scale;
+    bars8[i].position.y = scale / 2;
+    // Add slight tilt for spiral visual effect
+    bars8[i].rotation.y = -((i / bars8.length) * Math.PI * 2 + rotationOffset7) + Math.sin(spiralPhase) * 0.25;
+    bars8[i].material.emissiveIntensity = 0.25 + normalized * 0.7 * beatBoost * (0.8 + 0.25 * spiral);
+  }
+
+  // Ring 9 - Radial pulse with phase offset (cool expanding pulse)
+  for (let i = 0; i < bars9.length; i++) {
+    const freq = data[(i * 5) % data.length];
+    const normalized = freq / 255;
+    // Radial pulse that expands outward in waves
+    const pulsePhase = (i / bars9.length) * Math.PI * 2 + Date.now() * 0.0018;
+    const pulseWave = (Math.sin(pulsePhase * 3) + 1) / 2;
+    // Creates expanding/contracting pulse effect
+    const scale = normalized * 6.5 * beatBoost * (0.82 + 0.28 * pulseWave) + 0.58;
+    bars9[i].scale.y = scale;
+    bars9[i].position.y = scale / 2;
+    // Add pulsing rotation for extra visual interest
+    bars9[i].rotation.z = Math.sin(pulsePhase * 2) * 0.15;
+    bars9[i].material.emissiveIntensity = 0.25 + normalized * 0.68 * beatBoost * (0.83 + 0.22 * pulseWave);
   }
 
   for (let k = 0; k < innerBuildings.length; k++) {
@@ -779,14 +1103,17 @@ function animate() {
     const freq = data[index];
     const intensity = freq / 255;
     const baseHeight = THREE.MathUtils.lerp(1.5, 0.1, t);
-    mesh.scale.y = baseHeight + intensity * (4.0 - t * 2.0);
+    // Better beat response with slight boost
+    mesh.scale.y = baseHeight + intensity * (4.5 - t * 2.2) * beatBoost;
     mesh.position.y = mesh.scale.y / 2;
-    mesh.material.emissiveIntensity = 0.3 + intensity * 0.9;
+    mesh.material.emissiveIntensity = 0.3 + intensity * 1.05 * beatBoost;
   }
 
   const avg2 = data.reduce((a, b) => a + b, 0) / data.length;
-  outlinePass.edgeStrength = 6 + (avg2 / 255) * 3;
-  outlinePass.pulsePeriod = 2 + (avg2 / 255) * 2;
+  const normalizedAvg2 = avg2 / 255;
+  // Better outline response to rhythm
+  outlinePass.edgeStrength = 6 + normalizedAvg2 * 3.5 * beatBoost;
+  outlinePass.pulsePeriod = 2 + normalizedAvg2 * 2.2;
 
   // Make video overlay "bop" with the beat
   if (videoOverlayEl && overlayIsActive) {
