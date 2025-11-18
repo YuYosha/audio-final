@@ -94,6 +94,7 @@ const overlayVideos = [
   "springtrap.mp4",
   "teto.mp4",
   "tf2.mp4",
+  "cream.mp4",
 ];
 const VIDEO_CHECK_INTERVAL = 12000;
 const VIDEO_APPEAR_CHANCE = 0.38; // ~38% chance per interval -> more common
