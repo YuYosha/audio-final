@@ -154,6 +154,12 @@ let experimentalModeEnabled = false; // Toggle for experimental visualizer
 const experimentalBtn = document.getElementById("experimental-btn");
 const experimentalCanvas = document.getElementById("experimental-visualizer");
 let experimentalAnimationId = null;
+let experimentalLowPassFilter = null;
+let experimentalGainNode = null;
+let experimentalBandPassFilter = null; // Bandpass to let one frequency through
+let experimentalMerger = null; // To merge filtered and unfiltered signals
+let experimentalSplitter = null; // To split signal without breaking analyser
+let audioContext = null;
 
 // Color variations for error windows
 const errorWindowColors = [
@@ -759,6 +765,13 @@ experimentalBtn?.addEventListener("click", () => {
           videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
         }
       }, 500);
+      
+      // Apply audio effects (Sonic boost muffled effect)
+      if (sound.isPlaying) {
+        setTimeout(() => {
+          applyExperimentalAudioEffects();
+        }, 200);
+      }
     }, 100);
   } else {
     experimentalBtn.classList.remove("active");
@@ -772,10 +785,23 @@ experimentalBtn?.addEventListener("click", () => {
     }
     stopExperimentalVisualizer();
     
+    // Remove audio effects BEFORE showing 3D container
+    removeExperimentalAudioEffects();
+    
     // Wait for glitch animation, then show 3D container
     setTimeout(() => {
       const container = document.getElementById("container");
       if (container) container.style.display = "block";
+      
+      // Ensure audio continues playing
+      const wasPlaying = sound.isPlaying;
+      if (wasPlaying && sound.buffer && !sound.isPlaying) {
+        setTimeout(() => {
+          if (sound.buffer && !sound.isPlaying) {
+            sound.play().catch(err => console.warn("Could not resume audio:", err));
+          }
+        }, 100);
+      }
       
       // Remove glitch after transition
       setTimeout(() => {
@@ -787,6 +813,199 @@ experimentalBtn?.addEventListener("click", () => {
     }, 100);
   }
 });
+
+// === Experimental Audio Effects ===
+function applyExperimentalAudioEffects() {
+  if (!experimentalModeEnabled || !sound || !sound.isPlaying) return;
+  
+  try {
+    if (!audioContext) {
+      audioContext = THREE.AudioContext.getContext();
+    }
+    
+    if (!audioContext || !listener) return;
+    
+    const context = audioContext;
+    
+    // Create aggressive low-pass filter for muffled effect (Sonic boost style)
+    if (!experimentalLowPassFilter) {
+      experimentalLowPassFilter = context.createBiquadFilter();
+      experimentalLowPassFilter.type = 'lowpass';
+      experimentalLowPassFilter.frequency.value = 700; // Very muffled - cut high frequencies aggressively
+      experimentalLowPassFilter.Q.value = 3.5; // Higher Q for sharper cutoff
+    }
+    
+    // Create bandpass filter to let one frequency band through clearly
+    if (!experimentalBandPassFilter) {
+      experimentalBandPassFilter = context.createBiquadFilter();
+      experimentalBandPassFilter.type = 'bandpass';
+      experimentalBandPassFilter.frequency.value = 2000; // Let mid-highs through (2kHz)
+      experimentalBandPassFilter.Q.value = 5.0; // Narrow bandpass for clear frequency
+    }
+    
+    // Get sound's gain node and listener input
+    const soundGain = sound.gain;
+    const listenerInput = listener.getInput();
+    
+    if (soundGain && listenerInput) {
+      try {
+        // IMPORTANT: Don't disconnect sound.gain - this breaks the analyser!
+        // Instead, we'll use a different approach: connect filters in parallel
+        // and use volume/gain to control the effect
+        
+        // Create a gain node to control the filtered signal
+        if (!experimentalGainNode) {
+          experimentalGainNode = context.createGain();
+          experimentalGainNode.gain.value = 0.85; // Slightly reduce volume for muffled effect
+        }
+        
+        // Connect: sound.gain -> lowpass -> gain -> listener (for muffled)
+        // Also connect: sound.gain -> bandpass -> listener (for clear frequency)
+        // But we need to be careful not to break existing connections
+        
+        // Create splitter to split the signal
+        if (!experimentalSplitter) {
+          experimentalSplitter = context.createChannelSplitter(2);
+        }
+        
+        // Create merger to combine signals
+        if (!experimentalMerger) {
+          experimentalMerger = context.createChannelMerger(2);
+        }
+        
+        // IMPORTANT: Only disconnect the specific connection to listener
+        // This preserves the analyser connection which is also on sound.gain
+        try {
+          soundGain.disconnect(listenerInput);
+        } catch (e) {
+          // If already disconnected, that's fine
+        }
+        
+        // Split signal
+        soundGain.connect(experimentalSplitter);
+        
+        // Path 1: Muffled lowpass signal
+        experimentalSplitter.connect(experimentalLowPassFilter, 0);
+        experimentalLowPassFilter.connect(experimentalGainNode);
+        experimentalGainNode.connect(experimentalMerger, 0, 0);
+        
+        // Path 2: Clear bandpass signal (one frequency through)
+        experimentalSplitter.connect(experimentalBandPassFilter, 1);
+        experimentalBandPassFilter.connect(experimentalMerger, 0, 1);
+        
+        // Merge to listener
+        experimentalMerger.connect(listenerInput);
+        
+        // Slight volume reduction for muffled effect
+        if (sound.setVolume) {
+          sound.setVolume(0.75);
+        }
+      } catch (e) {
+        // If connection fails, use volume only as fallback
+        console.warn("Could not apply experimental audio filters, using volume only:", e);
+        if (sound.setVolume) {
+          sound.setVolume(0.7);
+        }
+      }
+    } else {
+      // Fallback: reduce volume
+      if (sound.setVolume) {
+        sound.setVolume(0.7);
+      }
+    }
+    
+    // Animate lowpass filter for dynamic muffled effect
+    let freq = 700;
+    let dir = 1;
+    const animateFilter = () => {
+      if (!experimentalModeEnabled || !experimentalLowPassFilter) return;
+      
+      freq += dir * 60;
+      if (freq <= 500 || freq >= 900) {
+        dir *= -1;
+      }
+      
+      experimentalLowPassFilter.frequency.setValueAtTime(freq, context.currentTime);
+      setTimeout(animateFilter, 120);
+    };
+    animateFilter();
+    
+  } catch (error) {
+    console.warn("Could not apply experimental audio effects:", error);
+    // Fallback: reduce volume
+    if (sound && sound.setVolume) {
+      sound.setVolume(0.7);
+    }
+  }
+}
+
+function removeExperimentalAudioEffects() {
+  try {
+    // Reconnect sound directly to listener (restore normal connection)
+    if (sound && sound.gain && listener && listener.getInput) {
+      const soundGain = sound.gain;
+      const listenerInput = listener.getInput();
+      
+      if (soundGain && listenerInput) {
+        try {
+          // Disconnect experimental nodes carefully
+          if (experimentalSplitter) {
+            try {
+              experimentalSplitter.disconnect();
+            } catch (e) {}
+            experimentalSplitter = null;
+          }
+          
+          if (experimentalLowPassFilter) {
+            try {
+              experimentalLowPassFilter.disconnect();
+            } catch (e) {}
+            experimentalLowPassFilter = null;
+          }
+          
+          if (experimentalBandPassFilter) {
+            try {
+              experimentalBandPassFilter.disconnect();
+            } catch (e) {}
+            experimentalBandPassFilter = null;
+          }
+          
+          if (experimentalGainNode) {
+            try {
+              experimentalGainNode.disconnect();
+            } catch (e) {}
+            experimentalGainNode = null;
+          }
+          
+          if (experimentalMerger) {
+            try {
+              experimentalMerger.disconnect(listenerInput);
+            } catch (e) {}
+            experimentalMerger = null;
+          }
+
+          // IMPORTANT: Only reconnect the specific connection to listener
+          // Don't disconnect all connections - this preserves the analyser!
+          try {
+            soundGain.connect(listenerInput);
+          } catch (e) {
+            // If already connected, that's fine
+          }
+        } catch (e) {
+          console.warn("Error reconnecting audio:", e);
+          // THREE.Audio should reconnect automatically on next play
+        }
+      }
+    }
+
+    // Restore normal volume
+    if (sound && sound.setVolume) {
+      sound.setVolume(0.8);
+    }
+  } catch (error) {
+    console.warn("Could not remove experimental audio effects:", error);
+  }
+}
 
 // Update experimental info panel
 function updateExperimentalInfo() {
