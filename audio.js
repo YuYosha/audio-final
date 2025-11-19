@@ -150,6 +150,10 @@ let errorWindowIntervalId = null;
 let activeErrorWindows = []; // Track multiple active windows
 let popupsEnabled = false; // Toggle for popups
 const popupsBtn = document.getElementById("popups-btn");
+let experimentalModeEnabled = false; // Toggle for experimental visualizer
+const experimentalBtn = document.getElementById("experimental-btn");
+const experimentalCanvas = document.getElementById("experimental-visualizer");
+let experimentalAnimationId = null;
 
 // Color variations for error windows
 const errorWindowColors = [
@@ -260,6 +264,10 @@ async function playSound() {
     if (popupsEnabled) {
       startErrorWindowLoop();
     }
+    // Start experimental visualizer if enabled
+    if (experimentalModeEnabled && experimentalCanvas) {
+      startExperimentalVisualizerLoop();
+    }
   }
 }
 
@@ -270,6 +278,8 @@ function stopSound() {
     // Resume menu music when song stops
     resumeMenuMusic();
     updateButtonStates();
+    // Stop experimental visualizer when music stops
+    stopExperimentalVisualizer();
   }
   // Stop any active video overlay when music stops
   if (overlayIsActive && overlayVideoEl) {
@@ -378,6 +388,7 @@ setupButtonHover(camLeftBtn);
 setupButtonHover(camStopBtn);
 setupButtonHover(camRightBtn);
 setupButtonHover(popupsBtn);
+setupButtonHover(experimentalBtn);
 
 // Setup select sounds for play and stop buttons
 setupButtonSelect(playBtn);
@@ -390,6 +401,7 @@ setupButtonSelect2(camLeftBtn);
 setupButtonSelect2(camStopBtn);
 setupButtonSelect2(camRightBtn);
 setupButtonSelect2(popupsBtn);
+setupButtonSelect2(experimentalBtn);
 
 playBtn?.addEventListener("click", () => {
   playSound();
@@ -472,6 +484,350 @@ popupsBtn?.addEventListener("click", () => {
     }
   }
 });
+
+// === Experimental Visualizer ===
+
+function stopExperimentalVisualizer() {
+  if (experimentalAnimationId) {
+    cancelAnimationFrame(experimentalAnimationId);
+    experimentalAnimationId = null;
+  }
+  // Draw static line when experimental mode is off
+  drawStaticLine();
+}
+
+function startExperimentalVisualizerLoop() {
+  if (!experimentalCanvas) return;
+  
+  experimentalCanvas.width = window.innerWidth;
+  experimentalCanvas.height = window.innerHeight;
+  const ctx = experimentalCanvas.getContext('2d');
+  
+  function drawLoop() {
+    if (!experimentalModeEnabled) {
+      // Stop loop when experimental mode is off
+      experimentalAnimationId = null;
+      return;
+    }
+    
+    if (!sound.isPlaying) {
+      // Draw static white line when experimental mode is on but music isn't playing
+      drawStaticLine();
+      experimentalAnimationId = requestAnimationFrame(drawLoop);
+      return;
+    }
+    
+    // Draw frantic visualizer when experimental mode is on and music is playing
+    // Vintage black background with slight texture
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
+    
+    // Add subtle vignette gradient
+    const gradient = ctx.createRadialGradient(
+      experimentalCanvas.width / 2,
+      experimentalCanvas.height / 2,
+      0,
+      experimentalCanvas.width / 2,
+      experimentalCanvas.height / 2,
+      Math.max(experimentalCanvas.width, experimentalCanvas.height) * 0.7
+    );
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
+    
+    // Get time-domain data from the underlying analyser for proper waveform oscillation
+    const underlyingAnalyser = analyser.analyser || analyser;
+    const bufferLength = underlyingAnalyser.frequencyBinCount || 256;
+    const timeData = new Uint8Array(bufferLength);
+    
+    // Try to get time domain data, fallback to frequency data if not available
+    if (underlyingAnalyser.getByteTimeDomainData) {
+      underlyingAnalyser.getByteTimeDomainData(timeData);
+    } else {
+      // Fallback: use frequency data but create oscillation pattern
+      const freqData = analyser.getFrequencyData();
+      for (let i = 0; i < bufferLength; i++) {
+        // Create oscillating pattern from frequency data
+        const v = freqData[i] / 255.0;
+        timeData[i] = 128 + Math.sin(i * 0.3) * v * 127;
+      }
+    }
+    
+    const centerY = experimentalCanvas.height / 2;
+    
+    // Vintage white line with slight glow
+    ctx.strokeStyle = '#f5f5f5';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 2;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+    
+    const sliceWidth = experimentalCanvas.width / bufferLength;
+    const maxAmplitude = centerY * 0.7; // Increased range - can go higher and lower
+    
+    // Draw multiple layered lines for depth effect
+    const numLayers = 3;
+    const layerOpacities = [1.0, 0.6, 0.4];
+    const layerOffsets = [0, 2, 4]; // Slight horizontal offset for layers
+    
+    // Pre-calculate smooth points with consistent smoothing
+    const rawPoints = [];
+    for (let i = 0; i < bufferLength; i++) {
+      const v = timeData[i] / 128.0;
+      const normalized = (v - 1.0);
+      // Remove random multiplier for consistent behavior
+      const amplitude = normalized * maxAmplitude;
+      const x = i * sliceWidth;
+      const y = centerY + amplitude;
+      rawPoints.push({ x, y });
+    }
+    
+    // Strong multi-pass smoothing for ultra-smooth movement
+    let smoothedPoints = [...rawPoints];
+    
+    // Apply stronger smoothing multiple times
+    for (let pass = 0; pass < 5; pass++) {
+      const tempPoints = [];
+      for (let i = 0; i < smoothedPoints.length; i++) {
+        let smoothY = smoothedPoints[i].y;
+        let weight = 1;
+        
+        // Strong weighted average with neighbors for smoother curves
+        // Immediate neighbors get more weight
+        if (i > 0) {
+          smoothY += smoothedPoints[i - 1].y * 0.8;
+          weight += 0.8;
+        }
+        if (i > 1) {
+          smoothY += smoothedPoints[i - 2].y * 0.4;
+          weight += 0.4;
+        }
+        if (i < smoothedPoints.length - 1) {
+          smoothY += smoothedPoints[i + 1].y * 0.8;
+          weight += 0.8;
+        }
+        if (i < smoothedPoints.length - 2) {
+          smoothY += smoothedPoints[i + 2].y * 0.4;
+          weight += 0.4;
+        }
+        
+        tempPoints.push({
+          x: smoothedPoints[i].x,
+          y: smoothY / weight
+        });
+      }
+      smoothedPoints = tempPoints;
+    }
+    
+    // Draw each layer with vintage styling
+    for (let layer = 0; layer < numLayers; layer++) {
+      ctx.beginPath();
+      // Slightly warm white tones for vintage feel
+      const whiteTone = layer === 0 ? 245 : layer === 1 ? 235 : 225;
+      ctx.strokeStyle = `rgba(${whiteTone}, ${whiteTone}, ${whiteTone}, ${layerOpacities[layer]})`;
+      ctx.lineWidth = layer === 0 ? 1.5 : 1;
+      ctx.shadowBlur = layer === 0 ? 2 : 1;
+      ctx.shadowColor = `rgba(255, 255, 255, ${0.2 * layerOpacities[layer]})`;
+      
+      const offset = layerOffsets[layer];
+      
+      for (let i = 0; i < smoothedPoints.length; i++) {
+        const x = smoothedPoints[i].x + offset;
+        // Use consistent offset per layer instead of random variation
+        const layerOffset = layer * 1.5;
+        const y = smoothedPoints[i].y + layerOffset;
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      
+      ctx.stroke();
+    }
+    
+    experimentalAnimationId = requestAnimationFrame(drawLoop);
+  }
+  
+  drawLoop();
+}
+
+function drawStaticLine() {
+  if (!experimentalCanvas) return;
+  
+  const ctx = experimentalCanvas.getContext('2d');
+  
+  // Vintage black background with vignette
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
+  
+  // Add vignette
+  const gradient = ctx.createRadialGradient(
+    experimentalCanvas.width / 2,
+    experimentalCanvas.height / 2,
+    0,
+    experimentalCanvas.width / 2,
+    experimentalCanvas.height / 2,
+    Math.max(experimentalCanvas.width, experimentalCanvas.height) * 0.7
+  );
+  gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
+  
+  // Draw vintage white line in the middle
+  ctx.strokeStyle = '#f5f5f5';
+  ctx.lineWidth = 1.5;
+  ctx.shadowBlur = 2;
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+  ctx.beginPath();
+  ctx.moveTo(0, experimentalCanvas.height / 2);
+  ctx.lineTo(experimentalCanvas.width, experimentalCanvas.height / 2);
+  ctx.stroke();
+}
+
+experimentalBtn?.addEventListener("click", () => {
+  experimentalModeEnabled = !experimentalModeEnabled;
+  const wrapper = document.getElementById("experimental-screen-wrapper");
+  
+  // Trigger glitch effect and sound
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  if (experimentalModeEnabled) {
+    experimentalBtn.classList.add("active");
+    // Hide 3D container, show experimental canvas
+    const container = document.getElementById("container");
+    if (container) container.style.display = "none";
+    
+    // Stop any active video overlays and color swaps
+    if (overlayIsActive && overlayVideoEl) {
+      overlayVideoEl.pause();
+      overlayVideoEl.removeAttribute("src");
+      overlayVideoEl.load();
+      if (videoOverlayEl) {
+        videoOverlayEl.classList.remove("visible");
+        if (glitchTimeoutId) {
+          window.clearTimeout(glitchTimeoutId);
+          glitchTimeoutId = null;
+        }
+      }
+      overlayIsActive = false;
+    }
+    
+    if (colorSwapActive) {
+      if (colorSwapTimeoutId) {
+        window.clearTimeout(colorSwapTimeoutId);
+        colorSwapTimeoutId = null;
+      }
+      // Restore original palette
+      applyColorPalette(currentTrackIndex);
+      colorSwapActive = false;
+    }
+    
+    // Wait for glitch animation, then show experimental screen
+    setTimeout(() => {
+      if (wrapper) {
+        wrapper.classList.add("active");
+        // Update resolution display
+        const resolutionEl = document.getElementById("experimental-resolution");
+        if (resolutionEl) {
+          resolutionEl.textContent = `${window.innerWidth}×${window.innerHeight}`;
+        }
+      }
+      if (experimentalCanvas) {
+        experimentalCanvas.style.display = "block";
+        // Start visualizer loop
+        startExperimentalVisualizerLoop();
+        // Start updating info displays
+        updateExperimentalInfo();
+      }
+      
+      // Remove glitch after transition
+      setTimeout(() => {
+        if (videoGlitchOverlayEl) {
+          videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+          videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+        }
+      }, 500);
+    }, 100);
+  } else {
+    experimentalBtn.classList.remove("active");
+    
+    // Hide experimental screen first, then show 3D after glitch
+    if (wrapper) {
+      wrapper.classList.remove("active");
+    }
+    if (experimentalCanvas) {
+      experimentalCanvas.style.display = "none";
+    }
+    stopExperimentalVisualizer();
+    
+    // Wait for glitch animation, then show 3D container
+    setTimeout(() => {
+      const container = document.getElementById("container");
+      if (container) container.style.display = "block";
+      
+      // Remove glitch after transition
+      setTimeout(() => {
+        if (videoGlitchOverlayEl) {
+          videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+          videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+        }
+      }, 500);
+    }, 100);
+  }
+});
+
+// Update experimental info panel
+function updateExperimentalInfo() {
+  if (!experimentalModeEnabled) return;
+  
+  const statusEl = document.getElementById("experimental-status");
+  const frequencyEl = document.getElementById("experimental-frequency");
+  const dataStream = document.getElementById("experimental-data-stream");
+  
+  if (statusEl) {
+    statusEl.textContent = sound.isPlaying ? "ACTIVE" : "STANDBY";
+    statusEl.style.color = sound.isPlaying ? "#ffffff" : "#808080";
+  }
+  
+  if (frequencyEl && analyser && sound.isPlaying) {
+    const data = analyser.getFrequencyData();
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    frequencyEl.textContent = `${Math.round(avg)} Hz`;
+  }
+  
+  if (dataStream && sound.isPlaying) {
+    const lines = dataStream.querySelectorAll('.data-stream-line');
+    const randomChars = ['>', ']', '[', '|', '/', '\\', '*', '+'];
+    lines.forEach(line => {
+      if (Math.random() > 0.7) {
+        line.textContent = randomChars[Math.floor(Math.random() * randomChars.length)] + 
+          Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      }
+    });
+  }
+  
+  // Update resolution on resize
+  const resolutionEl = document.getElementById("experimental-resolution");
+  if (resolutionEl && experimentalModeEnabled) {
+    resolutionEl.textContent = `${window.innerWidth}×${window.innerHeight}`;
+  }
+  
+  if (experimentalModeEnabled) {
+    setTimeout(updateExperimentalInfo, 500);
+  }
+}
 
 // === Loading Screen Management ===
 let assetsLoaded = false;
@@ -818,6 +1174,7 @@ function startOverlayVideoLoop() {
   overlayVideoEl.addEventListener("error", concludeOverlay);
 
   videoIntervalId = window.setInterval(() => {
+    if (experimentalModeEnabled) return; // Don't trigger overlays/color swaps in experimental mode
     if (overlayIsActive || colorSwapActive) return;
     if (!sound.isPlaying) return; // Don't play videos if song isn't playing
     
@@ -2133,4 +2490,10 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  
+  // Resize experimental canvas
+  if (experimentalCanvas) {
+    experimentalCanvas.width = window.innerWidth;
+    experimentalCanvas.height = window.innerHeight;
+  }
 });

@@ -32,6 +32,7 @@
     </button>
     <div id="popups-content">
       <button id="popups-btn" aria-label="Toggle pop ups">POP UPS</button>
+      <button id="experimental-btn" aria-label="Toggle experimental visualizer">EXPERIMENTAL</button>
     </div>
   </div>
   <div id="loading-screen">
@@ -86,6 +87,39 @@
     </div>
   </div>
   <div id="container"></div>
+  <div id="experimental-screen-wrapper">
+    <canvas id="experimental-visualizer" class="experimental-visualizer-hidden"></canvas>
+    <div id="experimental-border"></div>
+    <div id="experimental-corner-top-left"></div>
+    <div id="experimental-corner-top-right"></div>
+    <div id="experimental-corner-bottom-left"></div>
+    <div id="experimental-corner-bottom-right"></div>
+    <div id="experimental-label">EXPERIMENTAL MODE</div>
+    <div id="experimental-static-noise"></div>
+    
+    <!-- Additional Visual Elements -->
+    <div id="experimental-info-panel">
+      <div class="experimental-info-line"><span class="info-label">STATUS:</span><span class="info-value" id="experimental-status">ACTIVE</span></div>
+      <div class="experimental-info-line"><span class="info-label">RESOLUTION:</span><span class="info-value" id="experimental-resolution"></span></div>
+      <div class="experimental-info-line"><span class="info-label">FREQUENCY:</span><span class="info-value" id="experimental-frequency">ANALYZING...</span></div>
+    </div>
+    
+    <div id="experimental-corner-lines-top"></div>
+    <div id="experimental-corner-lines-bottom"></div>
+    <div id="experimental-side-bars-left"></div>
+    <div id="experimental-side-bars-right"></div>
+    
+    <div id="experimental-scan-line"></div>
+    <div id="experimental-crosshair"></div>
+    
+    <div id="experimental-data-stream">
+      <div class="data-stream-line">></div>
+      <div class="data-stream-line">></div>
+      <div class="data-stream-line">></div>
+      <div class="data-stream-line">></div>
+      <div class="data-stream-line">></div>
+    </div>
+  </div>
   <div id="controls">
     <button id="controls-toggle" aria-label="Toggle controls">
       <span id="toggle-arrow">▼</span>
