@@ -24,13 +24,23 @@
     <button id="cam-stop-btn" aria-label="Stop camera rotation">STOP</button>
     <button id="cam-right-btn" aria-label="Rotate camera right">RIGHT</button>
   </div>
+  
+  <!-- Popups Controls - Left Side -->
+  <div id="popups-controls">
+    <button id="popups-toggle" aria-label="Toggle popups menu">
+      <span id="popups-toggle-arrow">▼</span>
+    </button>
+    <div id="popups-content">
+      <button id="popups-btn" aria-label="Toggle pop ups">POP UPS</button>
+    </div>
+  </div>
   <div id="loading-screen">
     <!-- Left side - Character/Illustration area -->
     <div id="loading-left-panel">
       <div id="loading-character-area">
         <div id="loading-pattern-bg"></div>
         <div id="loading-gif-wrapper">
-          <img id="loading-gif" src="./images/sonic-running.gif" alt="Loading">
+          <img id="loading-gif" src="./images/sonicW.gif" alt="Loading">
         </div>
       </div>
     </div>
@@ -83,6 +93,20 @@
   </div>
   <div id="video-overlay" aria-hidden="true">
     <video id="overlay-video" muted playsinline></video>
+  </div>
+  
+  <!-- Error Window Popup -->
+  <div id="error-window" class="error-window-hidden">
+    <div class="error-window-header">
+      <div class="error-window-title">
+        <span class="error-icon">⚠</span>
+        <span>ERROR</span>
+      </div>
+      <button class="error-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="error-window-content">
+      <video class="error-window-video" muted playsinline loop></video>
+    </div>
   </div>
   <script type="module" src="./audio.js"></script>
 </body>

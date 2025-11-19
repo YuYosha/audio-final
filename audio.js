@@ -57,6 +57,7 @@ camRightBtn?.addEventListener("click", () => {
 // Set stop as default active
 camStopBtn?.classList.add("active");
 
+
 // === Lighting ===
 scene.add(new THREE.AmbientLight(0x99ccff, 0.7));
 const pointLight = new THREE.PointLight(0x66ccff, 1.5, 100);
@@ -135,6 +136,14 @@ const VIDEO_APPEAR_CHANCE = 0.6; // ~60% chance per interval -> more common
 let videoIntervalId = null;
 let overlayIsActive = false;
 let glitchTimeoutId = null;
+
+// Error window popup
+const ERROR_WINDOW_INTERVAL = 12000; // Same interval as video
+const ERROR_APPEAR_CHANCE = 0.6; // Same chance as video
+let errorWindowIntervalId = null;
+let errorWindowIsActive = false;
+let popupsEnabled = false; // Toggle for popups
+const popupsBtn = document.getElementById("popups-btn");
 
 function updateTrackLabel(state = "ready") {
   if (!trackNameEl) return;
@@ -229,6 +238,10 @@ async function playSound() {
     // Pause menu music when song starts playing
     pauseMenuMusic();
     updateButtonStates();
+    // Start error window loop if popups are enabled
+    if (popupsEnabled) {
+      startErrorWindowLoop();
+    }
   }
 }
 
@@ -254,6 +267,19 @@ function stopSound() {
       videoOverlayEl.classList.remove("glitching");
     }
     overlayIsActive = false;
+  }
+  
+  // Close any active error windows when music stops
+  const errorWindowEl = document.getElementById("error-window");
+  const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
+  if (errorWindowIsActive && errorWindowVideoEl) {
+    errorWindowVideoEl.pause();
+    errorWindowVideoEl.removeAttribute("src");
+    errorWindowVideoEl.load();
+    if (errorWindowEl) {
+      errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+    }
+    errorWindowIsActive = false;
   }
 }
 
@@ -302,6 +328,10 @@ setupButtonHover(playBtn);
 setupButtonHover(stopBtn);
 setupButtonHover(nextBtn);
 setupButtonHover(prevBtn);
+setupButtonHover(camLeftBtn);
+setupButtonHover(camStopBtn);
+setupButtonHover(camRightBtn);
+setupButtonHover(popupsBtn);
 
 // Setup select sounds for play and stop buttons
 setupButtonSelect(playBtn);
@@ -310,6 +340,10 @@ setupButtonSelect(stopBtn);
 // Setup select2 sounds for next and prev buttons
 setupButtonSelect2(nextBtn);
 setupButtonSelect2(prevBtn);
+setupButtonSelect2(camLeftBtn);
+setupButtonSelect2(camStopBtn);
+setupButtonSelect2(camRightBtn);
+setupButtonSelect2(popupsBtn);
 
 playBtn?.addEventListener("click", () => {
   playSound();
@@ -334,8 +368,55 @@ updateButtonStates(); // Set initial button states (stop should be active)
 const controlsEl = document.getElementById("controls");
 const controlsToggle = document.getElementById("controls-toggle");
 
+// Setup sounds for toggle buttons
+setupButtonHover(controlsToggle);
+setupButtonSelect2(controlsToggle);
+
 controlsToggle?.addEventListener("click", () => {
   controlsEl?.classList.toggle("collapsed");
+});
+
+// === Popups Controls Toggle ===
+const popupsControlsEl = document.getElementById("popups-controls");
+const popupsToggle = document.getElementById("popups-toggle");
+
+// Setup sounds for popups toggle button
+setupButtonHover(popupsToggle);
+setupButtonSelect2(popupsToggle);
+
+popupsToggle?.addEventListener("click", () => {
+  popupsControlsEl?.classList.toggle("collapsed");
+});
+
+// === Popups Button Toggle ===
+popupsBtn?.addEventListener("click", () => {
+  popupsEnabled = !popupsEnabled;
+  if (popupsEnabled) {
+    popupsBtn.classList.add("active");
+    // Start error window loop if music is playing
+    if (sound.isPlaying) {
+      startErrorWindowLoop();
+    }
+  } else {
+    popupsBtn.classList.remove("active");
+    // Stop error window loop
+    if (errorWindowIntervalId) {
+      window.clearInterval(errorWindowIntervalId);
+      errorWindowIntervalId = null;
+    }
+    // Close any active error windows
+    const errorWindowEl = document.getElementById("error-window");
+    const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
+    if (errorWindowIsActive && errorWindowVideoEl) {
+      errorWindowVideoEl.pause();
+      errorWindowVideoEl.removeAttribute("src");
+      errorWindowVideoEl.load();
+      if (errorWindowEl) {
+        errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+      }
+      errorWindowIsActive = false;
+    }
+  }
 });
 
 // === Loading Screen Management ===
@@ -381,6 +462,10 @@ function hideLoadingScreen() {
     
     // Start the overlay video loop after loading
     startOverlayVideoLoop();
+    // Start the error window popup loop only if popups are enabled
+    if (popupsEnabled) {
+      startErrorWindowLoop();
+    }
   } else if (!loadingScreenEl) {
     console.warn("Loading screen element not found");
   } else if (assetsLoaded) {
@@ -688,6 +773,184 @@ function startOverlayVideoLoop() {
       concludeOverlay();
     });
   }, VIDEO_CHECK_INTERVAL);
+}
+
+// === Error Window Popup ===
+function startErrorWindowLoop() {
+  // Only start if popups are enabled
+  if (!popupsEnabled) {
+    return;
+  }
+  
+  const errorWindowEl = document.getElementById("error-window");
+  const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
+  const errorWindowCloseBtn = errorWindowEl?.querySelector(".error-close-btn");
+  
+  if (!errorWindowEl || !errorWindowVideoEl || !overlayVideos.length || errorWindowIntervalId) {
+    return;
+  }
+
+  const concludeErrorWindow = () => {
+    if (!errorWindowEl || !errorWindowVideoEl) return;
+    // Add glitch effect before closing (same as spawn)
+    errorWindowEl.classList.add("error-window-glitching");
+    errorWindowVideoEl.pause();
+    errorWindowVideoEl.removeAttribute("src");
+    errorWindowVideoEl.load();
+    
+    // Remove visible class after glitch animation (500ms same as spawn)
+    setTimeout(() => {
+      errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+      errorWindowIsActive = false;
+    }, 500);
+  };
+
+  errorWindowCloseBtn?.addEventListener("click", concludeErrorWindow);
+  errorWindowVideoEl.addEventListener("ended", concludeErrorWindow);
+  errorWindowVideoEl.addEventListener("error", concludeErrorWindow);
+
+  errorWindowIntervalId = window.setInterval(() => {
+    if (errorWindowIsActive) return;
+    if (!sound.isPlaying) return; // Don't show error windows if song isn't playing
+    if (Math.random() > ERROR_APPEAR_CHANCE) return;
+    
+    const choice = overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
+    if (!choice) return;
+    
+    errorWindowIsActive = true;
+    
+    // Random size (250-400px width, 180-300px height)
+    const minWidth = 250;
+    const maxWidth = 400;
+    const minHeight = 180;
+    const maxHeight = 300;
+    const randomWidth = minWidth + Math.random() * (maxWidth - minWidth);
+    const randomHeight = minHeight + Math.random() * (maxHeight - minHeight);
+    
+    errorWindowEl.style.width = `${randomWidth}px`;
+    errorWindowEl.style.height = `${randomHeight}px`;
+    
+    // Avoid button areas:
+    // - Top left: author name (~16px top, ~16px left, ~220px width including image)
+    // - Top right: camera controls (~16px top, ~16px right, ~220px width)
+    // - Bottom center: controls panel (~24px bottom, centered, ~360px width, ~200px height when expanded)
+    const padding = 20;
+    const avoidTopLeftWidth = 220;
+    const avoidTopLeftHeight = 90;
+    const avoidTopRightWidth = 220;
+    const avoidTopRightHeight = 90;
+    const avoidBottomHeight = 250;
+    const avoidBottomWidth = 360;
+    
+    let validPosition = false;
+    let randomX, randomY;
+    let attempts = 0;
+    
+    // Helper function to get slightly weighted random position (slight bias towards edges)
+    const getWeightedRandom = (min, max, center) => {
+      // Use a subtle power function to slightly favor edges
+      const power = 1.3; // Lower power = more subtle bias
+      const normalized = Math.random();
+      // Transform to slightly favor edges
+      const weighted = Math.pow(normalized, 1 / power);
+      // Map to range with subtle edge bias
+      const range = max - min;
+      const distanceFromCenter = (weighted - 0.5) * 2; // -1 to 1
+      // Apply subtle bias: slight preference for edges
+      const bias = distanceFromCenter * 0.3; // 30% bias towards edges
+      return center + bias * (range / 2);
+    };
+    
+    // Try to find a valid position (avoid overlapping buttons)
+    while (!validPosition && attempts < 100) {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      const minX = padding;
+      const maxX = window.innerWidth - randomWidth - padding;
+      const minY = padding;
+      const maxY = window.innerHeight - randomHeight - padding;
+      
+      // Use weighted random to favor positions further from center
+      randomX = getWeightedRandom(minX, maxX, centerX);
+      randomY = getWeightedRandom(minY, maxY, centerY);
+      
+      // Clamp to valid range
+      randomX = Math.max(minX, Math.min(maxX, randomX));
+      randomY = Math.max(minY, Math.min(maxY, randomY));
+      
+      // Check if it overlaps with top left (author name)
+      const overlapsTopLeft = randomX < avoidTopLeftWidth && randomY < avoidTopLeftHeight;
+      
+      // Check if it overlaps with top right (camera controls)
+      const overlapsTopRight = randomX > (window.innerWidth - avoidTopRightWidth - randomWidth) && randomY < avoidTopRightHeight;
+      
+      // Check if it overlaps with bottom center (controls panel)
+      const controlsCenterX = window.innerWidth / 2;
+      const controlsLeft = controlsCenterX - avoidBottomWidth / 2;
+      const controlsRight = controlsCenterX + avoidBottomWidth / 2;
+      const overlapsBottom = randomY > (window.innerHeight - avoidBottomHeight) && 
+                            randomX + randomWidth > controlsLeft && 
+                            randomX < controlsRight;
+      
+      if (!overlapsTopLeft && !overlapsTopRight && !overlapsBottom) {
+        validPosition = true;
+      }
+      
+      attempts++;
+    }
+    
+    // If we couldn't find a valid position after 100 attempts, just place it in a safe edge area
+    if (!validPosition) {
+      // Place in a corner area (favors edges)
+      const corner = Math.floor(Math.random() * 4);
+      switch(corner) {
+        case 0: // Top-left (but avoid author name)
+          randomX = avoidTopLeftWidth + padding;
+          randomY = avoidTopLeftHeight + padding;
+          break;
+        case 1: // Top-right (but avoid camera controls)
+          randomX = window.innerWidth - avoidTopRightWidth - randomWidth - padding;
+          randomY = avoidTopRightHeight + padding;
+          break;
+        case 2: // Bottom-left
+          randomX = padding;
+          randomY = window.innerHeight - randomHeight - avoidBottomHeight - padding;
+          break;
+        case 3: // Bottom-right
+          randomX = window.innerWidth - randomWidth - padding;
+          randomY = window.innerHeight - randomHeight - avoidBottomHeight - padding;
+          break;
+      }
+    }
+    
+    errorWindowEl.style.left = `${randomX}px`;
+    errorWindowEl.style.top = `${randomY}px`;
+    
+    // Add glitch effect on spawn
+    errorWindowEl.classList.add("error-window-visible", "error-window-glitching");
+    
+    // Remove glitch after spawn animation
+    setTimeout(() => {
+      errorWindowEl.classList.remove("error-window-glitching");
+    }, 500);
+    
+    errorWindowVideoEl.src = `./video/${choice}`;
+    errorWindowVideoEl.currentTime = 0;
+    errorWindowVideoEl.loop = true;
+    
+    errorWindowVideoEl.play().catch((error) => {
+      console.warn("Error window video failed to play:", error);
+      concludeErrorWindow();
+    });
+    
+    // Auto-close after video duration (with some extra time)
+    errorWindowVideoEl.addEventListener("loadedmetadata", () => {
+      const duration = errorWindowVideoEl.duration;
+      if (duration && !isNaN(duration)) {
+        setTimeout(concludeErrorWindow, (duration * 1000) + 2000);
+      }
+    }, { once: true });
+  }, ERROR_WINDOW_INTERVAL);
 }
 
 // === Color Palettes ===
@@ -1349,6 +1612,12 @@ applyColorPalette(currentTrackIndex);
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
+  const data = analyser.getFrequencyData();
+  
+  // Better beat detection using bass frequencies (better for rhythm)
+  const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
+  const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+  
   // Rotate camera if rotation is active (with smooth acceleration/deceleration)
   const targetSpeed = cameraRotationDirection * cameraRotationSpeed;
   const speedDiff = targetSpeed - currentRotationSpeed;
@@ -1363,12 +1632,6 @@ function animate() {
     camera.position.z = radius * Math.sin(newAngle);
     controls.target.set(0, 0, 0);
   }
-  
-  const data = analyser.getFrequencyData();
-  const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
-  
-  // Better beat detection using bass frequencies (better for rhythm)
-  const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
   const midAvg = data.reduce((a, b, idx) => idx > 4 && idx < data.length * 0.5 ? a + b : a, 0) / (Math.floor(data.length * 0.5) - 5) / 255;
   
   // Moderate beat sensitivity enhancement - more noticeable but not extreme
