@@ -137,6 +137,7 @@ function loadTrack(index, shouldAutoplay = false) {
   sound.stop();
   sound.buffer = null;
   updateTrackLabel("loading");
+  updateButtonStates(); // Update buttons when stopping to load new track
   
   // Apply color palette based on track index
   applyColorPalette(currentTrackIndex);
@@ -154,6 +155,8 @@ function loadTrack(index, shouldAutoplay = false) {
       pendingAutoplay = false;
       if (shouldPlayNow) {
         playSound();
+      } else {
+        updateButtonStates();
       }
     },
     undefined,
@@ -165,6 +168,18 @@ function loadTrack(index, shouldAutoplay = false) {
       console.error(`Failed to load ${track.file}`, error);
     }
   );
+}
+
+function updateButtonStates() {
+  if (playBtn) {
+    if (sound.isPlaying) {
+      playBtn.classList.add('active');
+      stopBtn?.classList.remove('active');
+    } else {
+      playBtn.classList.remove('active');
+      stopBtn?.classList.add('active');
+    }
+  }
 }
 
 async function playSound() {
@@ -181,6 +196,7 @@ async function playSound() {
     sound.play();
     // Pause menu music when song starts playing
     pauseMenuMusic();
+    updateButtonStates();
   }
 }
 
@@ -190,6 +206,7 @@ function stopSound() {
     sound.stop();
     // Resume menu music when song stops
     resumeMenuMusic();
+    updateButtonStates();
   }
   // Stop any active video overlay when music stops
   if (overlayIsActive && overlayVideoEl) {
@@ -279,6 +296,15 @@ prevBtn?.addEventListener("click", () => {
 });
 
 updateTrackLabel();
+updateButtonStates(); // Set initial button states (stop should be active)
+
+// === Controls Toggle ===
+const controlsEl = document.getElementById("controls");
+const controlsToggle = document.getElementById("controls-toggle");
+
+controlsToggle?.addEventListener("click", () => {
+  controlsEl?.classList.toggle("collapsed");
+});
 
 // === Loading Screen Management ===
 let assetsLoaded = false;

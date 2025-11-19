@@ -713,38 +713,110 @@ body {
   transform: translateX(-50%);
   display: inline-flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 22px;
-  background: radial-gradient(
-    circle at top,
-    rgba(0, 120, 255, 0.35),
-    rgba(0, 0, 0, 0.85)
-  );
-  border: 1px solid rgba(0, 255, 255, 0.4);
-  border-radius: 18px;
-  backdrop-filter: blur(12px);
+  gap: 0;
+  padding: 0;
+  background: 
+    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  backdrop-filter: blur(8px);
   color: #eaf9ff;
   z-index: 5;
-  min-width: 320px;
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.65), 0 0 60px rgba(0, 180, 255, 0.25);
+  min-width: 360px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(0, 212, 255, 0.1);
+  font-family: "Arial", "Helvetica", sans-serif;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#controls-toggle {
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #00d4ff;
+  transition: all 0.3s ease;
+  font-size: 12px;
+}
+
+#controls-toggle:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #ffffff;
+}
+
+#toggle-arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 10px;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#controls.collapsed #toggle-arrow {
+  transform: rotate(180deg);
+}
+
+#controls-content {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#controls.collapsed #controls-content {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
+  padding: 0 32px;
+  overflow: hidden;
+}
+
+#controls::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 100px,
+      rgba(0, 212, 255, 0.02) 100px,
+      rgba(0, 212, 255, 0.02) 101px
+    );
+  pointer-events: none;
+  z-index: 0;
 }
 
 #track-name {
-  font-size: 1.05rem;
-  letter-spacing: 0.08em;
+  font-size: 16px;
+  letter-spacing: 4px;
   text-align: center;
   text-transform: uppercase;
-  color: #ffffff;
-  background: linear-gradient(90deg, #00f0ff, #ff2bd9);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #00d4ff;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
 }
 
 .button-row {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .button-wrap {
@@ -752,47 +824,35 @@ body {
   flex: 1;
 }
 
-.button-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 120, 150, 0.95), rgba(120, 0, 0, 0.85));
-  transform: translate(-12px, -9px) scaleX(1.05);
-  filter: blur(0.3px);
-  box-shadow: 0 25px 45px rgba(255, 40, 60, 0.35), 0 0 35px rgba(255, 0, 51, 0.6);
-  z-index: 0;
-}
-
-#controls button {
-  padding: 14px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: linear-gradient(140deg, rgba(1, 8, 26, 0.9), rgba(30, 2, 36, 0.85));
-  color: #e9f9ff;
+#controls button:not(#controls-toggle) {
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  color: #00d4ff;
   font-weight: 700;
-  font-size: 0.75rem;
-  letter-spacing: 0.18em;
+  font-size: 12px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition: all 0.3s ease;
   position: relative;
-  overflow: visible;
-  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.05),
-    0 0 25px rgba(0, 200, 255, 0.35);
   width: 100%;
+  text-align: left;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  opacity: 0.7;
+  font-family: "Arial", "Helvetica", sans-serif;
 }
 
-#controls button::before {
-  content: "";
+#controls button:not(#controls-toggle)::before {
+  content: "▶";
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(120deg, rgba(0, 255, 255, 0.3), rgba(255, 0, 153, 0.3));
-  mix-blend-mode: screen;
+  left: -20px;
+  color: #ff0000;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
   opacity: 0;
-  transition: opacity 0.25s ease;
-  z-index: -1;
+  transition: opacity 0.3s ease;
 }
 
 #controls button span {
@@ -800,21 +860,33 @@ body {
   z-index: 1;
 }
 
-#controls button:hover {
-  transform: translateY(-2px);
-  filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.35));
+#controls button:not(#controls-toggle):hover {
+  color: #ffffff;
+  opacity: 1;
+  transform: translateX(10px);
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 30px rgba(0, 212, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-#controls button:hover::before {
+#controls button:not(#controls-toggle):hover::before {
   opacity: 1;
 }
 
-#controls button:active {
-  transform: translateY(0);
+#controls button:not(#controls-toggle):active {
+  transform: translateX(8px);
 }
 
-#controls button:disabled {
-  opacity: 0.45;
+#controls button:not(#controls-toggle):disabled {
+  opacity: 0.3;
   cursor: not-allowed;
   filter: none;
+}
+
+#play-btn.active,
+#stop-btn.active {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
 }
