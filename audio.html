@@ -15,6 +15,44 @@
   </script>
 </head>
 <body>
+  <div id="author-name">
+    <img id="author-signature" src="./images/plat.png" alt="Signature">
+    <span>Eugenio Ramirez</span>
+  </div>
+  <div id="loading-screen">
+    <!-- Left side - Character/Illustration area -->
+    <div id="loading-left-panel">
+      <div id="loading-character-area">
+        <div id="loading-pattern-bg"></div>
+        <div id="loading-gif-wrapper">
+          <img id="loading-gif" src="./images/sonic-running.gif" alt="Loading">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right side - Menu area -->
+    <div id="loading-right-panel">
+      <div id="loading-menu-container">
+        <div class="loading-menu-item active">LOADING</div>
+        <div class="loading-menu-item">INITIALIZING</div>
+        <div class="loading-menu-item">PREPARING</div>
+        <div class="loading-menu-item">READY</div>
+      </div>
+      
+      <!-- Title in menu area -->
+      <div id="loading-title-area">
+        <canvas id="loading-visualizer"></canvas>
+        <div class="title-main">The Unnecessary</div>
+        <div class="title-main">Sonic Display Engine</div>
+        <div class="title-deluxe">DELUXE</div>
+      </div>
+    </div>
+    
+    <!-- Top UI elements -->
+    <div id="loading-top-ui">
+      <div id="loading-currency">LOADING...</div>
+    </div>
+  </div>
   <div id="container"></div>
   <div id="controls">
     <div id="track-name"></div>

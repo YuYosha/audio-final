@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 body {
   margin: 0;
   overflow: hidden;
@@ -10,6 +12,350 @@ body {
   font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   position: relative;
 }
+
+/* Author name - always visible in top left */
+#author-name {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 14px;
+  color: white;
+  z-index: 1000;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#author-signature {
+  height: 60px;
+  width: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.8));
+}
+
+/* Loading screen - Persona 3 Reload style - Full Redesign */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0a1a2e 0%, #162447 30%, #1a1a2e 70%, #0f1b2e 100%);
+  z-index: 9999;
+  display: grid;
+  grid-template-columns: 35% 65%;
+  grid-template-rows: auto 1fr;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
+  transform: translateX(0);
+  opacity: 1;
+  overflow: hidden;
+  font-family: "Press Start 2P", monospace;
+}
+
+#loading-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 255, 255, 0.02) 0px,
+      transparent 1px,
+      transparent 20px,
+      rgba(0, 255, 255, 0.02) 21px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 255, 255, 0.02) 0px,
+      transparent 1px,
+      transparent 20px,
+      rgba(0, 255, 255, 0.02) 21px
+    );
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+#loading-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 20% 50%, rgba(0, 200, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(100, 150, 255, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, transparent 0%, rgba(0, 150, 255, 0.05) 100%);
+  pointer-events: none;
+  animation: persona3Pulse 4s ease-in-out infinite;
+}
+
+@keyframes persona3Pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+#loading-screen.hidden {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Left Panel - Character/Illustration Area */
+#loading-left-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  background: 
+    repeating-linear-gradient(
+      45deg,
+      rgba(0, 0, 0, 0.1) 0px,
+      rgba(0, 0, 0, 0.1) 20px,
+      transparent 20px,
+      transparent 40px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0, 0, 0, 0.1) 0px,
+      rgba(0, 0, 0, 0.1) 20px,
+      transparent 20px,
+      transparent 40px
+    );
+}
+
+#loading-character-area {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#loading-pattern-bg {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 30% 40%, rgba(0, 200, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(100, 150, 255, 0.08) 0%, transparent 50%);
+  opacity: 0.6;
+  animation: patternPulse 3s ease-in-out infinite;
+}
+
+@keyframes patternPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+#loading-gif-wrapper {
+  position: relative;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.6)) drop-shadow(0 0 40px rgba(0, 212, 255, 0.3));
+  z-index: 2;
+  animation: characterFloat 4s ease-in-out infinite;
+}
+
+@keyframes characterFloat {
+  0%, 100% { transform: scale(1.2) translateY(0); }
+  50% { transform: scale(1.2) translateY(-20px); }
+}
+
+#loading-gif {
+  height: 300px;
+  width: auto;
+  display: block;
+}
+
+/* Right Panel - Menu Area */
+#loading-right-panel {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 80px 60px 40px;
+  background: 
+    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%);
+  overflow: hidden;
+}
+
+#loading-right-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.03) 50%, transparent 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 100px,
+      rgba(0, 212, 255, 0.02) 100px,
+      rgba(0, 212, 255, 0.02) 101px
+    );
+  pointer-events: none;
+}
+
+/* Menu Container */
+#loading-menu-container {
+  position: relative;
+  z-index: 2;
+  margin-top: 40px;
+}
+
+.loading-menu-item {
+  font-size: 14px;
+  color: #00d4ff;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  padding: 12px 0;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  position: relative;
+  cursor: default;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.loading-menu-item.active {
+  color: #ffffff;
+  opacity: 1;
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 30px rgba(0, 212, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  transform: translateX(10px);
+}
+
+.loading-menu-item.active::before {
+  content: "▶";
+  position: absolute;
+  left: -30px;
+  color: #ff0000;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+  animation: menuPulse 1s ease-in-out infinite;
+}
+
+@keyframes menuPulse {
+  0%, 100% { opacity: 1; transform: translateX(0); }
+  50% { opacity: 0.6; transform: translateX(3px); }
+}
+
+/* Title Area */
+#loading-title-area {
+  margin-top: auto;
+  margin-bottom: 60px;
+  position: relative;
+  z-index: 2;
+  text-align: left;
+  padding-left: 20px;
+}
+
+#loading-visualizer {
+  position: fixed;
+  top: 45vh;
+  right: 0;
+  width: 65%;
+  height: 200px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.05) 50%, transparent 100%);
+  border-top: 1px solid rgba(0, 212, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.title-main {
+  font-family: "Arial", "Helvetica", sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  color: #ffffff;
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.8),
+    0 0 30px rgba(0, 212, 255, 0.4),
+    3px 3px 6px rgba(0, 0, 0, 0.9);
+  letter-spacing: 6px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.title-subtitle {
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  color: #00d4ff;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+  text-transform: lowercase;
+  opacity: 0.8;
+}
+
+.title-deluxe {
+  font-family: "Arial", "Helvetica", sans-serif;
+  font-weight: 900;
+  font-size: 88px;
+  color: #00d4ff;
+  text-shadow: 
+    0 0 20px rgba(0, 212, 255, 1),
+    0 0 40px rgba(0, 212, 255, 0.7),
+    0 0 60px rgba(0, 212, 255, 0.4),
+    4px 4px 8px rgba(0, 0, 0, 0.9);
+  letter-spacing: 12px;
+  margin-top: 20px;
+  animation: deluxeGlow 2s ease-in-out infinite alternate;
+  text-transform: uppercase;
+}
+
+@keyframes deluxeGlow {
+  0% {
+    text-shadow: 
+      0 0 20px rgba(0, 212, 255, 1),
+      0 0 40px rgba(0, 212, 255, 0.7),
+      0 0 60px rgba(0, 212, 255, 0.4),
+      4px 4px 8px rgba(0, 0, 0, 0.9);
+  }
+  100% {
+    text-shadow: 
+      0 0 30px rgba(0, 212, 255, 1),
+      0 0 60px rgba(0, 212, 255, 1),
+      0 0 90px rgba(0, 212, 255, 0.6),
+      4px 4px 8px rgba(0, 0, 0, 0.9);
+  }
+}
+
+/* Top UI */
+#loading-top-ui {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+  z-index: 10;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+#loading-currency {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(0, 212, 255, 0.4);
+  padding: 8px 16px;
+  color: #ffffff;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+  backdrop-filter: blur(5px);
+}
+
 
 #container {
   width: 100%;

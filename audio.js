@@ -179,6 +179,8 @@ async function playSound() {
   }
   if (!sound.isPlaying) {
     sound.play();
+    // Pause menu music when song starts playing
+    pauseMenuMusic();
   }
 }
 
@@ -186,6 +188,8 @@ function stopSound() {
   pendingAutoplay = false;
   if (sound.isPlaying) {
     sound.stop();
+    // Resume menu music when song stops
+    resumeMenuMusic();
   }
   // Stop any active video overlay when music stops
   if (overlayIsActive && overlayVideoEl) {
@@ -209,6 +213,55 @@ function changeTrack(step) {
   loadTrack(currentTrackIndex + step, shouldAutoplay);
 }
 
+// === Button Sound Effects ===
+const hoverSound = new Audio('./sound/hover.mp3');
+hoverSound.volume = 0.6;
+const selectSound = new Audio('./sound/select.wav');
+selectSound.volume = 0.7;
+const select2Sound = new Audio('./sound/select2.wav');
+select2Sound.volume = 0.7;
+
+function setupButtonHover(button) {
+  if (!button) return;
+  
+  button.addEventListener('mouseenter', () => {
+    hoverSound.currentTime = 0;
+    hoverSound.play().catch(err => console.warn("Could not play hover sound:", err));
+  });
+}
+
+function setupButtonSelect(button) {
+  if (!button) return;
+  
+  button.addEventListener('click', () => {
+    selectSound.currentTime = 0;
+    selectSound.play().catch(err => console.warn("Could not play select sound:", err));
+  });
+}
+
+function setupButtonSelect2(button) {
+  if (!button) return;
+  
+  button.addEventListener('click', () => {
+    select2Sound.currentTime = 0;
+    select2Sound.play().catch(err => console.warn("Could not play select2 sound:", err));
+  });
+}
+
+// Setup hover sounds for all buttons
+setupButtonHover(playBtn);
+setupButtonHover(stopBtn);
+setupButtonHover(nextBtn);
+setupButtonHover(prevBtn);
+
+// Setup select sounds for play and stop buttons
+setupButtonSelect(playBtn);
+setupButtonSelect(stopBtn);
+
+// Setup select2 sounds for next and prev buttons
+setupButtonSelect2(nextBtn);
+setupButtonSelect2(prevBtn);
+
 playBtn?.addEventListener("click", () => {
   playSound();
 });
@@ -226,7 +279,273 @@ prevBtn?.addEventListener("click", () => {
 });
 
 updateTrackLabel();
-startOverlayVideoLoop();
+
+// === Loading Screen Management ===
+let assetsLoaded = false;
+let menuCycleInterval = null;
+let waitAudio = null;
+let discAudio = null;
+let waitAudioContext = null;
+let waitAnalyser = null;
+let waitDataArray = null;
+let visualizerAnimationId = null;
+let menuAudio = null;
+
+function hideLoadingScreen() {
+  const loadingScreenEl = document.getElementById("loading-screen");
+  console.log("hideLoadingScreen called", { loadingScreenEl, assetsLoaded });
+  if (loadingScreenEl && !assetsLoaded) {
+    assetsLoaded = true;
+    console.log("Hiding loading screen");
+    if (menuCycleInterval) {
+      clearInterval(menuCycleInterval);
+      menuCycleInterval = null;
+    }
+    
+    // Stop wait sound
+    if (waitAudio) {
+      waitAudio.pause();
+      waitAudio.currentTime = 0;
+    }
+    
+    // Stop visualizer
+    if (visualizerAnimationId) {
+      cancelAnimationFrame(visualizerAnimationId);
+      visualizerAnimationId = null;
+    }
+    
+    loadingScreenEl.classList.add("hidden");
+    
+    // Start menu music slightly later after loading screen
+    setTimeout(() => {
+      startMenuMusic();
+    }, 300);
+    
+    // Start the overlay video loop after loading
+    startOverlayVideoLoop();
+  } else if (!loadingScreenEl) {
+    console.warn("Loading screen element not found");
+  } else if (assetsLoaded) {
+    console.log("Already loaded");
+  }
+}
+
+// === Menu Music Management ===
+function startMenuMusic() {
+  menuAudio = new Audio('./sound/menu.mp3');
+  menuAudio.loop = true;
+  menuAudio.volume = 0;
+  menuAudio.play().catch(err => console.warn("Could not play menu music:", err));
+  
+  // Fade in over 1.5 seconds
+  const targetVolume = 0.5;
+  const fadeDuration = 1500; // milliseconds
+  const fadeSteps = 30;
+  const stepDuration = fadeDuration / fadeSteps;
+  const volumeStep = targetVolume / fadeSteps;
+  
+  let currentStep = 0;
+  const fadeInterval = setInterval(() => {
+    currentStep++;
+    menuAudio.volume = Math.min(targetVolume, volumeStep * currentStep);
+    
+    if (currentStep >= fadeSteps) {
+      clearInterval(fadeInterval);
+      menuAudio.volume = targetVolume;
+    }
+  }, stepDuration);
+}
+
+function pauseMenuMusic() {
+  if (menuAudio && !menuAudio.paused) {
+    menuAudio.pause();
+  }
+}
+
+function resumeMenuMusic() {
+  if (menuAudio && menuAudio.paused) {
+    menuAudio.volume = 0;
+    menuAudio.play().catch(err => console.warn("Could not resume menu music:", err));
+    
+    // Fade in over 1.5 seconds
+    const targetVolume = 0.5;
+    const fadeDuration = 1500; // milliseconds
+    const fadeSteps = 30;
+    const stepDuration = fadeDuration / fadeSteps;
+    const volumeStep = targetVolume / fadeSteps;
+    
+    let currentStep = 0;
+    const fadeInterval = setInterval(() => {
+      currentStep++;
+      menuAudio.volume = Math.min(targetVolume, volumeStep * currentStep);
+      
+      if (currentStep >= fadeSteps) {
+        clearInterval(fadeInterval);
+        menuAudio.volume = targetVolume;
+      }
+    }, stepDuration);
+  }
+}
+
+function cycleMenuItems() {
+  const menuItems = document.querySelectorAll('.loading-menu-item');
+  if (menuItems.length === 0) return;
+  
+  let currentIndex = 0;
+  menuItems[currentIndex].classList.add('active');
+  
+  menuCycleInterval = setInterval(() => {
+    menuItems[currentIndex].classList.remove('active');
+    currentIndex = (currentIndex + 1) % menuItems.length;
+    menuItems[currentIndex].classList.add('active');
+  }, 800);
+}
+
+// Setup 2D line visualizer for loading screen
+function setupLoadingVisualizer() {
+  const canvas = document.getElementById('loading-visualizer');
+  if (!canvas) return;
+  
+  // Use viewport dimensions for fixed positioning
+  canvas.width = window.innerWidth * 0.65;
+  canvas.height = 200;
+  
+  const ctx = canvas.getContext('2d');
+  
+  function drawVisualizer() {
+    if (!waitAnalyser || !waitDataArray || assetsLoaded) return;
+    
+    waitAnalyser.getByteFrequencyData(waitDataArray);
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Subtle gradient background that matches Persona 3 style
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    gradient.addColorStop(0, 'rgba(0, 212, 255, 0.03)');
+    gradient.addColorStop(0.5, 'rgba(0, 212, 255, 0.08)');
+    gradient.addColorStop(1, 'rgba(0, 212, 255, 0.03)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = '#00d4ff';
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#00d4ff';
+    
+    const bufferLength = waitDataArray.length;
+    const sliceWidth = canvas.width / bufferLength;
+    let x = 0;
+    
+    ctx.beginPath();
+    
+    // Make it more sporadic by using every other sample and adding randomness
+    for (let i = 0; i < bufferLength; i += 2) {
+      const v = waitDataArray[i] / 255.0;
+      // Add sporadic jumps - multiply by random factor between 0.8 and 1.5
+      const randomFactor = 0.8 + (Math.random() * 0.7);
+      const sporadicV = Math.min(1, v * randomFactor * 1.3);
+      const y = (sporadicV * canvas.height * 0.7) + (canvas.height * 0.15);
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        // Add some randomness to x position for more sporadic effect
+        const randomX = x + (Math.random() - 0.5) * sliceWidth * 0.3;
+        ctx.lineTo(randomX, y);
+      }
+      
+      x += sliceWidth * 2;
+    }
+    
+    ctx.stroke();
+    
+    // Draw a second subtle accent line that matches Persona 3 style
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(0, 212, 255, 0.6)';
+    ctx.beginPath();
+    
+    x = 0;
+    for (let i = 0; i < bufferLength; i += 3) {
+      const v = waitDataArray[i] / 255.0;
+      const randomFactor = 0.7 + (Math.random() * 0.6);
+      const sporadicV = Math.min(1, v * randomFactor * 1.2);
+      const y = (sporadicV * canvas.height * 0.7) + (canvas.height * 0.15);
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        const randomX = x + (Math.random() - 0.5) * sliceWidth * 0.4;
+        ctx.lineTo(randomX, y);
+      }
+      
+      x += sliceWidth * 3;
+    }
+    
+    ctx.stroke();
+    
+    visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+  }
+  
+  drawVisualizer();
+}
+
+// Preload first track and wait for it to be ready
+function preloadAssets() {
+  console.log("preloadAssets called");
+  
+  // Setup loading screen audio with Web Audio API for visualization
+  waitAudio = new Audio('./sound/wait.mp3');
+  waitAudio.loop = true;
+  waitAudio.volume = 0.4;
+  
+  discAudio = new Audio('./sound/disc.mp3');
+  discAudio.volume = 0.7;
+  
+  // Setup Web Audio API for visualizer
+  waitAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+  waitAnalyser = waitAudioContext.createAnalyser();
+  waitAnalyser.fftSize = 256;
+  waitDataArray = new Uint8Array(waitAnalyser.frequencyBinCount);
+  
+  const source = waitAudioContext.createMediaElementSource(waitAudio);
+  source.connect(waitAnalyser);
+  waitAnalyser.connect(waitAudioContext.destination);
+  
+  // Play wait sound
+  waitAudio.play().catch(err => console.warn("Could not play wait sound:", err));
+  
+  // Start visualizer after a short delay to ensure canvas is ready
+  setTimeout(() => {
+    setupLoadingVisualizer();
+  }, 100);
+  
+  // Load the first track
+  loadTrack(currentTrackIndex, false);
+  
+  // Always hide after 15 seconds, regardless of load status
+  console.log("Setting timeout to hide loading screen in 15 seconds");
+  
+  // Play disc sound slightly earlier (0.8 seconds before hiding)
+  setTimeout(() => {
+    if (discAudio) {
+      discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
+    }
+  }, 14200);
+  
+  setTimeout(() => {
+    console.log("Timeout fired - hiding loading screen");
+    hideLoadingScreen();
+  }, 15000);
+}
+
+// Start preloading assets - ensure DOM is ready
+window.addEventListener('load', () => {
+  console.log("Window loaded, starting preload");
+  cycleMenuItems();
+  preloadAssets();
+});
 
 function startOverlayVideoLoop() {
   if (!videoOverlayEl || !overlayVideoEl) return;
@@ -846,7 +1165,8 @@ for (let i = 0; i < radialCount; i++) {
 }
 
 // === Camera ===
-camera.position.set(0, 25, 2);
+camera.position.set(0, 25, 0);
+controls.target.set(0, 0, 0);
 controls.update();
 
 // === Postprocessing ===
