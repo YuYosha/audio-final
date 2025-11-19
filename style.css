@@ -34,6 +34,74 @@ body {
   width: auto;
   image-rendering: pixelated;
   filter: drop-shadow(2px 2px 0px rgba(0, 0, 0, 0.8));
+  animation: swayRotate 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes swayRotate {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Camera Controls - Top Right */
+#camera-controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+  font-family: "Arial", "Helvetica", sans-serif;
+}
+
+#camera-controls button {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  color: #00d4ff;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  opacity: 0.7;
+}
+
+#camera-controls button:hover {
+  color: #ffffff;
+  opacity: 1;
+  border-color: rgba(0, 212, 255, 0.6);
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 30px rgba(0, 212, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  transform: translateY(-2px);
+}
+
+#camera-controls button:active {
+  transform: translateY(0);
+}
+
+#camera-controls button.active {
+  color: #ffffff;
+  opacity: 1;
+  border-color: #00d4ff;
+  background: rgba(0, 212, 255, 0.1);
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 30px rgba(0, 212, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Loading screen - Persona 3 Reload style - Full Redesign */
