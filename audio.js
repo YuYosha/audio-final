@@ -72,29 +72,30 @@ const audioLoader = new THREE.AudioLoader();
 const analyser = new THREE.AudioAnalyser(sound, 256);
 
 const tracks = [
-  { label: "Nikke", file: "Nikke.mp3" },
-  { label: "Bingo", file: "Bingo.mp3" },
-  { label: "Black", file: "Black.mp3" },
-  { label: "Casino", file: "Casino.mp3" },
+  { label: "Jump UP", file: "JumpUP.mp3" },
+  { label: "Bingo Highway", file: "BingoHighway.mp3" },
+  { label: "Black Knife", file: "BlackKnife.mp3" },
+  { label: "Roulette Road", file: "RouletteRoad.mp3" },
   { label: "Duel", file: "Duel.mp3" },
-  { label: "EggD", file: "EggD.mp3" },
-  { label: "EggS", file: "EggS.mp3" },
-  { label: "Emote", file: "Emote.mp3" },
-  { label: "Expo", file: "Expo.mp3" },
-  { label: "Forever", file: "Forever.mp3" },
-  { label: "Fury", file: "Fury.mp3" },
-  { label: "Megalo", file: "megalo.mp3" },
-  { label: "Metal", file: "Metal.mp3" },
-  { label: "PM", file: "PM.mp3" },
-  { label: "Pokemon", file: "Pokemon.mp3" },
-  { label: "Riders", file: "Riders.mp3" },
-  { label: "Rude", file: "Rude.mp3" },
-  { label: "Sans", file: "Sans.mp3" },
-  { label: "SonicR", file: "SonicR.mp3" },
-  { label: "Tea", file: "Tea.mp3" },
-  { label: "Tou", file: "Tou.mp3" },
-  { label: "Way", file: "Way.mp3" },
-  { label: "LoveF", file: "LoveF.mp3" },
+  { label: "Egg Dragoon", file: "EggDragoon.mp3" },
+  { label: "Shmoovin", file: "Shmoovin.mp3" },
+  { label: "Running The Bassline", file: "RunningTheBassline.mp3" },
+  { label: "Eggman Expo", file: "EggmanExpo.mp3" },
+  { label: "Forever Imperfect", file: "ForeverImperfect.mp3" },
+  { label: "Feel The Fury", file: "FeelTheFury.mp3" },
+  { label: "Eg Megalovania", file: "EgMegalovania.mp3" },
+  { label: "Vs Metal Sonic", file: "VsMetalSonic.mp3" },
+  { label: "Pumpkin Mansion", file: "PumpkinMansion.mp3" },
+  { label: "Vs Jacinthe", file: "VsJacinthe.mp3" },
+  { label: "Un Gravitify", file: "UnGravitify.mp3" },
+  { label: "Rude Busters", file: "RudeBusters.mp3" },
+  { label: "Vs Sans", file: "VsSans.mp3" },
+  { label: "Trinity Encore", file: "TrinityEncore.mp3" },
+  { label: "Tea Time Waltz", file: "TeaTimeWaltz.mp3" },
+  { label: "Touhou", file: "Touhou.mp3" },
+  { label: "In My Way", file: "InMyWay.mp3" },
+  { label: "Random Test Funk", file: "RandomTestFunk.mp3" },
+  { label: "Machine Love", file: "MachineLove.mp3" },
 ];
 
 let currentTrackIndex = 0; // default to "Nikke"
@@ -109,41 +110,58 @@ const nextBtn = document.getElementById("next-btn");
 const prevBtn = document.getElementById("prev-btn");
 const videoOverlayEl = document.getElementById("video-overlay");
 const overlayVideoEl = document.getElementById("overlay-video");
+const videoGlitchOverlayEl = document.getElementById("video-glitch-overlay");
 
 const overlayVideos = [
- // "asgore.mp4",
- // "benson.mp4",
-  //"dante.mp4",
-  //"eggman.mp4",
-  //"eggsax.mp4",
- // "goku.mp4",
-  //"jojo.mp4",
+ "asgore.mp4",
+ "benson.mp4",
+  "dante.mp4",
+  "eggman.mp4",
+  "eggsax.mp4",
+  "goku.mp4",
+  "jojo.mp4",
   "metal.mp4",
-  //"metroman.mp4",
-  //"mez.mp4",
-  //"p3.mp4",
-  //"pbj.mp4",
-  //"ratdance.mp4",
-  //"rewrite.mp4",
-  //"springtrap.mp4",
-  //"teto.mp4",
-  //"tf2.mp4",
+  "metroman.mp4",
+  "mez.mp4",
+  "p3.mp4",
+  "pbj.mp4",
+  "ratdance.mp4",
+  "rewrite.mp4",
+  "springtrap.mp4",
+  "teto.mp4",
+  "tf2.mp4",
   "cream.mp4",
-  //"DC.mp4", 
+  "DC.mp4", 
 ];
-const VIDEO_CHECK_INTERVAL = 12000;
-const VIDEO_APPEAR_CHANCE = 0.6; // ~60% chance per interval -> more common
+const VIDEO_CHECK_INTERVAL = 25000; // Increased to 25s - triggers less frequently, more separation
+const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance between video and color swap
+const COLOR_SWAP_DURATION = 7000; // 7 seconds
 let videoIntervalId = null;
 let overlayIsActive = false;
+let colorSwapActive = false;
+let colorSwapTimeoutId = null;
 let glitchTimeoutId = null;
+let currentActivePaletteIndex = 0; // Track the currently active palette (not just track default)
 
 // Error window popup
-const ERROR_WINDOW_INTERVAL = 12000; // Same interval as video
-const ERROR_APPEAR_CHANCE = 0.6; // Same chance as video
+const ERROR_WINDOW_INTERVAL = 4000; // More sporadic - check every 4 seconds
+const ERROR_APPEAR_CHANCE = 0.3; // 30% chance per interval - more sporadic
 let errorWindowIntervalId = null;
-let errorWindowIsActive = false;
+let activeErrorWindows = []; // Track multiple active windows
 let popupsEnabled = false; // Toggle for popups
 const popupsBtn = document.getElementById("popups-btn");
+
+// Color variations for error windows
+const errorWindowColors = [
+  { border: '#ff0000', glow: 'rgba(255, 0, 0, 0.8)', inset: 'rgba(255, 0, 0, 0.3)', shadow: 'rgba(255, 0, 0, 0.5)' }, // Red
+  { border: '#ff00ff', glow: 'rgba(255, 0, 255, 0.8)', inset: 'rgba(255, 0, 255, 0.3)', shadow: 'rgba(255, 0, 255, 0.5)' }, // Magenta
+  { border: '#00ffff', glow: 'rgba(0, 255, 255, 0.8)', inset: 'rgba(0, 255, 255, 0.3)', shadow: 'rgba(0, 255, 255, 0.5)' }, // Cyan
+  { border: '#ffff00', glow: 'rgba(255, 255, 0, 0.8)', inset: 'rgba(255, 255, 0, 0.3)', shadow: 'rgba(255, 255, 0, 0.5)' }, // Yellow
+  { border: '#00ff00', glow: 'rgba(0, 255, 0, 0.8)', inset: 'rgba(0, 255, 0, 0.3)', shadow: 'rgba(0, 255, 0, 0.5)' }, // Green
+  { border: '#ff8800', glow: 'rgba(255, 136, 0, 0.8)', inset: 'rgba(255, 136, 0, 0.3)', shadow: 'rgba(255, 136, 0, 0.5)' }, // Orange
+  { border: '#ff0088', glow: 'rgba(255, 0, 136, 0.8)', inset: 'rgba(255, 0, 136, 0.3)', shadow: 'rgba(255, 0, 136, 0.5)' }, // Pink
+  { border: '#8800ff', glow: 'rgba(136, 0, 255, 0.8)', inset: 'rgba(136, 0, 255, 0.3)', shadow: 'rgba(136, 0, 255, 0.5)' }, // Purple
+];
 
 function updateTrackLabel(state = "ready") {
   if (!trackNameEl) return;
@@ -264,22 +282,48 @@ function stopSound() {
         window.clearTimeout(glitchTimeoutId);
         glitchTimeoutId = null;
       }
-      videoOverlayEl.classList.remove("glitching");
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
     }
     overlayIsActive = false;
   }
   
-  // Close any active error windows when music stops
-  const errorWindowEl = document.getElementById("error-window");
-  const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
-  if (errorWindowIsActive && errorWindowVideoEl) {
-    errorWindowVideoEl.pause();
-    errorWindowVideoEl.removeAttribute("src");
-    errorWindowVideoEl.load();
-    if (errorWindowEl) {
-      errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+  // Stop any active color swap when music stops
+  if (colorSwapActive) {
+    if (colorSwapTimeoutId) {
+      window.clearTimeout(colorSwapTimeoutId);
+      colorSwapTimeoutId = null;
     }
-    errorWindowIsActive = false;
+    // Restore original palette
+    applyColorPalette(currentTrackIndex);
+    if (videoGlitchOverlayEl) {
+      videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+      videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+    }
+    colorSwapActive = false;
+  }
+  
+  // Close any active error windows when music stops
+  const container = document.getElementById("error-windows-container");
+  if (container) {
+    const errorWindows = container.querySelectorAll(".error-window.error-window-visible");
+    errorWindows.forEach(errorWindowEl => {
+      const errorWindowVideoEl = errorWindowEl.querySelector(".error-window-video");
+      if (errorWindowVideoEl) {
+        errorWindowVideoEl.pause();
+        errorWindowVideoEl.removeAttribute("src");
+        errorWindowVideoEl.load();
+      }
+      errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+      setTimeout(() => {
+        if (errorWindowEl.parentNode) {
+          errorWindowEl.parentNode.removeChild(errorWindowEl);
+        }
+      }, 500);
+    });
+    activeErrorWindows = [];
   }
 }
 
@@ -295,6 +339,8 @@ const selectSound = new Audio('./sound/select.wav');
 selectSound.volume = 0.7;
 const select2Sound = new Audio('./sound/select2.wav');
 select2Sound.volume = 0.7;
+const glitchSound = new Audio('./sound/glitch.mp3');
+glitchSound.volume = 1.0;
 
 function setupButtonHover(button) {
   if (!button) return;
@@ -405,16 +451,24 @@ popupsBtn?.addEventListener("click", () => {
       errorWindowIntervalId = null;
     }
     // Close any active error windows
-    const errorWindowEl = document.getElementById("error-window");
-    const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
-    if (errorWindowIsActive && errorWindowVideoEl) {
-      errorWindowVideoEl.pause();
-      errorWindowVideoEl.removeAttribute("src");
-      errorWindowVideoEl.load();
-      if (errorWindowEl) {
+    const container = document.getElementById("error-windows-container");
+    if (container) {
+      const errorWindows = container.querySelectorAll(".error-window.error-window-visible");
+      errorWindows.forEach(errorWindowEl => {
+        const errorWindowVideoEl = errorWindowEl.querySelector(".error-window-video");
+        if (errorWindowVideoEl) {
+          errorWindowVideoEl.pause();
+          errorWindowVideoEl.removeAttribute("src");
+          errorWindowVideoEl.load();
+        }
         errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
-      }
-      errorWindowIsActive = false;
+        setTimeout(() => {
+          if (errorWindowEl.parentNode) {
+            errorWindowEl.parentNode.removeChild(errorWindowEl);
+          }
+        }, 500);
+      });
+      activeErrorWindows = [];
     }
   }
 });
@@ -667,20 +721,34 @@ function preloadAssets() {
   // Load the first track
   loadTrack(currentTrackIndex, false);
   
-  // Always hide after 15 seconds, regardless of load status
-  console.log("Setting timeout to hide loading screen in 15 seconds");
+  // Always hide after 25 seconds, regardless of load status
+  console.log("Setting timeout to hide loading screen in 25 seconds");
+  
+  // Start loading bar animation
+  const loadingBarFill = document.getElementById("loading-bar-fill");
+  if (loadingBarFill) {
+    // Ensure it starts at 0%
+    loadingBarFill.style.width = "0%";
+    // Use requestAnimationFrame to ensure the initial state is applied before animating
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        loadingBarFill.style.transition = "width 25s linear";
+        loadingBarFill.style.width = "100%";
+      });
+    });
+  }
   
   // Play disc sound slightly earlier (0.8 seconds before hiding)
   setTimeout(() => {
     if (discAudio) {
       discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
     }
-  }, 14200);
+  }, 24200);
   
   setTimeout(() => {
     console.log("Timeout fired - hiding loading screen");
     hideLoadingScreen();
-  }, 15000);
+  }, 25000);
 }
 
 // Start preloading assets - ensure DOM is ready
@@ -724,10 +792,24 @@ function startOverlayVideoLoop() {
     // Restore original palette based on current track
     applyColorPalette(currentTrackIndex);
     
+    // Add glitch effect before closing (matching error window behavior - identical to error windows)
+    if (videoGlitchOverlayEl) {
+      videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+      videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+    }
+    
+    // Play glitch sound at end
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+    
     // Trigger intense glitch for video end
     triggerIntenseGlitch(500);
     window.setTimeout(() => {
       videoOverlayEl.classList.remove("visible");
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
       overlayIsActive = false;
     }, 550);
   };
@@ -736,94 +818,247 @@ function startOverlayVideoLoop() {
   overlayVideoEl.addEventListener("error", concludeOverlay);
 
   videoIntervalId = window.setInterval(() => {
-    if (overlayIsActive) return;
+    if (overlayIsActive || colorSwapActive) return;
     if (!sound.isPlaying) return; // Don't play videos if song isn't playing
-    if (Math.random() > VIDEO_APPEAR_CHANCE) return;
-    const choice =
-      overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
-    if (!choice) return;
     
-    // Randomly pick a color palette when video loads
-    const randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
-    applyColorPalette(randomPaletteIndex);
+    const randomValue = Math.random();
+    console.log(`Video check: random=${randomValue.toFixed(3)}, threshold=${VIDEO_APPEAR_CHANCE}, will ${randomValue <= VIDEO_APPEAR_CHANCE ? 'SHOW VIDEO' : 'SHOW COLOR SWAP'}`);
     
-    overlayIsActive = true;
-    videoOverlayEl.classList.add("visible");
-    // Trigger intense glitch for video start
-    triggerIntenseGlitch(900);
-    overlayVideoEl.src = `./video/${choice}`;
-    overlayVideoEl.currentTime = 0;
-    
-    overlayVideoEl.onplaying = () => {
-      // Add subtle continuous glitch when video starts playing
-      if (videoOverlayEl) {
-        videoOverlayEl.classList.add("active-glitch");
+    if (randomValue <= VIDEO_APPEAR_CHANCE) {
+      // 50% chance: Video overlay appears
+      const choice =
+        overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
+      if (!choice) {
+        console.warn("No video choice available");
+        return;
       }
-    };
-    
-    overlayVideoEl.onpause = () => {
-      // Remove subtle glitch if video is paused
-      if (videoOverlayEl) {
-        videoOverlayEl.classList.remove("active-glitch");
+      
+      // Randomly pick a color palette when video loads, but exclude the currently active palette
+      let randomPaletteIndex;
+      do {
+        randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
+      } while (randomPaletteIndex === currentActivePaletteIndex); // Prevent swapping to same palette
+      
+      applyColorPalette(randomPaletteIndex);
+      
+      overlayIsActive = true;
+      videoOverlayEl.classList.add("visible");
+      // Trigger glitch overlay (identical to error windows)
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
       }
-    };
-    
-    overlayVideoEl.play().catch((error) => {
-      console.warn("Overlay video failed to play:", error);
-      concludeOverlay();
-    });
+      // Play glitch sound at start
+      glitchSound.currentTime = 0;
+      glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+      // Trigger intense glitch for video start
+      triggerIntenseGlitch(900);
+      overlayVideoEl.src = `./video/${choice}`;
+      overlayVideoEl.currentTime = 0;
+      
+      // Remove glitch after spawn animation (matching error window timing)
+      setTimeout(() => {
+        if (videoGlitchOverlayEl) {
+          videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+          videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+        }
+      }, 500);
+      
+      overlayVideoEl.onplaying = () => {
+        // Add subtle continuous glitch when video starts playing
+        if (videoOverlayEl) {
+          videoOverlayEl.classList.add("active-glitch");
+        }
+      };
+      
+      overlayVideoEl.onpause = () => {
+        // Remove subtle glitch if video is paused
+        if (videoOverlayEl) {
+          videoOverlayEl.classList.remove("active-glitch");
+        }
+      };
+      
+      overlayVideoEl.onloadeddata = () => {
+        // Ensure video plays when loaded
+        overlayVideoEl.play().catch((error) => {
+          console.warn("Overlay video failed to play:", error);
+          concludeOverlay();
+        });
+      };
+      
+      overlayVideoEl.onerror = () => {
+        console.warn("Overlay video failed to load:", choice);
+        concludeOverlay();
+      };
+      
+      overlayVideoEl.play().catch((error) => {
+        console.warn("Overlay video failed to play immediately:", error);
+        // If play fails, try again after a short delay
+        setTimeout(() => {
+          if (overlayIsActive && overlayVideoEl.src) {
+            overlayVideoEl.play().catch((err) => {
+              console.warn("Overlay video failed to play on retry:", err);
+              concludeOverlay();
+            });
+          }
+        }, 100);
+      });
+    } else {
+      // 50% chance: Color swap (when video doesn't appear)
+      // Trigger glitch overlay at start
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+      }
+      
+      // Play glitch sound at start
+      glitchSound.currentTime = 0;
+      glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+      
+      // Randomly pick a color palette, but exclude the currently active palette
+      let randomPaletteIndex;
+      do {
+        randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
+      } while (randomPaletteIndex === currentActivePaletteIndex); // Prevent swapping to same palette
+      
+      applyColorPalette(randomPaletteIndex);
+      
+      colorSwapActive = true;
+      
+      // Remove glitch after spawn animation (matching error window timing)
+      setTimeout(() => {
+        if (videoGlitchOverlayEl) {
+          videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+          videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+        }
+      }, 500);
+      
+      // After 7 seconds, restore original palette with glitch
+      colorSwapTimeoutId = window.setTimeout(() => {
+        // Trigger glitch overlay at end
+        if (videoGlitchOverlayEl) {
+          videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+          videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+        }
+        
+        // Play glitch sound at end
+        glitchSound.currentTime = 0;
+        glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+        
+        // Restore original palette based on current track
+        applyColorPalette(currentTrackIndex);
+        
+        // Remove glitch after animation
+        setTimeout(() => {
+          if (videoGlitchOverlayEl) {
+            videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+            videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+          }
+          colorSwapActive = false;
+        }, 500);
+      }, COLOR_SWAP_DURATION);
+    }
   }, VIDEO_CHECK_INTERVAL);
 }
 
 // === Error Window Popup ===
+function createErrorWindow() {
+  const container = document.getElementById("error-windows-container");
+  if (!container) return null;
+  
+  // Create new error window element
+  const errorWindowEl = document.createElement("div");
+  errorWindowEl.className = "error-window error-window-hidden";
+  
+  // Pick random color variation
+  const colorScheme = errorWindowColors[Math.floor(Math.random() * errorWindowColors.length)];
+  
+  // Apply color scheme via CSS variables
+  errorWindowEl.style.setProperty('--error-border-color', colorScheme.border);
+  errorWindowEl.style.setProperty('--error-glow-color', colorScheme.glow);
+  errorWindowEl.style.setProperty('--error-inset-color', colorScheme.inset);
+  errorWindowEl.style.setProperty('--error-shadow-color', colorScheme.shadow);
+  
+  errorWindowEl.innerHTML = `
+    <div class="error-window-header">
+      <div class="error-window-title">
+        <span class="error-icon">⚠</span>
+        <span>ERROR</span>
+      </div>
+      <button class="error-close-btn" aria-label="Close">✕</button>
+    </div>
+    <div class="error-window-content">
+      <video class="error-window-video" muted playsinline></video>
+    </div>
+  `;
+  
+  container.appendChild(errorWindowEl);
+  return errorWindowEl;
+}
+
 function startErrorWindowLoop() {
   // Only start if popups are enabled
   if (!popupsEnabled) {
     return;
   }
   
-  const errorWindowEl = document.getElementById("error-window");
-  const errorWindowVideoEl = errorWindowEl?.querySelector(".error-window-video");
-  const errorWindowCloseBtn = errorWindowEl?.querySelector(".error-close-btn");
-  
-  if (!errorWindowEl || !errorWindowVideoEl || !overlayVideos.length || errorWindowIntervalId) {
+  if (!overlayVideos.length || errorWindowIntervalId) {
     return;
   }
 
-  const concludeErrorWindow = () => {
-    if (!errorWindowEl || !errorWindowVideoEl) return;
-    // Add glitch effect before closing (same as spawn)
-    errorWindowEl.classList.add("error-window-glitching");
-    errorWindowVideoEl.pause();
-    errorWindowVideoEl.removeAttribute("src");
-    errorWindowVideoEl.load();
-    
-    // Remove visible class after glitch animation (500ms same as spawn)
-    setTimeout(() => {
-      errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
-      errorWindowIsActive = false;
-    }, 500);
-  };
-
-  errorWindowCloseBtn?.addEventListener("click", concludeErrorWindow);
-  errorWindowVideoEl.addEventListener("ended", concludeErrorWindow);
-  errorWindowVideoEl.addEventListener("error", concludeErrorWindow);
-
   errorWindowIntervalId = window.setInterval(() => {
-    if (errorWindowIsActive) return;
     if (!sound.isPlaying) return; // Don't show error windows if song isn't playing
     if (Math.random() > ERROR_APPEAR_CHANCE) return;
     
     const choice = overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
     if (!choice) return;
     
-    errorWindowIsActive = true;
+    const errorWindowEl = createErrorWindow();
+    if (!errorWindowEl) return;
     
-    // Random size (250-400px width, 180-300px height)
-    const minWidth = 250;
-    const maxWidth = 400;
-    const minHeight = 180;
-    const maxHeight = 300;
+    const errorWindowVideoEl = errorWindowEl.querySelector(".error-window-video");
+    const errorWindowCloseBtn = errorWindowEl.querySelector(".error-close-btn");
+    
+    if (!errorWindowVideoEl) return;
+    
+    // Track this window
+    const windowId = Date.now() + Math.random();
+    activeErrorWindows.push(windowId);
+    
+    const concludeErrorWindow = () => {
+      // Remove from active windows
+      const index = activeErrorWindows.indexOf(windowId);
+      if (index > -1) {
+        activeErrorWindows.splice(index, 1);
+      }
+      
+      if (!errorWindowEl || !errorWindowVideoEl) return;
+      
+      // Add glitch effect before closing (same as spawn)
+      errorWindowEl.classList.add("error-window-glitching");
+      errorWindowVideoEl.pause();
+      errorWindowVideoEl.removeAttribute("src");
+      errorWindowVideoEl.load();
+      
+      // Remove visible class after glitch animation (500ms same as spawn)
+      setTimeout(() => {
+        errorWindowEl.classList.remove("error-window-visible", "error-window-glitching");
+        // Remove from DOM after animation
+        setTimeout(() => {
+          if (errorWindowEl.parentNode) {
+            errorWindowEl.parentNode.removeChild(errorWindowEl);
+          }
+        }, 300);
+      }, 500);
+    };
+
+    errorWindowCloseBtn?.addEventListener("click", concludeErrorWindow);
+    
+    // Random size (200-500px width, 150-350px height) - more variation
+    const minWidth = 200;
+    const maxWidth = 500;
+    const minHeight = 150;
+    const maxHeight = 350;
     const randomWidth = minWidth + Math.random() * (maxWidth - minWidth);
     const randomHeight = minHeight + Math.random() * (maxHeight - minHeight);
     
@@ -861,7 +1096,7 @@ function startErrorWindowLoop() {
       return center + bias * (range / 2);
     };
     
-    // Try to find a valid position (avoid overlapping buttons)
+    // Try to find a valid position (avoid overlapping buttons and other windows)
     while (!validPosition && attempts < 100) {
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
@@ -892,7 +1127,24 @@ function startErrorWindowLoop() {
                             randomX + randomWidth > controlsLeft && 
                             randomX < controlsRight;
       
-      if (!overlapsTopLeft && !overlapsTopRight && !overlapsBottom) {
+      // Check if it overlaps with other active error windows
+      let overlapsOtherWindow = false;
+      const container = document.getElementById("error-windows-container");
+      if (container) {
+        const existingWindows = container.querySelectorAll(".error-window.error-window-visible");
+        for (const existingWindow of existingWindows) {
+          if (existingWindow === errorWindowEl) continue;
+          const rect = existingWindow.getBoundingClientRect();
+          const overlapX = !(randomX + randomWidth < rect.left || randomX > rect.right);
+          const overlapY = !(randomY + randomHeight < rect.top || randomY > rect.bottom);
+          if (overlapX && overlapY) {
+            overlapsOtherWindow = true;
+            break;
+          }
+        }
+      }
+      
+      if (!overlapsTopLeft && !overlapsTopRight && !overlapsBottom && !overlapsOtherWindow) {
         validPosition = true;
       }
       
@@ -936,20 +1188,24 @@ function startErrorWindowLoop() {
     
     errorWindowVideoEl.src = `./video/${choice}`;
     errorWindowVideoEl.currentTime = 0;
-    errorWindowVideoEl.loop = true;
+    errorWindowVideoEl.loop = false; // Don't loop - play once and close
+    
+    // Add event listeners for this video instance
+    const handleVideoEnd = () => {
+      concludeErrorWindow();
+    };
+    
+    const handleVideoError = () => {
+      concludeErrorWindow();
+    };
+    
+    errorWindowVideoEl.addEventListener("ended", handleVideoEnd, { once: true });
+    errorWindowVideoEl.addEventListener("error", handleVideoError, { once: true });
     
     errorWindowVideoEl.play().catch((error) => {
       console.warn("Error window video failed to play:", error);
       concludeErrorWindow();
     });
-    
-    // Auto-close after video duration (with some extra time)
-    errorWindowVideoEl.addEventListener("loadedmetadata", () => {
-      const duration = errorWindowVideoEl.duration;
-      if (duration && !isNaN(duration)) {
-        setTimeout(concludeErrorWindow, (duration * 1000) + 2000);
-      }
-    }, { once: true });
   }, ERROR_WINDOW_INTERVAL);
 }
 
@@ -1539,6 +1795,7 @@ composer.addPass(outlinePass);
 // === Color Palette Function ===
 function applyColorPalette(paletteIndex) {
   const palette = colorPalettes[paletteIndex % colorPalettes.length];
+  currentActivePaletteIndex = paletteIndex % colorPalettes.length; // Update currently active palette
   
   // Update skybox shader uniforms
   const sky = palette.skybox;
