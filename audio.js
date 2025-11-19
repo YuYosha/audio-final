@@ -78,25 +78,25 @@ const videoOverlayEl = document.getElementById("video-overlay");
 const overlayVideoEl = document.getElementById("overlay-video");
 
 const overlayVideos = [
-  "asgore.mp4",
+ // "asgore.mp4",
  // "benson.mp4",
   //"dante.mp4",
-  "eggman.mp4",
-  "eggsax.mp4",
+  //"eggman.mp4",
+  //"eggsax.mp4",
  // "goku.mp4",
   //"jojo.mp4",
   "metal.mp4",
   //"metroman.mp4",
-  "mez.mp4",
-  "p3.mp4",
+  //"mez.mp4",
+  //"p3.mp4",
   //"pbj.mp4",
-  "ratdance.mp4",
-  "rewrite.mp4",
+  //"ratdance.mp4",
+  //"rewrite.mp4",
   //"springtrap.mp4",
-  "teto.mp4",
+  //"teto.mp4",
   //"tf2.mp4",
   "cream.mp4",
-  "DC.mp4", 
+  //"DC.mp4", 
 ];
 const VIDEO_CHECK_INTERVAL = 12000;
 const VIDEO_APPEAR_CHANCE = 0.38; // ~38% chance per interval -> more common
@@ -234,29 +234,15 @@ function startOverlayVideoLoop() {
     return;
   }
 
-  const triggerOverlayGlitch = (duration = 480) => {
+  const triggerIntenseGlitch = (duration = 900) => {
     if (!videoOverlayEl) return;
     if (glitchTimeoutId) {
       window.clearTimeout(glitchTimeoutId);
     }
-    videoOverlayEl.classList.add("glitching");
+    videoOverlayEl.classList.add("glitch-intense");
     glitchTimeoutId = window.setTimeout(() => {
-      videoOverlayEl.classList.remove("glitching");
+      videoOverlayEl.classList.remove("glitch-intense");
     }, duration);
-    
-    // Add extra flicker effect for more visibility
-    let flickerCount = 0;
-    const flickerInterval = setInterval(() => {
-      if (flickerCount >= 6 || !videoOverlayEl.classList.contains("glitching")) {
-        clearInterval(flickerInterval);
-        return;
-      }
-      videoOverlayEl.classList.toggle("glitching");
-      setTimeout(() => {
-        if (flickerCount < 6) videoOverlayEl.classList.add("glitching");
-      }, 20);
-      flickerCount++;
-    }, 80);
   };
 
   const concludeOverlay = () => {
@@ -276,11 +262,12 @@ function startOverlayVideoLoop() {
     // Restore original palette based on current track
     applyColorPalette(currentTrackIndex);
     
-    triggerOverlayGlitch(400);
+    // Trigger intense glitch for video end
+    triggerIntenseGlitch(500);
     window.setTimeout(() => {
       videoOverlayEl.classList.remove("visible");
       overlayIsActive = false;
-    }, 220);
+    }, 550);
   };
 
   overlayVideoEl.addEventListener("ended", concludeOverlay);
@@ -300,7 +287,8 @@ function startOverlayVideoLoop() {
     
     overlayIsActive = true;
     videoOverlayEl.classList.add("visible");
-    triggerOverlayGlitch(650); // Longer glitch duration for more visibility
+    // Trigger intense glitch for video start
+    triggerIntenseGlitch(900);
     overlayVideoEl.src = `./video/${choice}`;
     overlayVideoEl.currentTime = 0;
     
@@ -331,10 +319,10 @@ const colorPalettes = [
   {
     name: "Original",
     skybox: {
-      baseColor1: { x: 0.0, y: 0.02, z: 0.05 },
-      baseColor2: { x: 0.0, y: 0.05, z: 0.09 },
-      pulseTint1: { x: 0.0, y: 0.2, z: 0.5 },
-      pulseTint2: { x: 0.0, y: 0.5, z: 0.9 },
+      baseColor1: { x: 0.0, y: 0.015, z: 0.04 },
+      baseColor2: { x: 0.0, y: 0.04, z: 0.07 },
+      pulseTint1: { x: 0.0, y: 0.15, z: 0.4 },
+      pulseTint2: { x: 0.0, y: 0.4, z: 0.75 },
       toneShift: { x: 0.6, y: 0.8, z: 1.5 },
     },
     ring1: { color: 0xff00cc, emissive: 0xff00cc },
@@ -353,10 +341,10 @@ const colorPalettes = [
   {
     name: "Neon Cyber",
     skybox: {
-      baseColor1: { x: 0.02, y: 0.0, z: 0.05 },
-      baseColor2: { x: 0.05, y: 0.0, z: 0.09 },
-      pulseTint1: { x: 0.2, y: 0.0, z: 0.5 },
-      pulseTint2: { x: 0.6, y: 0.0, z: 0.9 },
+      baseColor1: { x: 0.015, y: 0.0, z: 0.04 },
+      baseColor2: { x: 0.04, y: 0.0, z: 0.07 },
+      pulseTint1: { x: 0.15, y: 0.0, z: 0.4 },
+      pulseTint2: { x: 0.5, y: 0.0, z: 0.75 },
       toneShift: { x: 1.2, y: 0.6, z: 1.5 },
     },
     ring1: { color: 0x00ff88, emissive: 0x00ff88 },
@@ -375,10 +363,10 @@ const colorPalettes = [
   {
     name: "Inferno",
     skybox: {
-      baseColor1: { x: 0.05, y: 0.0, z: 0.0 },
-      baseColor2: { x: 0.09, y: 0.02, z: 0.0 },
-      pulseTint1: { x: 0.5, y: 0.1, z: 0.0 },
-      pulseTint2: { x: 0.9, y: 0.3, z: 0.0 },
+      baseColor1: { x: 0.04, y: 0.0, z: 0.0 },
+      baseColor2: { x: 0.07, y: 0.015, z: 0.0 },
+      pulseTint1: { x: 0.4, y: 0.08, z: 0.0 },
+      pulseTint2: { x: 0.75, y: 0.25, z: 0.0 },
       toneShift: { x: 1.5, y: 0.8, z: 0.6 },
     },
     ring1: { color: 0xff4400, emissive: 0xff4400 },
@@ -397,10 +385,10 @@ const colorPalettes = [
   {
     name: "Ocean Depth",
     skybox: {
-      baseColor1: { x: 0.0, y: 0.02, z: 0.05 },
-      baseColor2: { x: 0.0, y: 0.08, z: 0.12 },
-      pulseTint1: { x: 0.0, y: 0.3, z: 0.6 },
-      pulseTint2: { x: 0.0, y: 0.7, z: 1.0 },
+      baseColor1: { x: 0.0, y: 0.015, z: 0.04 },
+      baseColor2: { x: 0.0, y: 0.06, z: 0.10 },
+      pulseTint1: { x: 0.0, y: 0.25, z: 0.5 },
+      pulseTint2: { x: 0.0, y: 0.6, z: 0.85 },
       toneShift: { x: 0.6, y: 1.0, z: 1.5 },
     },
     ring1: { color: 0x0099ff, emissive: 0x0099ff },
@@ -419,10 +407,10 @@ const colorPalettes = [
   {
     name: "Royal Purple",
     skybox: {
-      baseColor1: { x: 0.05, y: 0.0, z: 0.05 },
-      baseColor2: { x: 0.09, y: 0.02, z: 0.09 },
-      pulseTint1: { x: 0.5, y: 0.0, z: 0.5 },
-      pulseTint2: { x: 0.8, y: 0.2, z: 1.0 },
+      baseColor1: { x: 0.04, y: 0.0, z: 0.04 },
+      baseColor2: { x: 0.07, y: 0.015, z: 0.07 },
+      pulseTint1: { x: 0.4, y: 0.0, z: 0.4 },
+      pulseTint2: { x: 0.65, y: 0.15, z: 0.85 },
       toneShift: { x: 1.2, y: 0.7, z: 1.3 },
     },
     ring1: { color: 0xaa00ff, emissive: 0xaa00ff },
@@ -441,10 +429,10 @@ const colorPalettes = [
   {
     name: "Electric Shock",
     skybox: {
-      baseColor1: { x: 0.04, y: 0.04, z: 0.0 },
-      baseColor2: { x: 0.08, y: 0.08, z: 0.02 },
-      pulseTint1: { x: 0.6, y: 0.6, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 1.0, z: 0.3 },
+      baseColor1: { x: 0.03, y: 0.03, z: 0.0 },
+      baseColor2: { x: 0.06, y: 0.06, z: 0.015 },
+      pulseTint1: { x: 0.5, y: 0.5, z: 0.0 },
+      pulseTint2: { x: 0.85, y: 0.85, z: 0.25 },
       toneShift: { x: 1.4, y: 1.4, z: 0.8 },
     },
     ring1: { color: 0xffff00, emissive: 0xffff00 },
@@ -463,10 +451,10 @@ const colorPalettes = [
   {
     name: "Aqua",
     skybox: {
-      baseColor1: { x: 0.0, y: 0.05, z: 0.06 },
-      baseColor2: { x: 0.0, y: 0.08, z: 0.1 },
-      pulseTint1: { x: 0.0, y: 0.4, z: 0.5 },
-      pulseTint2: { x: 0.0, y: 0.7, z: 0.9 },
+      baseColor1: { x: 0.0, y: 0.04, z: 0.05 },
+      baseColor2: { x: 0.0, y: 0.06, z: 0.08 },
+      pulseTint1: { x: 0.0, y: 0.3, z: 0.4 },
+      pulseTint2: { x: 0.0, y: 0.6, z: 0.75 },
       toneShift: { x: 0.7, y: 1.2, z: 1.4 },
     },
     ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
@@ -485,10 +473,10 @@ const colorPalettes = [
   {
     name: "Sunset",
     skybox: {
-      baseColor1: { x: 0.05, y: 0.02, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.05, z: 0.02 },
-      pulseTint1: { x: 0.8, y: 0.3, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 0.5, z: 0.2 },
+      baseColor1: { x: 0.04, y: 0.015, z: 0.0 },
+      baseColor2: { x: 0.10, y: 0.04, z: 0.015 },
+      pulseTint1: { x: 0.65, y: 0.25, z: 0.0 },
+      pulseTint2: { x: 0.85, y: 0.4, z: 0.15 },
       toneShift: { x: 1.5, y: 1.1, z: 0.7 },
     },
     ring1: { color: 0xff6600, emissive: 0xff6600 },
@@ -507,10 +495,10 @@ const colorPalettes = [
   {
     name: "Arctic",
     skybox: {
-      baseColor1: { x: 0.0, y: 0.04, z: 0.06 },
-      baseColor2: { x: 0.02, y: 0.08, z: 0.12 },
-      pulseTint1: { x: 0.0, y: 0.4, z: 0.7 },
-      pulseTint2: { x: 0.3, y: 0.8, z: 1.0 },
+      baseColor1: { x: 0.0, y: 0.03, z: 0.05 },
+      baseColor2: { x: 0.015, y: 0.06, z: 0.10 },
+      pulseTint1: { x: 0.0, y: 0.3, z: 0.6 },
+      pulseTint2: { x: 0.25, y: 0.65, z: 0.85 },
       toneShift: { x: 0.8, y: 1.1, z: 1.4 },
     },
     ring1: { color: 0x88ddff, emissive: 0x88ddff },
@@ -529,10 +517,10 @@ const colorPalettes = [
   {
     name: "Cosmic",
     skybox: {
-      baseColor1: { x: 0.02, y: 0.0, z: 0.08 },
-      baseColor2: { x: 0.05, y: 0.02, z: 0.12 },
-      pulseTint1: { x: 0.4, y: 0.0, z: 0.7 },
-      pulseTint2: { x: 0.6, y: 0.3, z: 1.0 },
+      baseColor1: { x: 0.015, y: 0.0, z: 0.06 },
+      baseColor2: { x: 0.04, y: 0.015, z: 0.10 },
+      pulseTint1: { x: 0.3, y: 0.0, z: 0.6 },
+      pulseTint2: { x: 0.5, y: 0.25, z: 0.85 },
       toneShift: { x: 1.1, y: 0.7, z: 1.4 },
     },
     ring1: { color: 0x6600ff, emissive: 0x6600ff },
@@ -858,7 +846,7 @@ for (let i = 0; i < radialCount; i++) {
 }
 
 // === Camera ===
-camera.position.set(0, 8, 15);
+camera.position.set(0, 25, 2);
 controls.update();
 
 // === Postprocessing ===
