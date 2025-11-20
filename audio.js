@@ -198,6 +198,15 @@ let experimentalSplitter = null; // To split signal without breaking analyser
 let audioContext = null;
 let staticSound = null; // Static sound for experimental mode
 
+// Menu music experimental audio effects
+let menuExperimentalLowPassFilter = null;
+let menuExperimentalHighPassFilter = null;
+let menuExperimentalGainNode = null;
+let menuExperimentalBandPassFilter = null;
+let menuExperimentalMerger = null;
+let menuExperimentalSplitter = null;
+let menuAudioSource = null; // MediaElementSourceNode for menu audio
+
 // Color variations for error windows
 const errorWindowColors = [
   { border: '#ff0000', glow: 'rgba(255, 0, 0, 0.8)', inset: 'rgba(255, 0, 0, 0.3)', shadow: 'rgba(255, 0, 0, 0.5)' }, // Red
@@ -810,6 +819,13 @@ experimentalBtn?.addEventListener("click", () => {
         }, 200);
       }
       
+      // Apply experimental effects to menu music if it's playing
+      if (menuAudio && !menuAudio.paused) {
+        setTimeout(() => {
+          applyExperimentalMenuMusicEffects();
+        }, 200);
+      }
+      
       // Start static sound
       startStaticSound();
     }, 100);
@@ -1107,12 +1123,202 @@ function removeExperimentalAudioEffects() {
   }
 }
 
+// === Menu Music Experimental Audio Effects ===
+function applyExperimentalMenuMusicEffects() {
+  if (!experimentalModeEnabled || !menuAudio || menuAudio.paused) return;
+  
+  try {
+    if (!audioContext) {
+      audioContext = THREE.AudioContext.getContext();
+    }
+    
+    if (!audioContext) return;
+    
+    const context = audioContext;
+    
+    // Create MediaElementSourceNode from HTML Audio element
+    if (!menuAudioSource) {
+      try {
+        menuAudioSource = context.createMediaElementSource(menuAudio);
+      } catch (e) {
+        // Source already created, try to reuse existing
+        console.warn("Menu audio source already exists or error:", e);
+        return;
+      }
+    }
+    
+    // Create filters if they don't exist
+    if (!menuExperimentalLowPassFilter) {
+      menuExperimentalLowPassFilter = context.createBiquadFilter();
+      menuExperimentalLowPassFilter.type = 'lowpass';
+      menuExperimentalLowPassFilter.frequency.value = 800;
+      menuExperimentalLowPassFilter.Q.value = 3.5;
+    }
+    
+    if (!menuExperimentalHighPassFilter) {
+      menuExperimentalHighPassFilter = context.createBiquadFilter();
+      menuExperimentalHighPassFilter.type = 'highpass';
+      menuExperimentalHighPassFilter.frequency.value = 120;
+      menuExperimentalHighPassFilter.Q.value = 1.2;
+    }
+    
+    if (!menuExperimentalBandPassFilter) {
+      menuExperimentalBandPassFilter = context.createBiquadFilter();
+      menuExperimentalBandPassFilter.type = 'bandpass';
+      menuExperimentalBandPassFilter.frequency.value = 1700;
+      menuExperimentalBandPassFilter.Q.value = 4.5;
+    }
+    
+    if (!menuExperimentalGainNode) {
+      menuExperimentalGainNode = context.createGain();
+      menuExperimentalGainNode.gain.value = 0.86;
+    }
+    
+    if (!menuExperimentalSplitter) {
+      menuExperimentalSplitter = context.createChannelSplitter(2);
+    }
+    
+    if (!menuExperimentalMerger) {
+      menuExperimentalMerger = context.createChannelMerger(2);
+    }
+    
+    // Get destination (speakers)
+    const destination = context.destination;
+    
+    // Disconnect menu audio source from destination
+    try {
+      menuAudioSource.disconnect(destination);
+    } catch (e) {
+      // Already disconnected or never connected
+    }
+    
+    // Route through filter chain
+    menuAudioSource.connect(menuExperimentalSplitter);
+    
+    // Path 1: Highpass -> Lowpass -> Gain
+    menuExperimentalSplitter.connect(menuExperimentalHighPassFilter, 0);
+    menuExperimentalHighPassFilter.connect(menuExperimentalLowPassFilter);
+    menuExperimentalLowPassFilter.connect(menuExperimentalGainNode);
+    menuExperimentalGainNode.connect(menuExperimentalMerger, 0, 0);
+    
+    // Path 2: Bandpass
+    menuExperimentalSplitter.connect(menuExperimentalBandPassFilter, 1);
+    menuExperimentalBandPassFilter.connect(menuExperimentalMerger, 0, 1);
+    
+    // Merge to destination
+    menuExperimentalMerger.connect(destination);
+    
+    // Animate filters (same as main music)
+    let freq = 800;
+    let dir = 1;
+    let speed = 60;
+    const animateFilter = () => {
+      if (!experimentalModeEnabled || !menuExperimentalLowPassFilter) return;
+      freq += dir * speed;
+      if (freq <= 650 || freq >= 1000) {
+        dir *= -1;
+        speed = 45 + Math.random() * 40;
+      }
+      menuExperimentalLowPassFilter.frequency.setValueAtTime(freq, context.currentTime);
+      setTimeout(animateFilter, 110);
+    };
+    animateFilter();
+    
+    let bandFreq = 1700;
+    let bandDir = 1;
+    let bandSpeed = 50;
+    const animateBandpass = () => {
+      if (!experimentalModeEnabled || !menuExperimentalBandPassFilter) return;
+      bandFreq += bandDir * bandSpeed;
+      if (bandFreq <= 1500 || bandFreq >= 1950) {
+        bandDir *= -1;
+        bandSpeed = 35 + Math.random() * 40;
+      }
+      menuExperimentalBandPassFilter.frequency.setValueAtTime(bandFreq, context.currentTime);
+      setTimeout(animateBandpass, 120);
+    };
+    animateBandpass();
+    
+    let qValue = 3.5;
+    let qDir = 1;
+    const animateQ = () => {
+      if (!experimentalModeEnabled || !menuExperimentalLowPassFilter) return;
+      qValue += qDir * 0.25;
+      if (qValue <= 3.0 || qValue >= 4.2) {
+        qDir *= -1;
+      }
+      menuExperimentalLowPassFilter.Q.setValueAtTime(qValue, context.currentTime);
+      setTimeout(animateQ, 180);
+    };
+    animateQ();
+    
+  } catch (error) {
+    console.warn("Could not apply experimental menu music effects:", error);
+  }
+}
+
+function removeExperimentalMenuMusicEffects() {
+  try {
+    if (!menuAudioSource) return;
+    
+    const context = audioContext || THREE.AudioContext.getContext();
+    if (!context) return;
+    
+    const destination = context.destination;
+    
+    // Disconnect all nodes
+    try {
+      if (menuExperimentalSplitter) {
+        menuExperimentalSplitter.disconnect();
+        menuExperimentalSplitter = null;
+      }
+      
+      if (menuExperimentalLowPassFilter) {
+        menuExperimentalLowPassFilter.disconnect();
+        menuExperimentalLowPassFilter = null;
+      }
+      
+      if (menuExperimentalHighPassFilter) {
+        menuExperimentalHighPassFilter.disconnect();
+        menuExperimentalHighPassFilter = null;
+      }
+      
+      if (menuExperimentalBandPassFilter) {
+        menuExperimentalBandPassFilter.disconnect();
+        menuExperimentalBandPassFilter = null;
+      }
+      
+      if (menuExperimentalGainNode) {
+        menuExperimentalGainNode.disconnect();
+        menuExperimentalGainNode = null;
+      }
+      
+      if (menuExperimentalMerger) {
+        menuExperimentalMerger.disconnect();
+        menuExperimentalMerger = null;
+      }
+      
+      // Reconnect menu audio source directly to destination
+      try {
+        menuAudioSource.disconnect();
+      } catch (e) {}
+      
+      menuAudioSource.connect(destination);
+    } catch (e) {
+      console.warn("Error removing menu music effects:", e);
+    }
+    
+  } catch (error) {
+    console.warn("Could not remove experimental menu music effects:", error);
+  }
+}
+
 // === Static Sound Management ===
 function startStaticSound() {
   if (!staticSound) {
     staticSound = new Audio('./sound/static.mp3');
     staticSound.loop = true;
-    staticSound.volume = 0.75; // Adjust volume as needed
+    staticSound.volume = 0.9; // Louder static sound
   }
   
   if (staticSound.paused) {
@@ -1210,7 +1416,7 @@ function hideLoadingScreen() {
     }, 300);
     
     // Start the overlay video loop after loading
-    startOverlayVideoLoop();
+startOverlayVideoLoop();
     // Start the error window popup loop only if popups are enabled
     if (popupsEnabled) {
       startErrorWindowLoop();
@@ -1244,6 +1450,13 @@ function startMenuMusic() {
     if (currentStep >= fadeSteps) {
       clearInterval(fadeInterval);
       menuAudio.volume = targetVolume;
+      
+      // Apply experimental effects if experimental mode is enabled
+      if (experimentalModeEnabled) {
+        setTimeout(() => {
+          applyExperimentalMenuMusicEffects();
+        }, 200);
+      }
     }
   }, stepDuration);
 }
@@ -1274,6 +1487,13 @@ function resumeMenuMusic() {
       if (currentStep >= fadeSteps) {
         clearInterval(fadeInterval);
         menuAudio.volume = targetVolume;
+        
+        // Apply experimental effects if experimental mode is enabled
+        if (experimentalModeEnabled) {
+          setTimeout(() => {
+            applyExperimentalMenuMusicEffects();
+          }, 200);
+        }
       }
     }, stepDuration);
   }
@@ -1522,8 +1742,8 @@ function startOverlayVideoLoop() {
     
     if (randomValue <= VIDEO_APPEAR_CHANCE) {
       // 50% chance: Video overlay appears
-      const choice =
-        overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
+    const choice =
+      overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
       if (!choice) {
         console.warn("No video choice available");
         return;
@@ -1536,13 +1756,13 @@ function startOverlayVideoLoop() {
       } while (randomPaletteIndex === currentActivePaletteIndex || randomPaletteIndex === currentTrackIndex); // Prevent swapping to same palette or original track color
       
       // Apply color swap FIRST (synchronously), then trigger glitch effect
-      applyColorPalette(randomPaletteIndex);
+    applyColorPalette(randomPaletteIndex);
       
       // Force a reflow to ensure color swap is rendered before glitch
       void videoOverlayEl.offsetHeight;
-      
-      overlayIsActive = true;
-      videoOverlayEl.classList.add("visible");
+    
+    overlayIsActive = true;
+    videoOverlayEl.classList.add("visible");
       // Trigger glitch overlay (identical to error windows)
       if (videoGlitchOverlayEl) {
         videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
@@ -1551,10 +1771,10 @@ function startOverlayVideoLoop() {
       // Play glitch sound at start
       glitchSound.currentTime = 0;
       glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
-      // Trigger intense glitch for video start
-      triggerIntenseGlitch(900);
-      overlayVideoEl.src = `./video/${choice}`;
-      overlayVideoEl.currentTime = 0;
+    // Trigger intense glitch for video start
+    triggerIntenseGlitch(900);
+    overlayVideoEl.src = `./video/${choice}`;
+    overlayVideoEl.currentTime = 0;
       
       // Remove glitch after spawn animation (matching error window timing)
       setTimeout(() => {
@@ -1563,27 +1783,27 @@ function startOverlayVideoLoop() {
           videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
         }
       }, 500);
-      
-      overlayVideoEl.onplaying = () => {
-        // Add subtle continuous glitch when video starts playing
-        if (videoOverlayEl) {
-          videoOverlayEl.classList.add("active-glitch");
-        }
-      };
-      
-      overlayVideoEl.onpause = () => {
-        // Remove subtle glitch if video is paused
-        if (videoOverlayEl) {
-          videoOverlayEl.classList.remove("active-glitch");
-        }
-      };
-      
+    
+    overlayVideoEl.onplaying = () => {
+      // Add subtle continuous glitch when video starts playing
+      if (videoOverlayEl) {
+        videoOverlayEl.classList.add("active-glitch");
+      }
+    };
+    
+    overlayVideoEl.onpause = () => {
+      // Remove subtle glitch if video is paused
+      if (videoOverlayEl) {
+        videoOverlayEl.classList.remove("active-glitch");
+      }
+    };
+    
       overlayVideoEl.onloadeddata = () => {
         // Ensure video plays when loaded
-        overlayVideoEl.play().catch((error) => {
-          console.warn("Overlay video failed to play:", error);
-          concludeOverlay();
-        });
+    overlayVideoEl.play().catch((error) => {
+      console.warn("Overlay video failed to play:", error);
+      concludeOverlay();
+    });
       };
       
       overlayVideoEl.onerror = () => {
@@ -2131,6 +2351,292 @@ const colorPalettes = [
     ring9: { color: 0xffff00, emissive: 0xffff00 },
     inner: { color: 0xffcc00, emissive: 0xffff44 },
     outline: { visible: "#ffcc00", hidden: "#ffff00" },
+  },
+  // Palette 11: Crimson/Violet - Blood Moon
+  {
+    name: "Blood Moon",
+    skybox: {
+      baseColor1: { x: 0.08, y: 0.0, z: 0.06 },
+      baseColor2: { x: 0.12, y: 0.01, z: 0.10 },
+      pulseTint1: { x: 0.9, y: 0.0, z: 0.7 },
+      pulseTint2: { x: 1.0, y: 0.2, z: 0.9 },
+      toneShift: { x: 1.8, y: 0.7, z: 1.6 },
+    },
+    ring1: { color: 0xcc0000, emissive: 0xcc0000 },
+    ring2: { color: 0x8800ff, emissive: 0x8800ff },
+    ring3: { color: 0xff4488, emissive: 0xff4488 },
+    ring4: { color: 0xaa0000, emissive: 0xaa0000 },
+    ring5: { color: 0x9900ff, emissive: 0x9900ff },
+    ring6: { color: 0xff0066, emissive: 0xff0066 },
+    ring7: { color: 0xaa00cc, emissive: 0xaa00cc },
+    ring8: { color: 0xcc0044, emissive: 0xcc0044 },
+    ring9: { color: 0xbb00ff, emissive: 0xbb00ff },
+    inner: { color: 0xcc0044, emissive: 0xcc4488 },
+    outline: { visible: "#cc0000", hidden: "#8800ff" },
+  },
+  // Palette 12: White/Silver - Frost (changed from cyan to white/silver)
+  {
+    name: "Frost",
+    skybox: {
+      baseColor1: { x: 0.04, y: 0.04, z: 0.05 },
+      baseColor2: { x: 0.06, y: 0.06, z: 0.08 },
+      pulseTint1: { x: 0.5, y: 0.5, z: 0.6 },
+      pulseTint2: { x: 0.8, y: 0.8, z: 0.9 },
+      toneShift: { x: 1.4, y: 1.4, z: 1.6 },
+    },
+    ring1: { color: 0xffffff, emissive: 0xffffff },
+    ring2: { color: 0xcccccc, emissive: 0xcccccc },
+    ring3: { color: 0xeeeeee, emissive: 0xeeeeee },
+    ring4: { color: 0xdddddd, emissive: 0xdddddd },
+    ring5: { color: 0xbbbbbb, emissive: 0xbbbbbb },
+    ring6: { color: 0xffffff, emissive: 0xffffff },
+    ring7: { color: 0xaaaaaa, emissive: 0xaaaaaa },
+    ring8: { color: 0xeeeeee, emissive: 0xeeeeee },
+    ring9: { color: 0xcccccc, emissive: 0xcccccc },
+    inner: { color: 0xdddddd, emissive: 0xeeeeee },
+    outline: { visible: "#ffffff", hidden: "#cccccc" },
+  },
+  // Palette 13: Acid Green/Purple - Toxic (changed from lime/yellow to acid green/purple)
+  {
+    name: "Toxic",
+    skybox: {
+      baseColor1: { x: 0.02, y: 0.06, z: 0.04 },
+      baseColor2: { x: 0.04, y: 0.11, z: 0.08 },
+      pulseTint1: { x: 0.3, y: 0.9, z: 0.5 },
+      pulseTint2: { x: 0.6, y: 1.0, z: 0.8 },
+      toneShift: { x: 1.1, y: 1.9, z: 1.4 },
+    },
+    ring1: { color: 0x66ff00, emissive: 0x66ff00 },
+    ring2: { color: 0xaa00ff, emissive: 0xaa00ff },
+    ring3: { color: 0x88ff44, emissive: 0x88ff44 },
+    ring4: { color: 0x44ff00, emissive: 0x44ff00 },
+    ring5: { color: 0xcc00ff, emissive: 0xcc00ff },
+    ring6: { color: 0x99ff66, emissive: 0x99ff66 },
+    ring7: { color: 0xbb44ff, emissive: 0xbb44ff },
+    ring8: { color: 0x55ff00, emissive: 0x55ff00 },
+    ring9: { color: 0xdd66ff, emissive: 0xdd66ff },
+    inner: { color: 0x66ff00, emissive: 0x88ff44 },
+    outline: { visible: "#66ff00", hidden: "#aa00ff" },
+  },
+  // Palette 14: Dark Blue/Cyan - Mystic (changed from purple/teal to dark blue/cyan)
+  {
+    name: "Mystic",
+    skybox: {
+      baseColor1: { x: 0.0, y: 0.02, z: 0.08 },
+      baseColor2: { x: 0.01, y: 0.05, z: 0.12 },
+      pulseTint1: { x: 0.0, y: 0.3, z: 0.9 },
+      pulseTint2: { x: 0.2, y: 0.6, z: 1.0 },
+      toneShift: { x: 0.8, y: 1.2, z: 1.8 },
+    },
+    ring1: { color: 0x0000ff, emissive: 0x0000ff },
+    ring2: { color: 0x00ffff, emissive: 0x00ffff },
+    ring3: { color: 0x0044ff, emissive: 0x0044ff },
+    ring4: { color: 0x0022ff, emissive: 0x0022ff },
+    ring5: { color: 0x00ccff, emissive: 0x00ccff },
+    ring6: { color: 0x0066ff, emissive: 0x0066ff },
+    ring7: { color: 0x00ddff, emissive: 0x00ddff },
+    ring8: { color: 0x0011ff, emissive: 0x0011ff },
+    ring9: { color: 0x44eeff, emissive: 0x44eeff },
+    inner: { color: 0x0022ff, emissive: 0x0044ff },
+    outline: { visible: "#0000ff", hidden: "#00ffff" },
+  },
+  // Palette 15: Red/White - Cherry (changed from orange/cyan to red/white)
+  {
+    name: "Cherry",
+    skybox: {
+      baseColor1: { x: 0.08, y: 0.03, z: 0.03 },
+      baseColor2: { x: 0.12, y: 0.06, z: 0.06 },
+      pulseTint1: { x: 1.0, y: 0.4, z: 0.4 },
+      pulseTint2: { x: 1.0, y: 0.8, z: 0.8 },
+      toneShift: { x: 1.8, y: 1.5, z: 1.5 },
+    },
+    ring1: { color: 0xff0000, emissive: 0xff0000 },
+    ring2: { color: 0xffffff, emissive: 0xffffff },
+    ring3: { color: 0xff4444, emissive: 0xff4444 },
+    ring4: { color: 0xff2222, emissive: 0xff2222 },
+    ring5: { color: 0xeeeeee, emissive: 0xeeeeee },
+    ring6: { color: 0xff6666, emissive: 0xff6666 },
+    ring7: { color: 0xdddddd, emissive: 0xdddddd },
+    ring8: { color: 0xff1111, emissive: 0xff1111 },
+    ring9: { color: 0xffffff, emissive: 0xffffff },
+    inner: { color: 0xff2222, emissive: 0xff4444 },
+    outline: { visible: "#ff0000", hidden: "#ffffff" },
+  },
+  // Palette 16: Magenta/Blue - Neon Dreams
+  {
+    name: "Neon Dreams",
+    skybox: {
+      baseColor1: { x: 0.05, y: 0.0, z: 0.08 },
+      baseColor2: { x: 0.09, y: 0.02, z: 0.12 },
+      pulseTint1: { x: 0.7, y: 0.0, z: 0.9 },
+      pulseTint2: { x: 0.9, y: 0.3, z: 1.0 },
+      toneShift: { x: 1.6, y: 0.8, z: 1.8 },
+    },
+    ring1: { color: 0xff00ff, emissive: 0xff00ff },
+    ring2: { color: 0x0088ff, emissive: 0x0088ff },
+    ring3: { color: 0xff44ff, emissive: 0xff44ff },
+    ring4: { color: 0xff00cc, emissive: 0xff00cc },
+    ring5: { color: 0x00aaff, emissive: 0x00aaff },
+    ring6: { color: 0xff66ff, emissive: 0xff66ff },
+    ring7: { color: 0x0099ff, emissive: 0x0099ff },
+    ring8: { color: 0xff00aa, emissive: 0xff00aa },
+    ring9: { color: 0x44aaff, emissive: 0x44aaff },
+    inner: { color: 0xff00cc, emissive: 0xff44ff },
+    outline: { visible: "#ff00ff", hidden: "#0088ff" },
+  },
+  // Palette 17: Amber/Red - Ember
+  {
+    name: "Ember",
+    skybox: {
+      baseColor1: { x: 0.08, y: 0.03, z: 0.0 },
+      baseColor2: { x: 0.12, y: 0.07, z: 0.01 },
+      pulseTint1: { x: 1.0, y: 0.5, z: 0.0 },
+      pulseTint2: { x: 1.0, y: 0.7, z: 0.2 },
+      toneShift: { x: 1.8, y: 1.5, z: 0.9 },
+    },
+    ring1: { color: 0xff4400, emissive: 0xff4400 },
+    ring2: { color: 0xff0000, emissive: 0xff0000 },
+    ring3: { color: 0xff8800, emissive: 0xff8800 },
+    ring4: { color: 0xff6600, emissive: 0xff6600 },
+    ring5: { color: 0xff2200, emissive: 0xff2200 },
+    ring6: { color: 0xffaa00, emissive: 0xffaa00 },
+    ring7: { color: 0xff1100, emissive: 0xff1100 },
+    ring8: { color: 0xff7700, emissive: 0xff7700 },
+    ring9: { color: 0xff5500, emissive: 0xff5500 },
+    inner: { color: 0xff6600, emissive: 0xff8800 },
+    outline: { visible: "#ff4400", hidden: "#ff0000" },
+  },
+  // Palette 18: Turquoise/Pink - Tropical
+  {
+    name: "Tropical",
+    skybox: {
+      baseColor1: { x: 0.03, y: 0.05, z: 0.06 },
+      baseColor2: { x: 0.06, y: 0.09, z: 0.11 },
+      pulseTint1: { x: 0.4, y: 0.6, z: 0.7 },
+      pulseTint2: { x: 0.7, y: 0.9, z: 1.0 },
+      toneShift: { x: 1.3, y: 1.6, z: 1.7 },
+    },
+    ring1: { color: 0x00ffaa, emissive: 0x00ffaa },
+    ring2: { color: 0xff0088, emissive: 0xff0088 },
+    ring3: { color: 0x44ffcc, emissive: 0x44ffcc },
+    ring4: { color: 0x00ffcc, emissive: 0x00ffcc },
+    ring5: { color: 0xff44aa, emissive: 0xff44aa },
+    ring6: { color: 0x66ffdd, emissive: 0x66ffdd },
+    ring7: { color: 0xff0066, emissive: 0xff0066 },
+    ring8: { color: 0x00ffdd, emissive: 0x00ffdd },
+    ring9: { color: 0xff66bb, emissive: 0xff66bb },
+    inner: { color: 0x00ffcc, emissive: 0x44ffdd },
+    outline: { visible: "#00ffaa", hidden: "#ff0088" },
+  },
+  // Palette 19: Navy/Orange - Galaxy (changed from indigo/yellow to navy/orange)
+  {
+    name: "Galaxy",
+    skybox: {
+      baseColor1: { x: 0.02, y: 0.02, z: 0.08 },
+      baseColor2: { x: 0.05, y: 0.05, z: 0.12 },
+      pulseTint1: { x: 0.2, y: 0.2, z: 0.9 },
+      pulseTint2: { x: 0.5, y: 0.5, z: 1.0 },
+      toneShift: { x: 1.0, y: 1.0, z: 1.8 },
+    },
+    ring1: { color: 0x000044, emissive: 0x0000aa },
+    ring2: { color: 0xff8800, emissive: 0xff8800 },
+    ring3: { color: 0x000066, emissive: 0x0000cc },
+    ring4: { color: 0x000022, emissive: 0x000088 },
+    ring5: { color: 0xffaa00, emissive: 0xffaa00 },
+    ring6: { color: 0x000088, emissive: 0x0000ee },
+    ring7: { color: 0xffcc00, emissive: 0xffcc00 },
+    ring8: { color: 0x000011, emissive: 0x000066 },
+    ring9: { color: 0xff9900, emissive: 0xff9900 },
+    inner: { color: 0x000022, emissive: 0x000066 },
+    outline: { visible: "#000044", hidden: "#ff8800" },
+  },
+  // Palette 20: Green/Orange - Citrus
+  {
+    name: "Citrus",
+    skybox: {
+      baseColor1: { x: 0.02, y: 0.06, z: 0.01 },
+      baseColor2: { x: 0.05, y: 0.11, z: 0.03 },
+      pulseTint1: { x: 0.3, y: 0.9, z: 0.4 },
+      pulseTint2: { x: 0.6, y: 1.0, z: 0.7 },
+      toneShift: { x: 1.1, y: 1.9, z: 1.3 },
+    },
+    ring1: { color: 0x00ff00, emissive: 0x00ff00 },
+    ring2: { color: 0xff6600, emissive: 0xff6600 },
+    ring3: { color: 0x44ff44, emissive: 0x44ff44 },
+    ring4: { color: 0x00ff44, emissive: 0x00ff44 },
+    ring5: { color: 0xff8800, emissive: 0xff8800 },
+    ring6: { color: 0x66ff66, emissive: 0x66ff66 },
+    ring7: { color: 0xffaa00, emissive: 0xffaa00 },
+    ring8: { color: 0x00ff66, emissive: 0x00ff66 },
+    ring9: { color: 0xffcc00, emissive: 0xffcc00 },
+    inner: { color: 0x00ff44, emissive: 0x44ff66 },
+    outline: { visible: "#00ff00", hidden: "#ff6600" },
+  },
+  // Palette 21: Rose/Teal - Vintage
+  {
+    name: "Vintage",
+    skybox: {
+      baseColor1: { x: 0.06, y: 0.03, z: 0.05 },
+      baseColor2: { x: 0.10, y: 0.06, z: 0.09 },
+      pulseTint1: { x: 0.8, y: 0.4, z: 0.6 },
+      pulseTint2: { x: 1.0, y: 0.7, z: 0.85 },
+      toneShift: { x: 1.7, y: 1.3, z: 1.5 },
+    },
+    ring1: { color: 0xff6688, emissive: 0xff6688 },
+    ring2: { color: 0x00ccaa, emissive: 0x00ccaa },
+    ring3: { color: 0xff8899, emissive: 0xff8899 },
+    ring4: { color: 0xff4466, emissive: 0xff4466 },
+    ring5: { color: 0x00aa88, emissive: 0x00aa88 },
+    ring6: { color: 0xffaabb, emissive: 0xffaabb },
+    ring7: { color: 0x00ddcc, emissive: 0x00ddcc },
+    ring8: { color: 0xff5577, emissive: 0xff5577 },
+    ring9: { color: 0x44ccbb, emissive: 0x44ccbb },
+    inner: { color: 0xff6688, emissive: 0xff8899 },
+    outline: { visible: "#ff6688", hidden: "#00ccaa" },
+  },
+  // Palette 22: Rainbow Multi-Color - Prism (changed from cyan/magenta to rainbow spectrum)
+  {
+    name: "Prism",
+    skybox: {
+      baseColor1: { x: 0.04, y: 0.04, z: 0.04 },
+      baseColor2: { x: 0.08, y: 0.08, z: 0.08 },
+      pulseTint1: { x: 0.5, y: 0.5, z: 0.5 },
+      pulseTint2: { x: 1.0, y: 1.0, z: 1.0 },
+      toneShift: { x: 1.5, y: 1.5, z: 1.5 },
+    },
+    ring1: { color: 0xff0000, emissive: 0xff0000 },
+    ring2: { color: 0xff8800, emissive: 0xff8800 },
+    ring3: { color: 0xffff00, emissive: 0xffff00 },
+    ring4: { color: 0x00ff00, emissive: 0x00ff00 },
+    ring5: { color: 0x0088ff, emissive: 0x0088ff },
+    ring6: { color: 0x0000ff, emissive: 0x0000ff },
+    ring7: { color: 0x8800ff, emissive: 0x8800ff },
+    ring8: { color: 0xff0088, emissive: 0xff0088 },
+    ring9: { color: 0xffffff, emissive: 0xffffff },
+    inner: { color: 0x00ff00, emissive: 0x0088ff },
+    outline: { visible: "#ff0000", hidden: "#8800ff" },
+  },
+  // Palette 23: Dark Purple/Pink - Synthwave (changed from purple/green to dark purple/pink)
+  {
+    name: "Synthwave",
+    skybox: {
+      baseColor1: { x: 0.06, y: 0.0, z: 0.07 },
+      baseColor2: { x: 0.10, y: 0.02, z: 0.11 },
+      pulseTint1: { x: 0.8, y: 0.0, z: 0.8 },
+      pulseTint2: { x: 1.0, y: 0.3, z: 1.0 },
+      toneShift: { x: 1.7, y: 0.8, z: 1.7 },
+    },
+    ring1: { color: 0x4400aa, emissive: 0x4400aa },
+    ring2: { color: 0xff00cc, emissive: 0xff00cc },
+    ring3: { color: 0x6600cc, emissive: 0x6600cc },
+    ring4: { color: 0x5500bb, emissive: 0x5500bb },
+    ring5: { color: 0xff44dd, emissive: 0xff44dd },
+    ring6: { color: 0x7700dd, emissive: 0x7700dd },
+    ring7: { color: 0xff66ee, emissive: 0xff66ee },
+    ring8: { color: 0x330099, emissive: 0x330099 },
+    ring9: { color: 0xff88ff, emissive: 0xff88ff },
+    inner: { color: 0x5500bb, emissive: 0x7700dd },
+    outline: { visible: "#4400aa", hidden: "#ff00cc" },
   },
 ];
 
