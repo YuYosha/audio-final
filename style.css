@@ -2048,3 +2048,514 @@ body {
   outline-offset: 4px;
   box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
 }
+
+/* === Welcome Popup === */
+#welcome-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+  overflow: hidden;
+}
+
+#welcome-popup.welcome-popup-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#welcome-popup.welcome-popup-hidden .welcome-popup-content {
+  opacity: 0;
+  transform: scale(0.8) translateY(-20px);
+}
+
+#welcome-popup.welcome-popup-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+#welcome-popup.welcome-popup-visible .welcome-popup-content {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.welcome-popup-content {
+  background: #1a1a1a;
+  border: 2px solid #00ffff;
+  border-radius: 0;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.8),
+    inset 0 0 10px rgba(0, 255, 255, 0.3),
+    0 0 40px rgba(0, 255, 255, 0.5);
+  padding: 0;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+  min-height: 400px;
+  min-width: 600px;
+  font-family: "Courier New", monospace;
+}
+
+.welcome-popup-header {
+  background: #0a0a0a;
+  border-bottom: 2px solid #00ffff;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  box-shadow: inset 0 -2px 10px rgba(0, 255, 255, 0.3);
+}
+
+.welcome-popup-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #00ffff;
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+  font-family: 'Courier New', monospace;
+}
+
+.welcome-popup-body {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  background: #000;
+  padding: 60px 80px;
+  text-align: center;
+}
+
+.welcome-popup-body > * {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes welcomePopIn {
+  0% {
+    transform: scale(0.5) rotateY(-15deg);
+    opacity: 0;
+    filter: blur(20px);
+  }
+  50% {
+    transform: scale(1.05) rotateY(5deg);
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+#welcome-close-btn {
+  background: transparent;
+  border: none;
+  color: #00ffff;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+}
+
+#welcome-close-btn:hover {
+  color: #ffffff;
+  text-shadow: 
+    0 0 15px rgba(0, 255, 255, 1),
+    0 0 25px rgba(0, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+@keyframes welcomeClosePulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 15px rgba(255, 68, 68, 0.4),
+      inset 0 0 10px rgba(255, 68, 68, 0.1);
+  }
+  50% {
+    box-shadow: 
+      0 0 25px rgba(255, 68, 68, 0.7),
+      inset 0 0 15px rgba(255, 68, 68, 0.2);
+  }
+}
+
+#welcome-close-btn:hover {
+  background: #ff4444;
+  color: #000;
+  box-shadow: 
+    0 0 30px rgba(255, 68, 68, 1),
+    inset 0 0 20px rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg) scale(1.1);
+  border-color: #ff6666;
+}
+
+.welcome-title {
+  font-size: 64px;
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.8),
+    0 0 40px rgba(0, 255, 255, 0.5),
+    0 0 60px rgba(0, 255, 255, 0.3),
+    3px 3px 6px rgba(0, 0, 0, 0.8);
+  margin: 0 0 20px 0;
+  letter-spacing: 8px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: welcomeTitleGlow 3s ease-in-out infinite;
+  transform: perspective(500px) rotateX(5deg);
+}
+
+@keyframes welcomeTitleGlow {
+  0%, 100% {
+    text-shadow: 
+      0 0 20px rgba(0, 255, 255, 0.8),
+      0 0 40px rgba(0, 255, 255, 0.5),
+      0 0 60px rgba(0, 255, 255, 0.3),
+      3px 3px 6px rgba(0, 0, 0, 0.8);
+  }
+  50% {
+    text-shadow: 
+      0 0 30px rgba(0, 255, 255, 1),
+      0 0 60px rgba(0, 255, 255, 0.7),
+      0 0 90px rgba(0, 255, 255, 0.5),
+      3px 3px 6px rgba(0, 0, 0, 0.8);
+  }
+}
+
+.welcome-subtitle {
+  font-size: 24px;
+  color: #ffffff;
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(0, 255, 255, 0.3);
+  margin: 0 0 15px 0;
+  letter-spacing: 2px;
+  position: relative;
+  z-index: 1;
+  animation: welcomeSubtitleFloat 4s ease-in-out infinite;
+}
+
+@keyframes welcomeSubtitleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.welcome-deluxe {
+  font-size: 48px;
+  font-weight: bold;
+  color: #ff00ff;
+  text-shadow: 
+    0 0 20px rgba(255, 0, 255, 0.8),
+    0 0 40px rgba(255, 0, 255, 0.5),
+    0 0 60px rgba(255, 0, 255, 0.3),
+    3px 3px 6px rgba(0, 0, 0, 0.8);
+  margin: 0 0 30px 0;
+  letter-spacing: 4px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: welcomeDeluxePulse 2.5s ease-in-out infinite;
+  transform: perspective(500px) rotateX(-3deg);
+}
+
+@keyframes welcomeDeluxePulse {
+  0%, 100% {
+    transform: perspective(500px) rotateX(-3deg) scale(1);
+    text-shadow: 
+      0 0 20px rgba(255, 0, 255, 0.8),
+      0 0 40px rgba(255, 0, 255, 0.5),
+      0 0 60px rgba(255, 0, 255, 0.3),
+      3px 3px 6px rgba(0, 0, 0, 0.8);
+  }
+  50% {
+    transform: perspective(500px) rotateX(-3deg) scale(1.05);
+    text-shadow: 
+      0 0 30px rgba(255, 0, 255, 1),
+      0 0 60px rgba(255, 0, 255, 0.7),
+      0 0 90px rgba(255, 0, 255, 0.5),
+      3px 3px 6px rgba(0, 0, 0, 0.8);
+  }
+}
+
+.welcome-text {
+  font-size: 18px;
+  color: #cccccc;
+  line-height: 1.8;
+  margin: 15px 0;
+  text-shadow: 
+    0 0 5px rgba(255, 255, 255, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  animation: welcomeTextFadeIn 0.8s ease-out forwards;
+  opacity: 0;
+}
+
+.welcome-text:nth-child(1) { animation-delay: 0.2s; }
+.welcome-text:nth-child(2) { animation-delay: 0.4s; }
+.welcome-text:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes welcomeTextFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.welcome-warning {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff0000;
+  text-shadow: 
+    0 0 15px rgba(255, 0, 0, 0.8),
+    0 0 30px rgba(255, 0, 0, 0.5),
+    0 0 45px rgba(255, 0, 0, 0.3),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  margin: 30px 0;
+  letter-spacing: 2px;
+  border: 3px solid #ff0000;
+  padding: 20px;
+  background: 
+    linear-gradient(135deg, rgba(255, 0, 0, 0.15) 0%, rgba(255, 50, 0, 0.1) 100%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 5px,
+      rgba(255, 0, 0, 0.1) 5px,
+      rgba(255, 0, 0, 0.1) 10px
+    );
+  box-shadow: 
+    0 0 20px rgba(255, 0, 0, 0.3),
+    inset 0 0 20px rgba(255, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+  animation: welcomeWarningFlash 2s ease-in-out infinite;
+  transform: perspective(500px) rotateX(2deg);
+}
+
+@keyframes welcomeWarningFlash {
+  0%, 100% {
+    border-color: #ff0000;
+    box-shadow: 
+      0 0 20px rgba(255, 0, 0, 0.3),
+      inset 0 0 20px rgba(255, 0, 0, 0.1);
+  }
+  50% {
+    border-color: #ff4444;
+    box-shadow: 
+      0 0 30px rgba(255, 0, 0, 0.6),
+      inset 0 0 30px rgba(255, 0, 0, 0.2);
+  }
+}
+
+.welcome-sit-back {
+  font-size: 28px;
+  font-weight: bold;
+  color: #cccccc;
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(0, 255, 255, 0.3);
+  margin: 20px 0 15px 0;
+  letter-spacing: 2px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: welcomeSitBackSlide 1s ease-out 0.8s both;
+}
+
+@keyframes welcomeSitBackSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.welcome-relax {
+  font-size: 40px;
+  font-weight: bold;
+  color: #cccccc;
+  text-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.6),
+    0 0 30px rgba(255, 0, 255, 0.4);
+  margin: 15px 0 15px 0;
+  letter-spacing: 3px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: welcomeRelaxSlide 1s ease-out 1s both;
+}
+
+@keyframes welcomeRelaxSlide {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.welcome-and {
+  font-size: 48px;
+  font-weight: bold;
+  color: #cccccc;
+  text-shadow: 
+    0 0 15px rgba(255, 255, 255, 0.6),
+    0 0 30px rgba(0, 255, 255, 0.4);
+  margin: 15px 0 10px 0;
+  letter-spacing: 4px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: welcomeAndBounce 1s ease-out 1.2s both;
+}
+
+@keyframes welcomeAndBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(180deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.welcome-enjoy {
+  font-size: 72px;
+  font-weight: bold;
+  color: #00ff00;
+  text-shadow: 
+    0 0 20px rgba(0, 255, 0, 0.8),
+    0 0 40px rgba(0, 255, 0, 0.5),
+    0 0 60px rgba(0, 255, 0, 0.3),
+    0 0 80px rgba(0, 255, 0, 0.2),
+    3px 3px 6px rgba(0, 0, 0, 0.8);
+  margin: 20px 0 20px 0;
+  letter-spacing: 8px;
+  font-family: 'Courier New', monospace;
+  position: relative;
+  z-index: 1;
+  animation: enjoyPulse 2s ease-in-out infinite, enjoyEntrance 1.5s ease-out 1.4s both;
+  transform: perspective(500px) rotateX(5deg);
+}
+
+@keyframes enjoyEntrance {
+  0% {
+    opacity: 0;
+    transform: perspective(500px) rotateX(5deg) scale(0.3) rotateY(180deg);
+    filter: blur(20px);
+  }
+  60% {
+    transform: perspective(500px) rotateX(5deg) scale(1.2) rotateY(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(500px) rotateX(5deg) scale(1) rotateY(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes enjoyPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+#welcome-plat-img {
+  width: 200px;
+  height: auto;
+  margin: 30px auto 0;
+  display: block;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+  opacity: 0;
+  position: relative;
+  z-index: 1;
+  animation: welcomePlatFadeIn 1s ease-out 1.6s forwards, welcomePlatFloat 3s ease-in-out 2.6s infinite;
+}
+
+@keyframes welcomePlatFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.8);
+  }
+  to {
+    opacity: 0.9;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes welcomePlatFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+    filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.8));
+  }
+}
+
+/* Scrollbar styling for popup */
+.welcome-popup-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.welcome-popup-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.welcome-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.5);
+  border-radius: 5px;
+}
+
+.welcome-popup-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.8);
+}

@@ -27,7 +27,7 @@ controls.enableDamping = true;
 
 // === Camera Rotation Controls ===
 let cameraRotationDirection = 0; // -1 = left, 0 = stop, 1 = right
-let cameraRotationSpeed = 0.003; // radians per frame (slower for smoother movement)
+let cameraRotationSpeed = 0.005; // radians per frame (faster movement)
 let currentRotationSpeed = 0; // Current interpolated speed for smooth acceleration/deceleration
 const camLeftBtn = document.getElementById("cam-left-btn");
 const camStopBtn = document.getElementById("cam-stop-btn");
@@ -319,6 +319,22 @@ async function playSound() {
     // Start experimental visualizer if enabled
     if (experimentalModeEnabled && experimentalCanvas) {
       startExperimentalVisualizerLoop();
+    }
+    // Apply experimental audio effects if experimental mode is already enabled
+    if (experimentalModeEnabled) {
+      // Wait a bit for sound to start playing, then apply effects
+      setTimeout(() => {
+        if (sound.isPlaying) {
+          applyExperimentalAudioEffects();
+        } else {
+          // If sound isn't playing yet, try again after a short delay
+          setTimeout(() => {
+            if (sound.isPlaying) {
+              applyExperimentalAudioEffects();
+            }
+          }, 100);
+        }
+      }, 200);
     }
   }
 }
@@ -1410,6 +1426,11 @@ function hideLoadingScreen() {
     
     loadingScreenEl.classList.add("hidden");
     
+    // Show welcome popup after loading screen
+    setTimeout(() => {
+      showWelcomePopup();
+    }, 1000);
+    
     // Start menu music slightly later after loading screen
     setTimeout(() => {
       startMenuMusic();
@@ -1666,9 +1687,56 @@ function preloadAssets() {
   }, 25000);
 }
 
+// === Welcome Popup Management ===
+function showWelcomePopup() {
+  const welcomePopup = document.getElementById('welcome-popup');
+  if (welcomePopup) {
+    welcomePopup.classList.remove('welcome-popup-hidden');
+    welcomePopup.classList.add('welcome-popup-visible');
+    welcomePopup.style.display = 'flex';
+  }
+}
+
+function hideWelcomePopup() {
+  const welcomePopup = document.getElementById('welcome-popup');
+  if (welcomePopup) {
+    welcomePopup.classList.remove('welcome-popup-visible');
+    welcomePopup.classList.add('welcome-popup-hidden');
+  }
+}
+
+// Setup welcome popup close button
+function setupWelcomePopup() {
+  const welcomeCloseBtn = document.getElementById('welcome-close-btn');
+  if (welcomeCloseBtn) {
+    // Add hover sound
+    setupButtonHover(welcomeCloseBtn);
+    // Add select sound
+    setupButtonSelect2(welcomeCloseBtn);
+    
+    // Close popup on click
+    welcomeCloseBtn.addEventListener('click', () => {
+      hideWelcomePopup();
+    });
+  }
+
+  // Close welcome popup when clicking outside
+  const welcomePopup = document.getElementById('welcome-popup');
+  if (welcomePopup) {
+    welcomePopup.addEventListener('click', (e) => {
+      // Only close if clicking the backdrop, not the content
+      if (e.target === welcomePopup) {
+        hideWelcomePopup();
+      }
+    });
+  }
+}
+
 // Start preloading assets - ensure DOM is ready
 window.addEventListener('load', () => {
   console.log("Window loaded, starting preload");
+  // Setup welcome popup event listeners
+  setupWelcomePopup();
   cycleMenuItems();
   preloadAssets();
 });

@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D Audio Visualizer</title>
+  <link rel="icon" type="image/png" href="./images/plat.png">
+  <link rel="shortcut icon" type="image/png" href="./images/plat.png">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
     {
@@ -149,6 +151,33 @@
   
   <!-- Error Window Popup Container (popups will be created dynamically) -->
   <div id="error-windows-container"></div>
+  
+  <!-- Welcome Popup -->
+  <div id="welcome-popup" class="welcome-popup-hidden">
+    <div class="welcome-popup-content">
+      <div class="welcome-popup-header">
+        <div class="welcome-popup-header-title">
+          <span>●</span>
+          <span>WELCOME</span>
+        </div>
+        <button id="welcome-close-btn" aria-label="Close welcome popup">×</button>
+      </div>
+      <div class="welcome-popup-body">
+        <h1 class="welcome-title">WELCOME</h1>
+        <p class="welcome-subtitle">THE UNNECESSARY SONIC DISPLAY ENGINE</p>
+        <h2 class="welcome-deluxe">DELUXE</h2>
+        <p class="welcome-text">Welcome to my pointless 3D thing for music. It's simple to operate, although if lagging reload. It has a bunch of experimental features, but for the main thing just pick a song and play.</p>
+        <p class="welcome-warning">THE EXTRA STUFF MAY BE BUGGY AND MAYBE NOT FULLY FUNCTIONAL, IT'S HERE FOR STYLE</p>
+        <p class="welcome-text">Also ignore the amount of sonic and other internet stuff I filled it with. I just like that type of weird stuff.</p>
+        <p class="welcome-sit-back">so sit back</p>
+        <p class="welcome-relax">relax</p>
+        <p class="welcome-and">and</p>
+        <h2 class="welcome-enjoy">ENJOY!!!</h2>
+        <img id="welcome-plat-img" src="./images/plat.png" alt="Signature">
+      </div>
+    </div>
+  </div>
+  
   <script type="module" src="./audio.js"></script>
 </body>
 </html>
