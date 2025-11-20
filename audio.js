@@ -161,6 +161,7 @@ let experimentalBandPassFilter = null; // Bandpass to let one frequency through
 let experimentalMerger = null; // To merge filtered and unfiltered signals
 let experimentalSplitter = null; // To split signal without breaking analyser
 let audioContext = null;
+let staticSound = null; // Static sound for experimental mode
 
 // Color variations for error windows
 const errorWindowColors = [
@@ -773,6 +774,9 @@ experimentalBtn?.addEventListener("click", () => {
           applyExperimentalAudioEffects();
         }, 200);
       }
+      
+      // Start static sound
+      startStaticSound();
     }, 100);
   } else {
     experimentalBtn.classList.remove("active");
@@ -785,6 +789,9 @@ experimentalBtn?.addEventListener("click", () => {
       experimentalCanvas.style.display = "none";
     }
     stopExperimentalVisualizer();
+    
+    // Stop static sound
+    stopStaticSound();
     
     // Remove audio effects BEFORE showing 3D container
     removeExperimentalAudioEffects();
@@ -1062,6 +1069,26 @@ function removeExperimentalAudioEffects() {
     }
   } catch (error) {
     console.warn("Could not remove experimental audio effects:", error);
+  }
+}
+
+// === Static Sound Management ===
+function startStaticSound() {
+  if (!staticSound) {
+    staticSound = new Audio('./sound/static.mp3');
+    staticSound.loop = true;
+    staticSound.volume = 0.75; // Adjust volume as needed
+  }
+  
+  if (staticSound.paused) {
+    staticSound.play().catch(err => console.warn("Could not play static sound:", err));
+  }
+}
+
+function stopStaticSound() {
+  if (staticSound && !staticSound.paused) {
+    staticSound.pause();
+    staticSound.currentTime = 0;
   }
 }
 
