@@ -30,8 +30,8 @@ controls.enableDamping = true;
 let splitViewActive = false;
 let splitViewTimeoutId = null;
 const SPLIT_VIEW_DURATION = 5000; // 5 seconds
-const SPLIT_VIEW_CHANCE = 0.003; // 0.3% chance per frame when music is playing (more common)
-const SPLIT_VIEW_COOLDOWN = 15000; // 15 seconds cooldown between splits (reduced for more frequency)
+const SPLIT_VIEW_CHANCE = 0.0015; // 0.15% chance per frame when music is playing (less common)
+const SPLIT_VIEW_COOLDOWN = 25000; // 25 seconds cooldown between splits (increased spacing)
 let splitViewLastTriggered = 0;
 let originalPaletteIndex = 0; // Store original palette when split activates
 let splitViewCornerPalettes = null; // Store palette indices for 2 splits (generated once per activation)
@@ -103,7 +103,7 @@ const tracks = [
   { label: "Eg Megalovania", file: "EgMegalovania.mp3" },
   { label: "Vs Metal Sonic", file: "VsMetalSonic.mp3" },
   { label: "Pumpkin Mansion", file: "PumpkinMansion.mp3" },
-  { label: "Vs Jacinthe", file: "VsJacinthe.mp3" },
+  { label: "Vs Jacinth", file: "VsJacinth.mp3" },
   { label: "Un Gravitify", file: "UnGravitify.mp3" },
   { label: "Rude Busters", file: "RudeBusters.mp3" },
   { label: "Vs Sans", file: "VsSans.mp3" },
@@ -217,8 +217,8 @@ const experimentalPlusBtn = document.getElementById("experimental-plus-btn");
 let experimentalPlusActive = false; // Current active state of experimental+ mode
 let experimentalPlusTimeoutId = null;
 const EXPERIMENTAL_PLUS_DURATION = 10000; // 10 seconds
-const EXPERIMENTAL_PLUS_CHANCE = 0.003; // 0.3% chance per frame when music is playing
-const EXPERIMENTAL_PLUS_COOLDOWN = 20000; // 20 seconds cooldown between triggers
+const EXPERIMENTAL_PLUS_CHANCE = 0.0015; // 0.15% chance per frame when music is playing (less common)
+const EXPERIMENTAL_PLUS_COOLDOWN = 30000; // 30 seconds cooldown between triggers (increased spacing)
 let experimentalPlusLastTriggered = 0;
 let splitViewEnabled = false; // Toggle for split view effect
 const splitScreenBtn = document.getElementById("split-screen-btn");
@@ -227,11 +227,14 @@ const mirrorModeBtn = document.getElementById("mirror-mode-btn");
 let mirrorModeActive = false; // Current active state of mirror mode
 let mirrorModeTimeoutId = null;
 const MIRROR_MODE_DURATION = 7000; // 7 seconds
-const MIRROR_MODE_CHANCE = 0.003; // 0.3% chance per frame when music is playing
-const MIRROR_MODE_COOLDOWN = 15000; // 15 seconds cooldown between mirrors
+const MIRROR_MODE_CHANCE = 0.0015; // 0.15% chance per frame when music is playing (less common)
+const MIRROR_MODE_COOLDOWN = 25000; // 25 seconds cooldown between mirrors (increased spacing)
 let mirrorModeLastTriggered = 0;
 let mirrorModeOriginalPaletteIndex = 0; // Store original palette when mirror activates
 let mirrorModePaletteIndex = null; // Store palette index for mirror mode (same for both halves)
+// Global cooldown to prevent special effects from overlapping
+let lastSpecialEffectTriggered = 0;
+const SPECIAL_EFFECT_GLOBAL_COOLDOWN = 6000; // 6 seconds minimum between any special effect
 const experimentalCanvas = document.getElementById("experimental-visualizer");
 let experimentalAnimationId = null;
 let experimentalLowPassFilter = null;
@@ -242,6 +245,7 @@ let experimentalMerger = null; // To merge filtered and unfiltered signals
 let experimentalSplitter = null; // To split signal without breaking analyser
 let audioContext = null;
 let staticSound = null; // Static sound for experimental mode
+let warningSound = null; // Warning sound for warning popup
 
 // Menu music experimental audio effects
 let menuExperimentalLowPassFilter = null;
@@ -1820,6 +1824,10 @@ function setupWelcomePopup() {
     // Close popup on click
     welcomeCloseBtn.addEventListener('click', () => {
       hideWelcomePopup();
+      // Show warning popup after welcome popup closes
+      setTimeout(() => {
+        showWarningPopup();
+      }, 500);
     });
   }
 
@@ -1830,6 +1838,148 @@ function setupWelcomePopup() {
       // Only close if clicking the backdrop, not the content
       if (e.target === welcomePopup) {
         hideWelcomePopup();
+        // Show warning popup after welcome popup closes
+        setTimeout(() => {
+          showWarningPopup();
+        }, 500);
+      }
+    });
+  }
+}
+
+// === Warning Popup Management ===
+function startWarningSound() {
+  // Pause menu music while warning sound plays
+  pauseMenuMusic();
+  
+  // Create warning sound if it doesn't exist
+  if (!warningSound) {
+    warningSound = new Audio('./sound/Warning.mp3');
+    warningSound.loop = true;
+    warningSound.volume = 0.7;
+    
+    // Add event listeners for debugging
+    warningSound.addEventListener('loadeddata', () => {
+      console.log("Warning sound loaded");
+    });
+    
+    warningSound.addEventListener('error', (e) => {
+      console.error("Warning sound error:", e, warningSound.error);
+    });
+    
+    warningSound.addEventListener('play', () => {
+      console.log("Warning sound playing");
+    });
+    
+    warningSound.addEventListener('ended', () => {
+      console.log("Warning sound ended (should loop)");
+    });
+  }
+  
+  // Ensure loop is set
+  warningSound.loop = true;
+  
+  // Reset to beginning
+  warningSound.currentTime = 0;
+  
+  // Play the sound
+  warningSound.play()
+    .then(() => {
+      console.log("Warning sound started successfully");
+      // Double-check loop is enabled
+      warningSound.loop = true;
+    })
+    .catch(err => {
+      console.error("Could not play warning sound:", err);
+      // Retry after a delay
+      setTimeout(() => {
+        if (warningSound) {
+          warningSound.play().catch(e => console.error("Retry failed:", e));
+        }
+      }, 500);
+    });
+}
+
+function stopWarningSound() {
+  if (warningSound && !warningSound.paused) {
+    warningSound.pause();
+    warningSound.currentTime = 0;
+  }
+  
+  // Resume menu music if it was playing before
+  resumeMenuMusic();
+}
+
+function showWarningPopup() {
+  const warningPopup = document.getElementById('warning-popup');
+  if (warningPopup) {
+    // Add glitch effect
+    warningPopup.classList.add('warning-popup-glitching');
+    warningPopup.classList.remove('warning-popup-hidden');
+    warningPopup.classList.add('warning-popup-visible');
+    warningPopup.style.display = 'flex';
+    
+    // Play glitch sound
+    if (glitchSound) {
+      glitchSound.currentTime = 0;
+      glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+    }
+    
+    // Start warning sound
+    startWarningSound();
+    
+    // Remove glitch after animation
+    setTimeout(() => {
+      warningPopup.classList.remove('warning-popup-glitching');
+    }, 500);
+  }
+}
+
+function hideWarningPopup() {
+  const warningPopup = document.getElementById('warning-popup');
+  if (warningPopup) {
+    // Stop warning sound
+    stopWarningSound();
+    
+    // Add glitch effect before closing
+    warningPopup.classList.add('warning-popup-glitching');
+    
+    // Play glitch sound
+    if (glitchSound) {
+      glitchSound.currentTime = 0;
+      glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+    }
+    
+    // Wait for glitch animation, then hide
+    setTimeout(() => {
+      warningPopup.classList.remove('warning-popup-visible', 'warning-popup-glitching');
+      warningPopup.classList.add('warning-popup-hidden');
+    }, 500);
+  }
+}
+
+// Setup warning popup close button
+function setupWarningPopup() {
+  const warningCloseBtn = document.getElementById('warning-close-btn');
+  if (warningCloseBtn) {
+    // Add hover sound
+    setupButtonHover(warningCloseBtn);
+    // Add select sound
+    setupButtonSelect2(warningCloseBtn);
+    
+    // Close popup on click
+    warningCloseBtn.addEventListener('click', () => {
+      hideWarningPopup();
+    });
+  }
+
+  // Close warning popup when clicking outside
+  const warningPopup = document.getElementById('warning-popup');
+  if (warningPopup) {
+    warningPopup.addEventListener('click', (e) => {
+      // Only close if clicking the backdrop, not the content
+      if (e.target === warningPopup) {
+        hideWarningPopup();
       }
     });
   }
@@ -1840,6 +1990,8 @@ window.addEventListener('load', () => {
   console.log("Window loaded, starting preload");
   // Setup welcome popup event listeners
   setupWelcomePopup();
+  // Setup warning popup event listeners
+  setupWarningPopup();
   cycleMenuItems();
   preloadAssets();
 });
@@ -3570,27 +3722,30 @@ function animate() {
   // Check for random experimental+ mode trigger (can trigger when others are active, but not when already active or manual experimental mode is on)
   if (experimentalPlusEnabled && sound.isPlaying && !experimentalPlusActive && !experimentalModeEnabled) {
     const timeSinceLastExperimental = Date.now() - experimentalPlusLastTriggered;
-    if (timeSinceLastExperimental > EXPERIMENTAL_PLUS_COOLDOWN) {
+    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    if (timeSinceLastExperimental > EXPERIMENTAL_PLUS_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < EXPERIMENTAL_PLUS_CHANCE) {
         activateExperimentalPlus();
       }
     }
   }
 
-  // Check for random split view trigger (cannot trigger when experimental+ is active, but can when it's just enabled)
-  if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled && !experimentalPlusActive) {
+  // Check for random split view trigger (cannot trigger when experimental+ or mirror mode is active)
+  if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled && !experimentalPlusActive && !mirrorModeActive) {
     const timeSinceLastSplit = Date.now() - splitViewLastTriggered;
-    if (timeSinceLastSplit > SPLIT_VIEW_COOLDOWN) {
+    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    if (timeSinceLastSplit > SPLIT_VIEW_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < SPLIT_VIEW_CHANCE) {
         activateSplitView();
       }
     }
   }
 
-  // Check for random mirror mode trigger (cannot trigger when experimental+ is active, but can when it's just enabled)
-  if (mirrorModeEnabled && sound.isPlaying && !mirrorModeActive && !experimentalModeEnabled && !experimentalPlusActive) {
+  // Check for random mirror mode trigger (cannot trigger when experimental+ or split view is active)
+  if (mirrorModeEnabled && sound.isPlaying && !mirrorModeActive && !experimentalModeEnabled && !experimentalPlusActive && !splitViewActive) {
     const timeSinceLastMirror = Date.now() - mirrorModeLastTriggered;
-    if (timeSinceLastMirror > MIRROR_MODE_COOLDOWN) {
+    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    if (timeSinceLastMirror > MIRROR_MODE_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < MIRROR_MODE_CHANCE) {
         activateMirrorMode();
       }
@@ -3668,7 +3823,7 @@ function updateCameraDebug() {
 
 // Activate mirror mode effect (with glitch and color swap)
 function activateMirrorMode() {
-  if (mirrorModeActive || experimentalModeEnabled || experimentalPlusActive) return;
+  if (mirrorModeActive || experimentalModeEnabled || experimentalPlusActive || splitViewActive) return;
   
   // Trigger glitch effect
   if (videoGlitchOverlayEl) {
@@ -3708,6 +3863,7 @@ function activateMirrorMode() {
     
     mirrorModeActive = true;
     mirrorModeLastTriggered = Date.now();
+    lastSpecialEffectTriggered = Date.now(); // Update global cooldown
     
     // Remove glitch after transition
     setTimeout(() => {
@@ -3782,6 +3938,7 @@ function deactivateMirrorMode() {
 function activateExperimentalPlus() {
   experimentalPlusActive = true;
   experimentalPlusLastTriggered = Date.now();
+  lastSpecialEffectTriggered = Date.now(); // Update global cooldown
   
   // Deactivate split view if it's active (experimental+ can interrupt it)
   if (splitViewActive) {
@@ -4005,7 +4162,7 @@ function renderMirrorMode() {
 
 // Activate split view effect (always 2 splits for performance)
 function activateSplitView() {
-  if (splitViewActive || experimentalModeEnabled || experimentalPlusActive) return;
+  if (splitViewActive || experimentalModeEnabled || experimentalPlusActive || mirrorModeActive) return;
   
   // Trigger glitch effect
   if (videoGlitchOverlayEl) {
@@ -4036,6 +4193,7 @@ function activateSplitView() {
     
     splitViewActive = true;
     splitViewLastTriggered = Date.now();
+    lastSpecialEffectTriggered = Date.now(); // Update global cooldown
     originalPaletteIndex = currentActivePaletteIndex;
     
     // Pre-calculate split dimensions once for better performance

@@ -1258,22 +1258,18 @@ body {
 }
 
 #popups-toggle {
-  background: 
-    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
-    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
-    linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: #000;
+  border: 3px solid #ff0000;
   border-left: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0;
   padding: 8px;
   cursor: pointer;
-  color: #00d4ff;
+  color: #ff0000;
   font-size: 12px;
   transition: all 0.3s ease;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(0, 212, 255, 0.1);
-  backdrop-filter: blur(8px);
+    0 0 20px rgba(255, 0, 0, 0.8),
+    inset 0 0 10px rgba(255, 0, 0, 0.3);
   height: fit-content;
   display: flex;
   align-items: center;
@@ -1281,19 +1277,25 @@ body {
   position: relative;
   transform: translateX(0);
   min-width: 40px;
-  font-family: "Arial", "Helvetica", sans-serif;
+  font-family: 'Courier New', monospace;
+  z-index: 2;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
 }
 
 #popups-controls.collapsed #popups-toggle {
   transform: translateX(calc(100% - 40px)); /* Slide to right edge, keep arrow visible on screen */
-  border-radius: 4px 0 0 4px; /* Round the left side when closed */
-  border-right: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 0;
+  border-right: 3px solid #ff0000;
   border-left: none;
 }
 
 #popups-toggle:hover {
-  background: rgba(0, 212, 255, 0.1);
+  background: rgba(255, 0, 0, 0.2);
   color: #ffffff;
+  box-shadow: 
+    0 0 30px rgba(255, 0, 0, 1),
+    inset 0 0 15px rgba(255, 0, 0, 0.5);
+  text-shadow: 0 0 15px rgba(255, 0, 0, 1);
 }
 
 #popups-toggle-arrow {
@@ -1301,8 +1303,9 @@ body {
   transition: transform 0.3s ease;
   font-size: 10px;
   text-shadow: 
-    0 0 10px rgba(0, 212, 255, 0.8),
+    0 0 10px rgba(255, 0, 0, 0.8),
     2px 2px 4px rgba(0, 0, 0, 0.8);
+  color: #ff0000;
 }
 
 #popups-controls.collapsed #popups-toggle-arrow {
@@ -1310,26 +1313,52 @@ body {
 }
 
 #popups-content {
-  background: 
-    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
-    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
-    linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 4px 0 0 4px;
+  background: #000;
+  border: 3px solid #ff0000;
+  border-radius: 0;
   padding: 24px 32px;
-  font-family: "Arial", "Helvetica", sans-serif;
-  color: #00d4ff;
+  font-family: 'Courier New', monospace;
+  color: #ff0000;
   min-width: 200px;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(0, 212, 255, 0.1);
-  backdrop-filter: blur(8px);
+    0 0 30px rgba(255, 0, 0, 1),
+    inset 0 0 20px rgba(255, 0, 0, 0.5),
+    0 0 60px rgba(255, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(255, 170, 0, 0.3);
   transform: translateX(0);
   transition: transform 0.3s ease, opacity 0.3s ease;
   opacity: 1;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: relative;
+  overflow: hidden;
+  animation: popupsJitter 0.1s infinite;
+}
+
+#popups-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.03) 1px,
+      rgba(0, 255, 0, 0.03) 2px
+    );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  animation: popupsTerminalFlicker 0.2s infinite;
+}
+
+@keyframes popupsJitter {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-0.3px, 0.3px); }
+  50% { transform: translate(0.3px, -0.3px); }
+  75% { transform: translate(-0.3px, -0.3px); }
 }
 
 #popups-controls.collapsed #popups-content {
@@ -1346,53 +1375,167 @@ body {
     repeating-linear-gradient(
       0deg,
       transparent 0px,
-      transparent 20px,
-      rgba(0, 212, 255, 0.03) 20px,
-      rgba(0, 212, 255, 0.03) 21px
+      transparent 1px,
+      rgba(0, 255, 0, 0.02) 1px,
+      rgba(0, 255, 0, 0.02) 2px
     );
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+#popups-header {
+  background: 
+    repeating-linear-gradient(
+      45deg,
+      #ff0000 0px,
+      #ff0000 15px,
+      #ffaa00 15px,
+      #ffaa00 30px
+    );
+  border-bottom: 3px solid #000;
+  padding: 10px 14px;
+  margin: -24px -32px 16px -32px;
+  border-radius: 4px 0 0 0;
+  white-space: nowrap;
+  position: relative;
+  box-shadow: 
+    inset 0 -3px 15px rgba(0, 0, 0, 0.8),
+    0 3px 10px rgba(255, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+#popups-header::before {
+  content: "[VIRUS_DETECTED] ";
+  position: absolute;
+  left: -200px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8px;
+  color: rgba(0, 255, 0, 0.3);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  animation: popupsCodeScroll 4s linear infinite;
+  white-space: nowrap;
+}
+
+#popups-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.05) 1px,
+      rgba(0, 255, 0, 0.05) 2px
+    );
+  pointer-events: none;
+  animation: popupsTerminalFlicker 0.2s infinite;
+}
+
+#popups-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 
+    1px 1px 0px #fff,
+    2px 2px 0px #ff0000,
+    0 0 15px rgba(255, 255, 255, 0.9);
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+  animation: popupsTitleBlink 1.5s infinite;
+}
+
+#popups-title::before {
+  content: "⚠ ";
+  font-size: 14px;
+  animation: popupsWarningPulse 1s infinite;
+}
+
+@keyframes popupsCodeScroll {
+  0% {
+    transform: translateY(-50%) translateX(100%);
+  }
+  100% {
+    transform: translateY(-50%) translateX(-100%);
+  }
+}
+
+@keyframes popupsTerminalFlicker {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes popupsTitleBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes popupsWarningPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.9; }
 }
 
 #popups-controls button:not(#popups-toggle) {
   padding: 14px 20px;
-  border: none;
-  background: transparent;
-  color: #00d4ff;
+  border: 2px solid rgba(255, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  color: #ff0000;
   font-weight: 700;
   font-size: 12px;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   cursor: pointer;
   text-align: left;
   text-shadow: 
-    0 0 10px rgba(0, 212, 255, 0.8),
+    0 0 10px rgba(255, 0, 0, 0.8),
     2px 2px 4px rgba(0, 0, 0, 0.8);
-  opacity: 0.7;
-  font-family: "Arial", "Helvetica", sans-serif;
+  opacity: 0.8;
+  font-family: 'Courier New', monospace;
   transition: all 0.3s ease;
   position: relative;
   width: 100%;
+  z-index: 2;
+  box-shadow: 
+    inset 0 0 5px rgba(255, 0, 0, 0.2),
+    0 0 5px rgba(255, 0, 0, 0.3);
 }
 
 #popups-controls button:not(#popups-toggle)::before {
-  content: "▶";
+  content: "[!]";
   position: absolute;
-  left: -20px;
+  left: -25px;
   color: #ff0000;
-  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 1);
   opacity: 0;
   transition: opacity 0.3s ease;
+  font-size: 10px;
+  animation: popupsWarningPulse 1s infinite;
 }
 
 #popups-controls button:not(#popups-toggle):hover {
   color: #ffffff;
   opacity: 1;
   transform: translateX(10px);
+  border-color: #ff0000;
+  background: rgba(255, 0, 0, 0.2);
   text-shadow: 
-    0 0 15px rgba(0, 212, 255, 1),
-    0 0 30px rgba(0, 212, 255, 0.6),
+    0 0 15px rgba(255, 0, 0, 1),
+    0 0 30px rgba(255, 0, 0, 0.8),
     2px 2px 4px rgba(0, 0, 0, 0.8);
+  box-shadow: 
+    inset 0 0 10px rgba(255, 0, 0, 0.4),
+    0 0 15px rgba(255, 0, 0, 0.6);
 }
 
 #popups-controls button:not(#popups-toggle):hover::before {
@@ -1401,15 +1544,21 @@ body {
 
 #popups-controls button:not(#popups-toggle):active {
   transform: translateX(8px);
+  background: rgba(255, 0, 0, 0.3);
 }
 
 #popups-controls button:not(#popups-toggle).active {
   color: #ffffff;
   opacity: 1;
+  border-color: #ff0000;
+  background: rgba(255, 0, 0, 0.3);
   text-shadow: 
-    0 0 15px rgba(0, 212, 255, 1),
-    0 0 30px rgba(0, 212, 255, 0.6),
+    0 0 15px rgba(255, 0, 0, 1),
+    0 0 30px rgba(255, 0, 0, 0.8),
     2px 2px 4px rgba(0, 0, 0, 0.8);
+  box-shadow: 
+    inset 0 0 10px rgba(255, 0, 0, 0.5),
+    0 0 20px rgba(255, 0, 0, 0.8);
 }
 
 /* Experimental Screen Wrapper */
@@ -1926,16 +2075,19 @@ body {
 #popups-controls button:not(#popups-toggle).active {
   color: #ffffff;
   opacity: 1;
-  outline: 2px solid #ffffff;
+  border-color: #ff0000;
+  background: rgba(255, 0, 0, 0.3);
+  outline: 2px solid #ff0000;
   outline-offset: 4px;
   box-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.5),
-    0 0 15px rgba(0, 212, 255, 1),
-    0 0 30px rgba(0, 212, 255, 0.6),
+    0 0 20px rgba(255, 0, 0, 0.8),
+    0 0 15px rgba(255, 0, 0, 1),
+    0 0 30px rgba(255, 0, 0, 0.6),
+    inset 0 0 10px rgba(255, 0, 0, 0.5),
     2px 2px 4px rgba(0, 0, 0, 0.8);
   text-shadow: 
-    0 0 15px rgba(0, 212, 255, 1),
-    0 0 30px rgba(0, 212, 255, 0.6),
+    0 0 15px rgba(255, 0, 0, 1),
+    0 0 30px rgba(255, 0, 0, 0.8),
     2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
@@ -2558,6 +2710,550 @@ body {
 
 .welcome-popup-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 255, 255, 0.8);
+}
+
+/* === Warning Popup === */
+#warning-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  font-family: 'Courier New', monospace;
+  animation: warningFlicker 0.15s infinite;
+}
+
+#warning-popup.warning-popup-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#warning-popup.warning-popup-hidden .warning-popup-content {
+  opacity: 0;
+  transform: scale(0.8) translateY(-20px);
+}
+
+#warning-popup.warning-popup-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}
+
+#warning-popup.warning-popup-visible .warning-popup-content {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#warning-popup.warning-popup-glitching .warning-popup-content {
+  animation: warningWindowGlitch 0.5s ease-in-out, warningJitter 0.1s infinite;
+}
+
+#warning-popup.warning-popup-glitching .warning-popup-content::before {
+  background: linear-gradient(90deg, rgba(255, 0, 150, 1.0) 0%, rgba(255, 50, 120, 1.0) 20%, rgba(255, 0, 100, 1.0) 35%, rgba(255, 20, 80, 0.95) 50%, rgba(0, 0, 0, 0) 65%);
+  animation: glitchSlices 0.5s steps(10, end), warningScanlines 0.1s infinite;
+  opacity: 0.8;
+  filter: brightness(1.6);
+  mix-blend-mode: screen;
+}
+
+#warning-popup.warning-popup-glitching .warning-popup-content::after {
+  background: linear-gradient(270deg, rgba(0, 255, 255, 1.0) 0%, rgba(50, 200, 255, 1.0) 25%, rgba(0, 180, 255, 1.0) 45%, rgba(0, 150, 255, 0.95) 60%, rgba(0, 0, 0, 0) 75%);
+  animation: glitchSlicesAlt 0.6s steps(9, end), warningTerminalFlicker 0.3s infinite;
+  opacity: 0.8;
+  filter: brightness(1.6);
+  mix-blend-mode: screen;
+}
+
+.warning-popup-content {
+  background: #000;
+  border: 3px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 
+    0 0 30px rgba(255, 0, 0, 1),
+    inset 0 0 20px rgba(255, 0, 0, 0.5),
+    0 0 60px rgba(255, 0, 0, 0.8),
+    0 0 100px rgba(255, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 170, 0, 0.3);
+  padding: 0;
+  max-width: 900px;
+  width: 90%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: warningJitter 0.1s infinite;
+  font-family: 'Courier New', 'Consolas', monospace;
+}
+
+.warning-popup-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.03) 1px,
+      rgba(0, 255, 0, 0.03) 2px
+    );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  animation: warningTerminalFlicker 0.3s infinite;
+}
+
+.warning-popup-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.03) 1px,
+      rgba(0, 255, 0, 0.03) 2px
+    );
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+  animation: warningTerminalFlicker 0.3s infinite;
+}
+
+#warning-popup.warning-popup-glitching .warning-popup-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10001;
+}
+
+#warning-popup.warning-popup-glitching .warning-popup-content::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10001;
+}
+
+.warning-popup-content::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255, 255, 0, 0.1) 2px,
+      rgba(255, 255, 0, 0.1) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255, 255, 0, 0.1) 2px,
+      rgba(255, 255, 0, 0.1) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+  animation: warningScanlines 0.1s infinite;
+}
+
+.warning-popup-header {
+  background: #0a0a0a;
+  border-bottom: 3px solid #ff0000;
+  border-top: 1px solid rgba(255, 0, 0, 0.3);
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 70px;
+  box-shadow: 
+    inset 0 -4px 15px rgba(255, 0, 0, 0.3),
+    0 4px 10px rgba(255, 0, 0, 0.5),
+    inset 0 0 20px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.warning-popup-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 10px,
+      rgba(255, 0, 0, 0.1) 10px,
+      rgba(255, 0, 0, 0.1) 20px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.05) 1px,
+      rgba(0, 255, 0, 0.05) 2px
+    );
+  pointer-events: none;
+  z-index: 1;
+  animation: warningHeaderFlicker 0.15s infinite;
+}
+
+.warning-popup-header::after {
+  content: "[VIRUS_DETECTED] [0xDEADBEEF] [CORRUPTION_LEVEL: 99%] [RANDOM_BULLSHIT_TAB: COMPROMISED]";
+  position: absolute;
+  top: 5px;
+  left: 10px;
+  font-size: 8px;
+  color: rgba(0, 255, 0, 0.5);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  animation: warningCodeScroll 4s linear infinite;
+  white-space: nowrap;
+  z-index: 3;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+}
+
+.warning-popup-title {
+  color: #ff0000;
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 0, 1),
+    0 0 20px rgba(255, 0, 0, 0.8),
+    0 0 30px rgba(255, 0, 0, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-family: 'Courier New', monospace;
+  animation: warningTitleGlitch 2s infinite;
+  white-space: nowrap;
+  position: relative;
+  z-index: 4;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 15px;
+  border: 2px solid #ff0000;
+  box-shadow: 
+    0 0 15px rgba(255, 0, 0, 0.8),
+    inset 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.warning-popup-title::before {
+  content: "⚠ ";
+  animation: warningIconPulse 1s infinite;
+}
+
+.warning-popup-title::after {
+  content: " ⚠";
+  animation: warningIconPulse 1s infinite 0.5s;
+}
+
+@keyframes warningTitleGlitch {
+  0%, 100% {
+    transform: translateX(0);
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    transform: translateX(-2px);
+    filter: hue-rotate(5deg);
+  }
+  50% {
+    transform: translateX(2px);
+    filter: hue-rotate(-5deg);
+  }
+  75% {
+    transform: translateX(-1px);
+    filter: hue-rotate(3deg);
+  }
+}
+
+@keyframes warningIconPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes warningHeaderFlicker {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+#warning-close-btn {
+  background: #000;
+  border: 2px solid #ff0000;
+  color: #ff0000;
+  width: 36px;
+  height: 36px;
+  font-size: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+  font-family: Arial, sans-serif;
+  line-height: 1;
+}
+
+#warning-close-btn:hover {
+  background: #ff0000;
+  color: #000;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 1);
+  transform: scale(1.1);
+}
+
+#warning-close-btn:active {
+  transform: scale(0.95);
+}
+
+.warning-popup-body {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(255, 0, 0, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(255, 170, 0, 0.08) 0%, transparent 50%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 40px,
+      rgba(255, 0, 0, 0.02) 40px,
+      rgba(255, 0, 0, 0.02) 41px
+    ),
+    #0a0a0a;
+  padding: 40px 50px;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.8;
+  z-index: 2;
+  border-top: 1px solid rgba(255, 0, 0, 0.2);
+}
+
+.warning-popup-body::before {
+  content: "> SYSTEM_COMPROMISED.exe > RANDOM_BULLSHIT_TAB.exe";
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 10px;
+  color: rgba(255, 0, 0, 0.5);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  z-index: 1;
+  animation: warningTerminalFlicker 0.8s infinite;
+  text-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-left: 2px solid #ff0000;
+}
+
+.warning-popup-body::after {
+  content: "01001000 01000101 01001100 01010000 [RANDOM_BULLSHIT_TAB_STATUS: CRITICAL]";
+  position: absolute;
+  bottom: 10px;
+  left: 20px;
+  font-size: 8px;
+  color: rgba(0, 255, 0, 0.4);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1.5px;
+  z-index: 1;
+  animation: warningBinaryFlicker 2s infinite;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
+}
+
+.warning-popup-body > * {
+  position: relative;
+  z-index: 3;
+}
+
+.warning-intro {
+  color: #fff;
+  font-size: 15px;
+  margin-bottom: 25px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.warning-list li {
+  color: #fff;
+  padding: 12px 0 12px 30px;
+  position: relative;
+  border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+  font-size: 14px;
+  animation: warningFadeIn 0.5s ease-in forwards;
+  opacity: 0;
+}
+
+.warning-list li:nth-child(1) { animation-delay: 0.1s; }
+.warning-list li:nth-child(2) { animation-delay: 0.2s; }
+.warning-list li:nth-child(3) { animation-delay: 0.3s; }
+.warning-list li:nth-child(4) { animation-delay: 0.4s; }
+.warning-list li:nth-child(5) { animation-delay: 0.5s; }
+.warning-list li:nth-child(6) { animation-delay: 0.6s; }
+.warning-list li:nth-child(7) { animation-delay: 0.7s; }
+.warning-list li:nth-child(8) { animation-delay: 0.8s; }
+.warning-list li:nth-child(9) { animation-delay: 0.9s; }
+.warning-list li:nth-child(10) { animation-delay: 1s; }
+.warning-list li:nth-child(11) { animation-delay: 1.1s; }
+
+.warning-list li::before {
+  content: "[!]";
+  position: absolute;
+  left: 0;
+  color: #ff0000;
+  font-size: 14px;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  text-shadow: 
+    0 0 10px rgba(255, 0, 0, 1),
+    0 0 20px rgba(255, 0, 0, 0.6);
+  animation: warningPulse 2s infinite;
+  letter-spacing: 1px;
+}
+
+.warning-footer {
+  color: #ffaa00;
+  font-size: 13px;
+  margin-top: 30px;
+  text-align: left;
+  font-style: italic;
+  border-top: 2px solid rgba(255, 170, 0, 0.4);
+  padding-top: 20px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.6);
+  background: rgba(255, 170, 0, 0.05);
+  padding: 20px;
+  border-left: 3px solid #ffaa00;
+  animation: warningFooterGlow 3s infinite;
+}
+
+@keyframes warningFooterGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 170, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 170, 0, 0.6);
+  }
+}
+
+/* Warning Popup Animations */
+@keyframes warningFlicker {
+  0%, 100% { opacity: 1; }
+  49% { opacity: 1; }
+  50% { opacity: 0.98; }
+  51% { opacity: 1; }
+  98% { opacity: 1; }
+  99% { opacity: 0.99; }
+}
+
+@keyframes warningJitter {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-0.5px, 0.5px); }
+  50% { transform: translate(0.5px, -0.5px); }
+  75% { transform: translate(-0.5px, -0.5px); }
+}
+
+@keyframes warningBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes warningScanlines {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+
+@keyframes warningPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes warningFadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes warningWindowGlitch {
+  0%, 100% {
+    transform: scale(1) translate(0, 0);
+    filter: hue-rotate(0deg);
+  }
+  10% {
+    transform: scale(1.02) translate(2px, -2px);
+    filter: hue-rotate(90deg);
+  }
+  20% {
+    transform: scale(0.98) translate(-2px, 2px);
+    filter: hue-rotate(180deg);
+  }
+  30% {
+    transform: scale(1.01) translate(1px, -1px);
+    filter: hue-rotate(270deg);
+  }
+  40% {
+    transform: scale(0.99) translate(-1px, 1px);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+@keyframes warningCodeScroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes warningTerminalFlicker {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes warningBinaryFlicker {
+  0%, 100% { opacity: 0.2; }
+  25% { opacity: 0.4; }
+  50% { opacity: 0.1; }
+  75% { opacity: 0.3; }
+}
+
+.warning-popup-content::-webkit-scrollbar {
+  width: 12px;
+}
+
+.warning-popup-content::-webkit-scrollbar-track {
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.warning-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 0, 0.5);
+  border: 2px solid #000;
+}
+
+.warning-popup-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 0, 0, 0.8);
 }
 
 /* Camera Debug Display */
