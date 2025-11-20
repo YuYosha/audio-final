@@ -155,6 +155,7 @@ const experimentalBtn = document.getElementById("experimental-btn");
 const experimentalCanvas = document.getElementById("experimental-visualizer");
 let experimentalAnimationId = null;
 let experimentalLowPassFilter = null;
+let experimentalHighPassFilter = null; // Highpass for subtle aesthetic effect
 let experimentalGainNode = null;
 let experimentalBandPassFilter = null; // Bandpass to let one frequency through
 let experimentalMerger = null; // To merge filtered and unfiltered signals
@@ -827,20 +828,28 @@ function applyExperimentalAudioEffects() {
     
     const context = audioContext;
     
-    // Create aggressive low-pass filter for muffled effect (Sonic boost style)
+    // Create unique low-pass filter - more muffled but with high character
     if (!experimentalLowPassFilter) {
       experimentalLowPassFilter = context.createBiquadFilter();
       experimentalLowPassFilter.type = 'lowpass';
-      experimentalLowPassFilter.frequency.value = 700; // Very muffled - cut high frequencies aggressively
-      experimentalLowPassFilter.Q.value = 3.5; // Higher Q for sharper cutoff
+      experimentalLowPassFilter.frequency.value = 800; // More muffled - distinct effect
+      experimentalLowPassFilter.Q.value = 3.5; // Higher Q for sharper, more distinct character
     }
     
-    // Create bandpass filter to let one frequency band through clearly
+    // Create high-pass filter for unique frequency shaping
+    if (!experimentalHighPassFilter) {
+      experimentalHighPassFilter = context.createBiquadFilter();
+      experimentalHighPassFilter.type = 'highpass';
+      experimentalHighPassFilter.frequency.value = 120; // Slight bass cut for clarity
+      experimentalHighPassFilter.Q.value = 1.2; // Moderate Q for definition
+    }
+    
+    // Create interesting bandpass filter - higher Q for more character despite muffling
     if (!experimentalBandPassFilter) {
       experimentalBandPassFilter = context.createBiquadFilter();
       experimentalBandPassFilter.type = 'bandpass';
-      experimentalBandPassFilter.frequency.value = 2000; // Let mid-highs through (2kHz)
-      experimentalBandPassFilter.Q.value = 5.0; // Narrow bandpass for clear frequency
+      experimentalBandPassFilter.frequency.value = 1700; // Unique mid-high frequency
+      experimentalBandPassFilter.Q.value = 4.5; // Higher Q for very distinct character
     }
     
     // Get sound's gain node and listener input
@@ -853,10 +862,10 @@ function applyExperimentalAudioEffects() {
         // Instead, we'll use a different approach: connect filters in parallel
         // and use volume/gain to control the effect
         
-        // Create a gain node to control the filtered signal
+        // Create a gain node to control the filtered signal - unique balance
         if (!experimentalGainNode) {
           experimentalGainNode = context.createGain();
-          experimentalGainNode.gain.value = 0.85; // Slightly reduce volume for muffled effect
+          experimentalGainNode.gain.value = 0.86; // Unique gain balance for character
         }
         
         // Connect: sound.gain -> lowpass -> gain -> listener (for muffled)
@@ -884,57 +893,99 @@ function applyExperimentalAudioEffects() {
         // Split signal
         soundGain.connect(experimentalSplitter);
         
-        // Path 1: Muffled lowpass signal
-        experimentalSplitter.connect(experimentalLowPassFilter, 0);
+        // Path 1: Gentle aesthetic effect chain - highpass -> lowpass -> gain (smooth, pleasant)
+        experimentalSplitter.connect(experimentalHighPassFilter, 0);
+        experimentalHighPassFilter.connect(experimentalLowPassFilter);
         experimentalLowPassFilter.connect(experimentalGainNode);
         experimentalGainNode.connect(experimentalMerger, 0, 0);
         
-        // Path 2: Clear bandpass signal (one frequency through)
+        // Path 2: Gentle mid-range bandpass signal for subtle vintage feel
         experimentalSplitter.connect(experimentalBandPassFilter, 1);
         experimentalBandPassFilter.connect(experimentalMerger, 0, 1);
         
         // Merge to listener
         experimentalMerger.connect(listenerInput);
         
-        // Slight volume reduction for muffled effect
+        // Unique volume balance for distinctive sound
         if (sound.setVolume) {
-          sound.setVolume(0.75);
+          sound.setVolume(0.8);
         }
       } catch (e) {
         // If connection fails, use volume only as fallback
         console.warn("Could not apply experimental audio filters, using volume only:", e);
         if (sound.setVolume) {
-          sound.setVolume(0.7);
+          sound.setVolume(0.78);
         }
       }
     } else {
-      // Fallback: reduce volume
+      // Fallback: unique volume for character
       if (sound.setVolume) {
-        sound.setVolume(0.7);
+        sound.setVolume(0.78);
       }
     }
     
-    // Animate lowpass filter for dynamic muffled effect
-    let freq = 700;
+    // Animate lowpass filter - more muffled but with high dynamic variables
+    let freq = 800;
     let dir = 1;
+    let speed = 60; // Higher speed for more dynamic movement despite muffling
     const animateFilter = () => {
       if (!experimentalModeEnabled || !experimentalLowPassFilter) return;
       
-      freq += dir * 60;
-      if (freq <= 500 || freq >= 900) {
+      // High dynamic frequency variation - keeps it interesting despite muffling
+      freq += dir * speed;
+      if (freq <= 650 || freq >= 1000) {
         dir *= -1;
+        // Higher variable speed for more organic, dynamic feel
+        speed = 45 + Math.random() * 40;
       }
       
       experimentalLowPassFilter.frequency.setValueAtTime(freq, context.currentTime);
-      setTimeout(animateFilter, 120);
+      setTimeout(animateFilter, 110); // Faster animation for high dynamics
     };
     animateFilter();
     
+    // Animate the bandpass filter with high dynamics
+    let bandFreq = 1700;
+    let bandDir = 1;
+    let bandSpeed = 50; // Higher speed
+    const animateBandpass = () => {
+      if (!experimentalModeEnabled || !experimentalBandPassFilter) return;
+      
+      // High dynamic movement for bandpass - keeps character high
+      bandFreq += bandDir * bandSpeed;
+      if (bandFreq <= 1500 || bandFreq >= 1950) {
+        bandDir *= -1;
+        // Higher variable speed for more character
+        bandSpeed = 35 + Math.random() * 40;
+      }
+      
+      experimentalBandPassFilter.frequency.setValueAtTime(bandFreq, context.currentTime);
+      setTimeout(animateBandpass, 120); // Faster timing for high dynamics
+    };
+    animateBandpass();
+    
+    // Animate Q value with higher variation for more unique character
+    let qValue = 3.5;
+    let qDir = 1;
+    const animateQ = () => {
+      if (!experimentalModeEnabled || !experimentalLowPassFilter) return;
+      
+      // Higher Q variation for more character despite muffling
+      qValue += qDir * 0.25;
+      if (qValue <= 3.0 || qValue >= 4.2) {
+        qDir *= -1;
+      }
+      
+      experimentalLowPassFilter.Q.setValueAtTime(qValue, context.currentTime);
+      setTimeout(animateQ, 180); // Faster Q variation for more dynamics
+    };
+    animateQ();
+    
   } catch (error) {
     console.warn("Could not apply experimental audio effects:", error);
-    // Fallback: reduce volume
+    // Fallback: unique volume for character
     if (sound && sound.setVolume) {
-      sound.setVolume(0.7);
+      sound.setVolume(0.78);
     }
   }
 }
@@ -961,6 +1012,13 @@ function removeExperimentalAudioEffects() {
               experimentalLowPassFilter.disconnect();
             } catch (e) {}
             experimentalLowPassFilter = null;
+          }
+          
+          if (experimentalHighPassFilter) {
+            try {
+              experimentalHighPassFilter.disconnect();
+            } catch (e) {}
+            experimentalHighPassFilter = null;
           }
           
           if (experimentalBandPassFilter) {
