@@ -25,6 +25,19 @@ document.getElementById("container").appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+// === Camera Split View Effect ===
+let splitViewActive = false;
+let splitViewTimeoutId = null;
+const SPLIT_VIEW_DURATION = 5000; // 5 seconds
+const SPLIT_VIEW_CHANCE = 0.003; // 0.3% chance per frame when music is playing (more common)
+const SPLIT_VIEW_COOLDOWN = 15000; // 15 seconds cooldown between splits (reduced for more frequency)
+let splitViewLastTriggered = 0;
+let originalPaletteIndex = 0; // Store original palette when split activates
+let splitViewCornerPalettes = null; // Store palette indices for 2 splits (generated once per activation)
+// Pre-calculate split dimensions for performance
+let splitViewHalfWidth = 0;
+let splitViewAspect = 0;
+
 // === Camera Rotation Controls ===
 let cameraRotationDirection = 0; // -1 = left, 0 = stop, 1 = right
 let cameraRotationSpeed = 0.005; // radians per frame (faster movement)
@@ -96,6 +109,7 @@ const tracks = [
   { label: "In My Way", file: "InMyWay.mp3" },
   { label: "Random Test Funk", file: "RandomTestFunk.mp3" },
   { label: "Machine Love", file: "MachineLove.mp3" },
+  { label: "Blood Drain", file: "BloodDrain.mp3" },
 ];
 
 let currentTrackIndex = 0; // default to "Nikke"
@@ -187,6 +201,8 @@ let popupsEnabled = false; // Toggle for popups
 const popupsBtn = document.getElementById("popups-btn");
 let experimentalModeEnabled = false; // Toggle for experimental visualizer
 const experimentalBtn = document.getElementById("experimental-btn");
+let splitViewEnabled = false; // Toggle for split view effect
+const splitScreenBtn = document.getElementById("split-screen-btn");
 const experimentalCanvas = document.getElementById("experimental-visualizer");
 let experimentalAnimationId = null;
 let experimentalLowPassFilter = null;
@@ -457,6 +473,7 @@ setupButtonHover(camStopBtn);
 setupButtonHover(camRightBtn);
 setupButtonHover(popupsBtn);
 setupButtonHover(experimentalBtn);
+setupButtonHover(splitScreenBtn);
 
 // Setup select sounds for play and stop buttons
 setupButtonSelect(playBtn);
@@ -470,6 +487,7 @@ setupButtonSelect2(camStopBtn);
 setupButtonSelect2(camRightBtn);
 setupButtonSelect2(popupsBtn);
 setupButtonSelect2(experimentalBtn);
+setupButtonSelect2(splitScreenBtn);
 
 playBtn?.addEventListener("click", () => {
   playSound();
@@ -549,6 +567,20 @@ popupsBtn?.addEventListener("click", () => {
         }, 500);
       });
       activeErrorWindows = [];
+    }
+  }
+});
+
+// === Split Screen Button Toggle ===
+splitScreenBtn?.addEventListener("click", () => {
+  splitViewEnabled = !splitViewEnabled;
+  if (splitViewEnabled) {
+    splitScreenBtn.classList.add("active");
+  } else {
+    splitScreenBtn.classList.remove("active");
+    // Deactivate split view if it's currently active
+    if (splitViewActive) {
+      deactivateSplitView();
     }
   }
 });
@@ -2706,6 +2738,28 @@ const colorPalettes = [
     inner: { color: 0x5500bb, emissive: 0x7700dd },
     outline: { visible: "#4400aa", hidden: "#ff00cc" },
   },
+  // Palette 24: Deep Crimson/Dark Red - Blood Drain
+  {
+    name: "Blood Drain",
+    skybox: {
+      baseColor1: { x: 0.08, y: 0.0, z: 0.0 },
+      baseColor2: { x: 0.12, y: 0.0, z: 0.01 },
+      pulseTint1: { x: 0.9, y: 0.0, z: 0.0 },
+      pulseTint2: { x: 1.0, y: 0.1, z: 0.1 },
+      toneShift: { x: 1.8, y: 0.5, z: 0.5 },
+    },
+    ring1: { color: 0x990000, emissive: 0x990000 },
+    ring2: { color: 0x660000, emissive: 0x660000 },
+    ring3: { color: 0xcc0000, emissive: 0xcc0000 },
+    ring4: { color: 0x880000, emissive: 0x880000 },
+    ring5: { color: 0xaa0000, emissive: 0xaa0000 },
+    ring6: { color: 0x440000, emissive: 0x440000 },
+    ring7: { color: 0xcc1111, emissive: 0xcc1111 },
+    ring8: { color: 0x770000, emissive: 0x770000 },
+    ring9: { color: 0xdd0000, emissive: 0xdd0000 },
+    inner: { color: 0x880000, emissive: 0xaa0000 },
+    outline: { visible: "#990000", hidden: "#660000" },
+  },
 ];
 
 // === Shader Skybox (stronger beat pulse) ===
@@ -3375,7 +3429,169 @@ function animate() {
     videoOverlayEl.style.transition = "transform 0.08s ease-out"; // Slightly faster for more snappy feel
   }
 
+  // Check for random split view trigger (only when enabled, music is playing, and not in cooldown)
+  if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled) {
+    const timeSinceLastSplit = Date.now() - splitViewLastTriggered;
+    if (timeSinceLastSplit > SPLIT_VIEW_COOLDOWN) {
+      if (Math.random() < SPLIT_VIEW_CHANCE) {
+        activateSplitView();
+      }
+    }
+  }
+
+  // Render split view if active
+  if (splitViewActive && !experimentalModeEnabled) {
+    renderSplitView();
+  } else {
   composer.render();
+  }
+}
+
+// Activate split view effect (always 2 splits for performance)
+function activateSplitView() {
+  if (splitViewActive || experimentalModeEnabled) return;
+  
+  // Trigger glitch effect
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  // Wait for glitch animation, then activate split view
+  setTimeout(() => {
+    splitViewActive = true;
+    splitViewLastTriggered = Date.now();
+    originalPaletteIndex = currentActivePaletteIndex;
+    
+    // Pre-calculate split dimensions once for better performance
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    splitViewHalfWidth = Math.floor(width / 2);
+    splitViewAspect = splitViewHalfWidth / height;
+    
+    // Generate 2 random palettes (excluding current active palette) - simplified for performance
+    splitViewCornerPalettes = [];
+    while (splitViewCornerPalettes.length < 2) {
+      let randomPalette = Math.floor(Math.random() * colorPalettes.length);
+      if (randomPalette !== originalPaletteIndex && !splitViewCornerPalettes.includes(randomPalette)) {
+        splitViewCornerPalettes.push(randomPalette);
+      }
+    }
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    // Auto-disable after duration
+    if (splitViewTimeoutId) {
+      window.clearTimeout(splitViewTimeoutId);
+    }
+    splitViewTimeoutId = window.setTimeout(() => {
+      deactivateSplitView();
+    }, SPLIT_VIEW_DURATION);
+  }, 100);
+}
+
+// Deactivate split view and restore normal view
+function deactivateSplitView() {
+  if (!splitViewActive) return;
+  
+  // Trigger glitch effect before deactivating
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  // Wait for glitch animation, then restore normal view
+  setTimeout(() => {
+    splitViewActive = false;
+    splitViewCornerPalettes = null; // Clear split palettes
+    splitViewHalfWidth = 0;
+    splitViewAspect = 0;
+    
+    // Restore original palette
+    applyColorPalette(originalPaletteIndex);
+    
+    // Restore full viewport
+    renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
+    renderer.setScissorTest(false);
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    // Clear timeout
+    if (splitViewTimeoutId) {
+      window.clearTimeout(splitViewTimeoutId);
+      splitViewTimeoutId = null;
+    }
+  }, 100);
+}
+
+// Render split view with different palettes (simplified to 2 splits only for performance)
+function renderSplitView() {
+  if (!splitViewCornerPalettes || splitViewCornerPalettes.length !== 2 || splitViewHalfWidth === 0) {
+    // Fallback to normal render if palettes not set
+    composer.render();
+    return;
+  }
+  
+  const height = window.innerHeight;
+  
+  // Store original renderer settings (cache to avoid repeated calls)
+  const originalViewport = renderer.getViewport(new THREE.Vector4());
+  const originalScissor = renderer.getScissor(new THREE.Vector4());
+  const originalScissorTest = renderer.getScissorTest();
+  const originalAspect = camera.aspect;
+  
+  // Enable scissor test once
+  renderer.setScissorTest(true);
+  
+  // Update camera aspect once (same for both splits)
+  if (Math.abs(camera.aspect - splitViewAspect) > 0.001) {
+    camera.aspect = splitViewAspect;
+    camera.updateProjectionMatrix();
+  }
+  
+  // Render left split (simplified - no array, direct rendering)
+  renderer.setViewport(0, 0, splitViewHalfWidth, height);
+  renderer.setScissor(0, 0, splitViewHalfWidth, height);
+  applyColorPalette(splitViewCornerPalettes[0]);
+  composer.render();
+  
+  // Render right split
+  renderer.setViewport(splitViewHalfWidth, 0, splitViewHalfWidth, height);
+  renderer.setScissor(splitViewHalfWidth, 0, splitViewHalfWidth, height);
+  applyColorPalette(splitViewCornerPalettes[1]);
+  composer.render();
+  
+  // Restore everything in one pass
+  camera.aspect = originalAspect;
+  camera.updateProjectionMatrix();
+  renderer.setViewport(originalViewport);
+  renderer.setScissor(originalScissor);
+  renderer.setScissorTest(originalScissorTest);
 }
 
 animate();
