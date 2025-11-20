@@ -1906,8 +1906,35 @@ function stopWarningSound() {
     warningSound.currentTime = 0;
   }
   
-  // Resume menu music if it was playing before
-  resumeMenuMusic();
+  // Resume menu music if it was playing before (only if hacked screen is not active)
+  const hackedScreen = document.getElementById('hacked-screen');
+  if (!hackedScreen || hackedScreen.classList.contains('hacked-screen-hidden')) {
+    resumeMenuMusic();
+  }
+}
+
+// === Hacked Screen Management ===
+function showHackedScreen() {
+  const hackedScreen = document.getElementById('hacked-screen');
+  if (hackedScreen) {
+    // Start warning sound continuously
+    startWarningSound();
+    
+    // Hide everything else
+    const container = document.getElementById("container");
+    if (container) container.style.display = "none";
+    
+    // Hide controls
+    const controls = document.getElementById("controls");
+    if (controls) controls.style.display = "none";
+    
+    // Show hacked screen
+    hackedScreen.classList.remove('hacked-screen-hidden');
+    hackedScreen.classList.add('hacked-screen-visible');
+    hackedScreen.style.display = 'flex';
+    
+    console.log("Hacked screen activated");
+  }
 }
 
 function showWarningPopup() {
@@ -1938,8 +1965,7 @@ function showWarningPopup() {
 function hideWarningPopup() {
   const warningPopup = document.getElementById('warning-popup');
   if (warningPopup) {
-    // Stop warning sound
-    stopWarningSound();
+    // Don't stop warning sound - it will continue in hacked screen
     
     // Add glitch effect before closing
     warningPopup.classList.add('warning-popup-glitching');
@@ -1950,10 +1976,14 @@ function hideWarningPopup() {
       glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
     }
     
-    // Wait for glitch animation, then hide
+    // Wait for glitch animation, then hide and show hacked screen
     setTimeout(() => {
       warningPopup.classList.remove('warning-popup-visible', 'warning-popup-glitching');
       warningPopup.classList.add('warning-popup-hidden');
+      // Show hacked screen after warning popup closes (for testing)
+      setTimeout(() => {
+        showHackedScreen();
+      }, 500);
     }, 500);
   }
 }
@@ -2078,7 +2108,7 @@ function startOverlayVideoLoop() {
         console.warn("No video choice available");
         return;
       }
-      
+    
       // Randomly pick a color palette when video loads, but exclude the currently active palette AND the original track palette
       let randomPaletteIndex;
       do {
