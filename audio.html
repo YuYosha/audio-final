@@ -27,16 +27,18 @@
     <button id="cam-right-btn" aria-label="Rotate camera right">RIGHT</button>
   </div>
   
-  <!-- Popups Controls - Left Side -->
-  <div id="popups-controls">
-    <button id="popups-toggle" aria-label="Toggle popups menu">
-      <span id="popups-toggle-arrow">▼</span>
-    </button>
+  <!-- Popups Controls - Right Side -->
+  <div id="popups-controls" class="collapsed">
     <div id="popups-content">
       <button id="popups-btn" aria-label="Toggle pop ups">POP UPS</button>
       <button id="experimental-btn" aria-label="Toggle experimental visualizer">EXPERIMENTAL</button>
+      <button id="experimental-plus-btn" aria-label="Toggle experimental plus mode">EXPERIMENTAL +</button>
       <button id="split-screen-btn" aria-label="Toggle split screen effect">SPLIT SCREEN</button>
+      <button id="mirror-mode-btn" aria-label="Toggle mirror mode">MIRROR MODE</button>
     </div>
+    <button id="popups-toggle" aria-label="Toggle popups menu">
+      <span id="popups-toggle-arrow">▶</span>
+    </button>
   </div>
   <div id="loading-screen">
     <!-- Left side - Character/Illustration area -->
@@ -90,6 +92,12 @@
     </div>
   </div>
   <div id="container"></div>
+  <div id="camera-debug-wrapper">
+    <button id="camera-debug-toggle" aria-label="Toggle camera debug display">
+      <span id="camera-debug-arrow">◀</span>
+    </button>
+    <div id="camera-debug-display"></div>
+  </div>
   <div id="experimental-screen-wrapper">
     <canvas id="experimental-visualizer" class="experimental-visualizer-hidden"></canvas>
     <div id="experimental-border"></div>

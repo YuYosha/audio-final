@@ -1246,59 +1246,49 @@ body {
   overflow: hidden;
 }
 
-/* Popups Controls - Right Side */
+/* Popups Controls - Right Side (like camera debug but from right) */
 #popups-controls {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  display: inline-flex;
+  bottom: 20px;
+  right: 0;
+  z-index: 5000; /* Lower than loading screen (9999) so it stays behind */
+  display: flex;
+  align-items: flex-end;
   flex-direction: row;
-  gap: 0;
-  padding: 0;
-  color: #eaf9ff;
-  z-index: 5;
-  font-family: "Arial", "Helvetica", sans-serif;
-  overflow: visible;
-}
-
-#popups-controls.collapsed #popups-content {
-  opacity: 0;
-  transform: translateX(100%);
-  pointer-events: none;
-  max-width: 0;
-  overflow: hidden;
 }
 
 #popups-toggle {
-  width: 40px;
-  height: 40px;
-  padding: 8px;
   background: 
+    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
     linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
   border: 1px solid rgba(0, 212, 255, 0.2);
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+  padding: 8px;
   cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   color: #00d4ff;
-  transition: all 0.3s ease;
   font-size: 12px;
+  transition: all 0.3s ease;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(0, 212, 255, 0.1);
   backdrop-filter: blur(8px);
-  z-index: 6;
+  height: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  flex-shrink: 0;
-}
-
-#popups-controls:not(.collapsed) #popups-toggle {
-  border-right: none;
-  border-radius: 4px 0 0 4px;
+  transform: translateX(0);
+  min-width: 40px;
+  font-family: "Arial", "Helvetica", sans-serif;
 }
 
 #popups-controls.collapsed #popups-toggle {
-  border-radius: 4px;
+  transform: translateX(calc(100% - 40px)); /* Slide to right edge, keep arrow visible on screen */
+  border-radius: 4px 0 0 4px; /* Round the left side when closed */
+  border-right: 1px solid rgba(0, 212, 255, 0.2);
+  border-left: none;
 }
 
 #popups-toggle:hover {
@@ -1316,35 +1306,35 @@ body {
 }
 
 #popups-controls.collapsed #popups-toggle-arrow {
-  transform: rotate(90deg); /* Point left (◄) when collapsed to indicate opening to the left */
+  transform: rotate(180deg); /* Point left when closed */
 }
 
 #popups-content {
-  padding: 24px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   background: 
     linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
     radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
     linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
   border: 1px solid rgba(0, 212, 255, 0.2);
-  border-left: none;
-  border-radius: 0 4px 4px 0;
-  backdrop-filter: blur(8px);
+  border-radius: 4px 0 0 4px;
+  padding: 24px 32px;
+  font-family: "Arial", "Helvetica", sans-serif;
+  color: #00d4ff;
+  min-width: 200px;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(0, 212, 255, 0.1);
-  min-width: 200px;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.4s ease, padding 0.4s ease;
+  backdrop-filter: blur(8px);
+  transform: translateX(0);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 #popups-controls.collapsed #popups-content {
-  opacity: 0;
   transform: translateX(100%);
-  max-width: 0;
-  padding: 0;
-  overflow: hidden;
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -1382,6 +1372,7 @@ body {
   font-family: "Arial", "Helvetica", sans-serif;
   transition: all 0.3s ease;
   position: relative;
+  width: 100%;
 }
 
 #popups-controls button:not(#popups-toggle)::before {
@@ -1410,6 +1401,15 @@ body {
 
 #popups-controls button:not(#popups-toggle):active {
   transform: translateX(8px);
+}
+
+#popups-controls button:not(#popups-toggle).active {
+  color: #ffffff;
+  opacity: 1;
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 30px rgba(0, 212, 255, 0.6),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 /* Experimental Screen Wrapper */
@@ -2558,4 +2558,139 @@ body {
 
 .welcome-popup-content::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 255, 255, 0.8);
+}
+
+/* Camera Debug Display */
+#camera-debug-wrapper {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  z-index: 5000; /* Lower than loading screen (9999) so it stays behind */
+  display: flex;
+  align-items: flex-end;
+}
+
+#camera-debug-toggle {
+  background: 
+    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  padding: 8px;
+  cursor: pointer;
+  color: #00d4ff;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(0, 212, 255, 0.1);
+  backdrop-filter: blur(8px);
+  height: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transform: translateX(0);
+  min-width: 40px;
+  font-family: "Arial", "Helvetica", sans-serif;
+}
+
+#camera-debug-wrapper.closed #camera-debug-toggle {
+  transform: translateX(calc(-100% + 40px)); /* Slide to left edge, keep arrow visible on screen */
+  border-radius: 0 4px 4px 0; /* Round the right side when closed */
+  border-left: 1px solid rgba(0, 212, 255, 0.2);
+  border-right: none;
+}
+
+#camera-debug-toggle:hover {
+  background: rgba(0, 212, 255, 0.1);
+  color: #ffffff;
+}
+
+#camera-debug-arrow {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  font-size: 10px;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#camera-debug-wrapper.closed #camera-debug-arrow {
+  transform: rotate(180deg);
+}
+
+#camera-debug-display {
+  background: 
+    linear-gradient(180deg, rgba(0, 150, 255, 0.05) 0%, transparent 30%),
+    radial-gradient(ellipse at 50% 0%, rgba(0, 200, 255, 0.1) 0%, transparent 60%),
+    linear-gradient(135deg, rgba(10, 26, 46, 0.95) 0%, rgba(22, 36, 71, 0.95) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 0 4px 4px 0;
+  padding: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #00d4ff;
+  min-width: 280px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(0, 212, 255, 0.1);
+  backdrop-filter: blur(8px);
+  transform: translateX(0);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+
+#camera-debug-wrapper.closed #camera-debug-display {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.camera-debug-title {
+  font-weight: bold;
+  font-size: 13px;
+  color: #00d4ff;
+  margin-bottom: 10px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  padding-bottom: 8px;
+  text-shadow: 
+    0 0 10px rgba(0, 212, 255, 0.8),
+    2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.camera-debug-section {
+  margin-bottom: 12px;
+}
+
+.camera-debug-label {
+  font-weight: bold;
+  color: #00d4ff;
+  margin-bottom: 5px;
+  font-size: 11px;
+  text-transform: uppercase;
+  text-shadow: 
+    0 0 8px rgba(0, 212, 255, 0.6),
+    1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.camera-debug-value {
+  color: #eaf9ff;
+  margin-left: 10px;
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+}
+
+.camera-debug-value span {
+  color: #00d4ff;
+  font-weight: bold;
+  text-shadow: 
+    0 0 8px rgba(0, 212, 255, 0.6),
+    1px 1px 2px rgba(0, 0, 0, 0.8);
 }

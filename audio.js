@@ -25,6 +25,7 @@ document.getElementById("container").appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+
 // === Camera Split View Effect ===
 let splitViewActive = false;
 let splitViewTimeoutId = null;
@@ -37,6 +38,7 @@ let splitViewCornerPalettes = null; // Store palette indices for 2 splits (gener
 // Pre-calculate split dimensions for performance
 let splitViewHalfWidth = 0;
 let splitViewAspect = 0;
+let splitViewOriginalCameraState = null; // Store original camera state for split view
 
 // === Camera Rotation Controls ===
 let cameraRotationDirection = 0; // -1 = left, 0 = stop, 1 = right
@@ -85,11 +87,13 @@ const audioLoader = new THREE.AudioLoader();
 const analyser = new THREE.AudioAnalyser(sound, 256);
 
 const tracks = [
+
   { label: "Jump UP", file: "JumpUP.mp3" },
   { label: "Bingo Highway", file: "BingoHighway.mp3" },
   { label: "Black Knife", file: "BlackKnife.mp3" },
   { label: "Roulette Road", file: "RouletteRoad.mp3" },
   { label: "Duel", file: "Duel.mp3" },
+
   { label: "Egg Dragoon", file: "EggDragoon.mp3" },
   { label: "Shmoovin", file: "Shmoovin.mp3" },
   { label: "Running The Bassline", file: "RunningTheBassline.mp3" },
@@ -124,10 +128,13 @@ const nextBtn = document.getElementById("next-btn");
 const prevBtn = document.getElementById("prev-btn");
 const videoOverlayEl = document.getElementById("video-overlay");
 const overlayVideoEl = document.getElementById("overlay-video");
+
 const videoGlitchOverlayEl = document.getElementById("video-glitch-overlay");
+
 
 // Video overlays (for full-screen overlays)
 const overlayVideos = [
+
   "asgore.mp4",
   "Blaze.mp4",
   "cream.mp4",
@@ -138,6 +145,7 @@ const overlayVideos = [
   "eggsax.mp4",
   "Iguchi.mp4",
   "metal.mp4",
+
   "mez.mp4",
   "pbj.mp4",
   "plan.mp4",
@@ -156,6 +164,7 @@ const popupVideos = [
   "benson.mp4",
   "Blaze.mp4",
   "cream.mp4",
+
   "cream2.mp4",
   "dante.mp4",
   "DC.mp4",
@@ -186,9 +195,11 @@ const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance betwe
 const COLOR_SWAP_DURATION = 7000; // 7 seconds
 let videoIntervalId = null;
 let overlayIsActive = false;
+
 let colorSwapActive = false;
 let colorSwapTimeoutId = null;
 let glitchTimeoutId = null;
+
 let currentActivePaletteIndex = 0; // Track the currently active palette (not just track default)
 
 // Error window popup
@@ -199,10 +210,28 @@ let errorWindowIntervalId = null;
 let activeErrorWindows = []; // Track multiple active windows
 let popupsEnabled = false; // Toggle for popups
 const popupsBtn = document.getElementById("popups-btn");
-let experimentalModeEnabled = false; // Toggle for experimental visualizer
+let experimentalModeEnabled = false; // Toggle for experimental visualizer (old button - manual toggle)
 const experimentalBtn = document.getElementById("experimental-btn");
+let experimentalPlusEnabled = false; // Toggle for experimental+ effect (enables random triggering)
+const experimentalPlusBtn = document.getElementById("experimental-plus-btn");
+let experimentalPlusActive = false; // Current active state of experimental+ mode
+let experimentalPlusTimeoutId = null;
+const EXPERIMENTAL_PLUS_DURATION = 10000; // 10 seconds
+const EXPERIMENTAL_PLUS_CHANCE = 0.003; // 0.3% chance per frame when music is playing
+const EXPERIMENTAL_PLUS_COOLDOWN = 20000; // 20 seconds cooldown between triggers
+let experimentalPlusLastTriggered = 0;
 let splitViewEnabled = false; // Toggle for split view effect
 const splitScreenBtn = document.getElementById("split-screen-btn");
+let mirrorModeEnabled = false; // Toggle for mirror mode effect (enables random triggering)
+const mirrorModeBtn = document.getElementById("mirror-mode-btn");
+let mirrorModeActive = false; // Current active state of mirror mode
+let mirrorModeTimeoutId = null;
+const MIRROR_MODE_DURATION = 7000; // 7 seconds
+const MIRROR_MODE_CHANCE = 0.003; // 0.3% chance per frame when music is playing
+const MIRROR_MODE_COOLDOWN = 15000; // 15 seconds cooldown between mirrors
+let mirrorModeLastTriggered = 0;
+let mirrorModeOriginalPaletteIndex = 0; // Store original palette when mirror activates
+let mirrorModePaletteIndex = null; // Store palette index for mirror mode (same for both halves)
 const experimentalCanvas = document.getElementById("experimental-visualizer");
 let experimentalAnimationId = null;
 let experimentalLowPassFilter = null;
@@ -268,6 +297,7 @@ function loadTrack(index, shouldAutoplay = false) {
   sound.stop();
   sound.buffer = null;
   updateTrackLabel("loading");
+
   updateButtonStates(); // Update buttons when stopping to load new track
   
   // Apply color palette based on track index
@@ -286,6 +316,7 @@ function loadTrack(index, shouldAutoplay = false) {
       pendingAutoplay = false;
       if (shouldPlayNow) {
         playSound();
+
       } else {
         updateButtonStates();
       }
@@ -300,6 +331,7 @@ function loadTrack(index, shouldAutoplay = false) {
     }
   );
 }
+
 
 function updateButtonStates() {
   if (playBtn) {
@@ -325,6 +357,7 @@ async function playSound() {
   }
   if (!sound.isPlaying) {
     sound.play();
+
     // Pause menu music when song starts playing
     pauseMenuMusic();
     updateButtonStates();
@@ -332,8 +365,8 @@ async function playSound() {
     if (popupsEnabled) {
       startErrorWindowLoop();
     }
-    // Start experimental visualizer if enabled
-    if (experimentalModeEnabled && experimentalCanvas) {
+    // Start experimental visualizer if enabled or if experimental+ is active
+    if ((experimentalModeEnabled || experimentalPlusActive) && experimentalCanvas) {
       startExperimentalVisualizerLoop();
     }
     // Apply experimental audio effects if experimental mode is already enabled
@@ -359,6 +392,7 @@ function stopSound() {
   pendingAutoplay = false;
   if (sound.isPlaying) {
     sound.stop();
+
     // Resume menu music when song stops
     resumeMenuMusic();
     updateButtonStates();
@@ -376,6 +410,7 @@ function stopSound() {
         window.clearTimeout(glitchTimeoutId);
         glitchTimeoutId = null;
       }
+
       if (videoGlitchOverlayEl) {
         videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
         videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
@@ -383,6 +418,7 @@ function stopSound() {
     }
     overlayIsActive = false;
   }
+
   
   // Stop any active color swap when music stops
   if (colorSwapActive) {
@@ -425,6 +461,7 @@ function changeTrack(step) {
   const shouldAutoplay = sound.isPlaying || pendingAutoplay;
   loadTrack(currentTrackIndex + step, shouldAutoplay);
 }
+
 
 // === Button Sound Effects ===
 const hoverSound = new Audio('./sound/hover.mp3');
@@ -473,7 +510,9 @@ setupButtonHover(camStopBtn);
 setupButtonHover(camRightBtn);
 setupButtonHover(popupsBtn);
 setupButtonHover(experimentalBtn);
+setupButtonHover(experimentalPlusBtn);
 setupButtonHover(splitScreenBtn);
+setupButtonHover(mirrorModeBtn);
 
 // Setup select sounds for play and stop buttons
 setupButtonSelect(playBtn);
@@ -487,7 +526,9 @@ setupButtonSelect2(camStopBtn);
 setupButtonSelect2(camRightBtn);
 setupButtonSelect2(popupsBtn);
 setupButtonSelect2(experimentalBtn);
+setupButtonSelect2(experimentalPlusBtn);
 setupButtonSelect2(splitScreenBtn);
+setupButtonSelect2(mirrorModeBtn);
 
 playBtn?.addEventListener("click", () => {
   playSound();
@@ -506,6 +547,7 @@ prevBtn?.addEventListener("click", () => {
 });
 
 updateTrackLabel();
+
 updateButtonStates(); // Set initial button states (stop should be active)
 
 // === Controls Toggle ===
@@ -571,6 +613,20 @@ popupsBtn?.addEventListener("click", () => {
   }
 });
 
+// === Experimental Plus Button Toggle ===
+experimentalPlusBtn?.addEventListener("click", () => {
+  experimentalPlusEnabled = !experimentalPlusEnabled;
+  if (experimentalPlusEnabled) {
+    experimentalPlusBtn.classList.add("active");
+  } else {
+    experimentalPlusBtn.classList.remove("active");
+    // Deactivate experimental+ mode if it's currently active
+    if (experimentalPlusActive) {
+      deactivateExperimentalPlus();
+    }
+  }
+});
+
 // === Split Screen Button Toggle ===
 splitScreenBtn?.addEventListener("click", () => {
   splitViewEnabled = !splitViewEnabled;
@@ -581,6 +637,20 @@ splitScreenBtn?.addEventListener("click", () => {
     // Deactivate split view if it's currently active
     if (splitViewActive) {
       deactivateSplitView();
+    }
+  }
+});
+
+// === Mirror Mode Button Toggle ===
+mirrorModeBtn?.addEventListener("click", () => {
+  mirrorModeEnabled = !mirrorModeEnabled;
+  if (mirrorModeEnabled) {
+    mirrorModeBtn.classList.add("active");
+  } else {
+    mirrorModeBtn.classList.remove("active");
+    // Deactivate mirror mode if it's currently active
+    if (mirrorModeActive) {
+      deactivateMirrorMode();
     }
   }
 });
@@ -604,7 +674,7 @@ function startExperimentalVisualizerLoop() {
   const ctx = experimentalCanvas.getContext('2d');
   
   function drawLoop() {
-    if (!experimentalModeEnabled) {
+    if (!experimentalModeEnabled && !experimentalPlusActive) {
       // Stop loop when experimental mode is off
       experimentalAnimationId = null;
       return;
@@ -923,7 +993,7 @@ experimentalBtn?.addEventListener("click", () => {
 
 // === Experimental Audio Effects ===
 function applyExperimentalAudioEffects() {
-  if (!experimentalModeEnabled || !sound || !sound.isPlaying) return;
+  if ((!experimentalModeEnabled && !experimentalPlusActive) || !sound || !sound.isPlaying) return;
   
   try {
     if (!audioContext) {
@@ -1035,7 +1105,7 @@ function applyExperimentalAudioEffects() {
     let dir = 1;
     let speed = 60; // Higher speed for more dynamic movement despite muffling
     const animateFilter = () => {
-      if (!experimentalModeEnabled || !experimentalLowPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !experimentalLowPassFilter) return;
       
       // High dynamic frequency variation - keeps it interesting despite muffling
       freq += dir * speed;
@@ -1055,7 +1125,7 @@ function applyExperimentalAudioEffects() {
     let bandDir = 1;
     let bandSpeed = 50; // Higher speed
     const animateBandpass = () => {
-      if (!experimentalModeEnabled || !experimentalBandPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !experimentalBandPassFilter) return;
       
       // High dynamic movement for bandpass - keeps character high
       bandFreq += bandDir * bandSpeed;
@@ -1074,7 +1144,7 @@ function applyExperimentalAudioEffects() {
     let qValue = 3.5;
     let qDir = 1;
     const animateQ = () => {
-      if (!experimentalModeEnabled || !experimentalLowPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !experimentalLowPassFilter) return;
       
       // Higher Q variation for more character despite muffling
       qValue += qDir * 0.25;
@@ -1173,7 +1243,7 @@ function removeExperimentalAudioEffects() {
 
 // === Menu Music Experimental Audio Effects ===
 function applyExperimentalMenuMusicEffects() {
-  if (!experimentalModeEnabled || !menuAudio || menuAudio.paused) return;
+  if ((!experimentalModeEnabled && !experimentalPlusActive) || !menuAudio || menuAudio.paused) return;
   
   try {
     if (!audioContext) {
@@ -1261,7 +1331,7 @@ function applyExperimentalMenuMusicEffects() {
     let dir = 1;
     let speed = 60;
     const animateFilter = () => {
-      if (!experimentalModeEnabled || !menuExperimentalLowPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !menuExperimentalLowPassFilter) return;
       freq += dir * speed;
       if (freq <= 650 || freq >= 1000) {
         dir *= -1;
@@ -1276,7 +1346,7 @@ function applyExperimentalMenuMusicEffects() {
     let bandDir = 1;
     let bandSpeed = 50;
     const animateBandpass = () => {
-      if (!experimentalModeEnabled || !menuExperimentalBandPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !menuExperimentalBandPassFilter) return;
       bandFreq += bandDir * bandSpeed;
       if (bandFreq <= 1500 || bandFreq >= 1950) {
         bandDir *= -1;
@@ -1290,7 +1360,7 @@ function applyExperimentalMenuMusicEffects() {
     let qValue = 3.5;
     let qDir = 1;
     const animateQ = () => {
-      if (!experimentalModeEnabled || !menuExperimentalLowPassFilter) return;
+      if ((!experimentalModeEnabled && !experimentalPlusActive) || !menuExperimentalLowPassFilter) return;
       qValue += qDir * 0.25;
       if (qValue <= 3.0 || qValue >= 4.2) {
         qDir *= -1;
@@ -1383,7 +1453,7 @@ function stopStaticSound() {
 
 // Update experimental info panel
 function updateExperimentalInfo() {
-  if (!experimentalModeEnabled) return;
+  if (!experimentalModeEnabled && !experimentalPlusActive) return;
   
   const statusEl = document.getElementById("experimental-status");
   const frequencyEl = document.getElementById("experimental-frequency");
@@ -1413,11 +1483,11 @@ function updateExperimentalInfo() {
   
   // Update resolution on resize
   const resolutionEl = document.getElementById("experimental-resolution");
-  if (resolutionEl && experimentalModeEnabled) {
+  if (resolutionEl && (experimentalModeEnabled || experimentalPlusActive)) {
     resolutionEl.textContent = `${window.innerWidth}×${window.innerHeight}`;
   }
   
-  if (experimentalModeEnabled) {
+  if (experimentalModeEnabled || experimentalPlusActive) {
     setTimeout(updateExperimentalInfo, 500);
   }
 }
@@ -1470,6 +1540,7 @@ function hideLoadingScreen() {
     
     // Start the overlay video loop after loading
 startOverlayVideoLoop();
+
     // Start the error window popup loop only if popups are enabled
     if (popupsEnabled) {
       startErrorWindowLoop();
@@ -1542,7 +1613,7 @@ function resumeMenuMusic() {
         menuAudio.volume = targetVolume;
         
         // Apply experimental effects if experimental mode is enabled
-        if (experimentalModeEnabled) {
+        if (experimentalModeEnabled || experimentalPlusActive) {
           setTimeout(() => {
             applyExperimentalMenuMusicEffects();
           }, 200);
@@ -1806,6 +1877,7 @@ function startOverlayVideoLoop() {
     
     // Restore original palette based on current track
     applyColorPalette(currentTrackIndex);
+
     
     // Add glitch effect before closing (matching error window behavior - identical to error windows)
     if (videoGlitchOverlayEl) {
@@ -1818,14 +1890,17 @@ function startOverlayVideoLoop() {
     glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
     
     // Trigger intense glitch for video end
+
     triggerIntenseGlitch(500);
     window.setTimeout(() => {
       videoOverlayEl.classList.remove("visible");
+
       if (videoGlitchOverlayEl) {
         videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
         videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
       }
       overlayIsActive = false;
+
     }, 550);
   };
 
@@ -1833,9 +1908,11 @@ function startOverlayVideoLoop() {
   overlayVideoEl.addEventListener("error", concludeOverlay);
 
   videoIntervalId = window.setInterval(() => {
-    if (experimentalModeEnabled) return; // Don't trigger overlays/color swaps in experimental mode
+
+    if (experimentalModeEnabled || experimentalPlusActive) return; // Don't trigger overlays/color swaps in experimental mode
     if (overlayIsActive || colorSwapActive) return;
     if (!sound.isPlaying) return; // Don't play videos if song isn't playing
+
     
     const randomValue = Math.random();
     console.log(`Video check: random=${randomValue.toFixed(3)}, threshold=${VIDEO_APPEAR_CHANCE}, will ${randomValue <= VIDEO_APPEAR_CHANCE ? 'SHOW VIDEO' : 'SHOW COLOR SWAP'}`);
@@ -1844,6 +1921,7 @@ function startOverlayVideoLoop() {
       // 50% chance: Video overlay appears
     const choice =
       overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
+
       if (!choice) {
         console.warn("No video choice available");
         return;
@@ -1857,12 +1935,14 @@ function startOverlayVideoLoop() {
       
       // Apply color swap FIRST (synchronously), then trigger glitch effect
     applyColorPalette(randomPaletteIndex);
+
       
       // Force a reflow to ensure color swap is rendered before glitch
       void videoOverlayEl.offsetHeight;
     
     overlayIsActive = true;
     videoOverlayEl.classList.add("visible");
+
       // Trigger glitch overlay (identical to error windows)
       if (videoGlitchOverlayEl) {
         videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
@@ -1875,6 +1955,7 @@ function startOverlayVideoLoop() {
     triggerIntenseGlitch(900);
     overlayVideoEl.src = `./video/${choice}`;
     overlayVideoEl.currentTime = 0;
+
       
       // Remove glitch after spawn animation (matching error window timing)
       setTimeout(() => {
@@ -1898,12 +1979,14 @@ function startOverlayVideoLoop() {
       }
     };
     
+
       overlayVideoEl.onloadeddata = () => {
         // Ensure video plays when loaded
     overlayVideoEl.play().catch((error) => {
       console.warn("Overlay video failed to play:", error);
       concludeOverlay();
     });
+
       };
       
       overlayVideoEl.onerror = () => {
@@ -1983,6 +2066,7 @@ function startOverlayVideoLoop() {
     }
   }, VIDEO_CHECK_INTERVAL);
 }
+
 
 // === Error Window Popup ===
 function createErrorWindow() {
@@ -2210,10 +2294,13 @@ function startErrorWindowLoop() {
 
 // === Color Palettes ===
 const colorPalettes = [
+
   // Palette 0: Vibrant Cyan/Magenta - High contrast electric
   {
+
     name: "Electric",
     skybox: {
+
       baseColor1: { x: 0.0, y: 0.025, z: 0.08 },
       baseColor2: { x: 0.0, y: 0.08, z: 0.12 },
       pulseTint1: { x: 0.0, y: 0.3, z: 0.7 },
@@ -2224,6 +2311,7 @@ const colorPalettes = [
     ring2: { color: 0xff00ff, emissive: 0xff00ff },
     ring3: { color: 0xffffff, emissive: 0xffffff },
     ring4: { color: 0x00ccff, emissive: 0x00ccff },
+
     ring5: { color: 0xff00cc, emissive: 0xff00cc },
     ring6: { color: 0x44ffff, emissive: 0x44ffff },
     ring7: { color: 0xff44ff, emissive: 0xff44ff },
@@ -2236,6 +2324,7 @@ const colorPalettes = [
   {
     name: "Inferno",
     skybox: {
+
       baseColor1: { x: 0.08, y: 0.0, z: 0.0 },
       baseColor2: { x: 0.12, y: 0.03, z: 0.0 },
       pulseTint1: { x: 0.7, y: 0.15, z: 0.0 },
@@ -2246,6 +2335,7 @@ const colorPalettes = [
     ring2: { color: 0xff4400, emissive: 0xff4400 },
     ring3: { color: 0xffff00, emissive: 0xffff00 },
     ring4: { color: 0xff6600, emissive: 0xff6600 },
+
     ring5: { color: 0xff2200, emissive: 0xff2200 },
     ring6: { color: 0xffaa00, emissive: 0xffaa00 },
     ring7: { color: 0xff8800, emissive: 0xff8800 },
@@ -2258,6 +2348,7 @@ const colorPalettes = [
   {
     name: "Cyber",
     skybox: {
+
       baseColor1: { x: 0.025, y: 0.0, z: 0.08 },
       baseColor2: { x: 0.08, y: 0.0, z: 0.12 },
       pulseTint1: { x: 0.3, y: 0.0, z: 0.7 },
@@ -2280,6 +2371,7 @@ const colorPalettes = [
   {
     name: "Lightning",
     skybox: {
+
       baseColor1: { x: 0.0, y: 0.04, z: 0.08 },
       baseColor2: { x: 0.015, y: 0.08, z: 0.12 },
       pulseTint1: { x: 0.0, y: 0.5, z: 0.8 },
@@ -2302,6 +2394,7 @@ const colorPalettes = [
   {
     name: "Sunset",
     skybox: {
+
       baseColor1: { x: 0.08, y: 0.02, z: 0.0 },
       baseColor2: { x: 0.12, y: 0.06, z: 0.02 },
       pulseTint1: { x: 0.8, y: 0.3, z: 0.1 },
@@ -2324,6 +2417,7 @@ const colorPalettes = [
   {
     name: "Aqua",
     skybox: {
+
       baseColor1: { x: 0.0, y: 0.04, z: 0.06 },
       baseColor2: { x: 0.0, y: 0.08, z: 0.10 },
       pulseTint1: { x: 0.0, y: 0.5, z: 0.6 },
@@ -2331,21 +2425,28 @@ const colorPalettes = [
       toneShift: { x: 0.7, y: 1.6, z: 1.7 },
     },
     ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
+
     ring2: { color: 0x00ff88, emissive: 0x00ff88 },
     ring3: { color: 0x88ffff, emissive: 0x88ffff },
     ring4: { color: 0x00ffaa, emissive: 0x00ffaa },
+
     ring5: { color: 0x44ffdd, emissive: 0x44ffdd },
     ring6: { color: 0x66ffee, emissive: 0x66ffee },
     ring7: { color: 0x00ffcc, emissive: 0x00ffcc },
+
     ring8: { color: 0x00ff66, emissive: 0x00ff66 },
     ring9: { color: 0x44ffff, emissive: 0x44ffff },
+
     inner: { color: 0x00ffcc, emissive: 0x44ffdd },
     outline: { visible: "#00ffcc", hidden: "#00ff88" },
   },
+
   // Palette 6: Deep Purple/Pink - Cosmic
   {
+
     name: "Cosmic",
     skybox: {
+
       baseColor1: { x: 0.06, y: 0.0, z: 0.08 },
       baseColor2: { x: 0.10, y: 0.02, z: 0.12 },
       pulseTint1: { x: 0.6, y: 0.0, z: 0.8 },
@@ -2405,13 +2506,17 @@ const colorPalettes = [
     ring7: { color: 0xff4400, emissive: 0xff4400 },
     ring8: { color: 0xff00aa, emissive: 0xff00aa },
     ring9: { color: 0xff8844, emissive: 0xff8844 },
+
     inner: { color: 0xff0044, emissive: 0xff4488 },
     outline: { visible: "#ff0000", hidden: "#ff0088" },
   },
+
   // Palette 9: Emerald/Teal - Ocean
   {
+
     name: "Ocean",
     skybox: {
+
       baseColor1: { x: 0.0, y: 0.06, z: 0.05 },
       baseColor2: { x: 0.0, y: 0.12, z: 0.10 },
       pulseTint1: { x: 0.0, y: 0.7, z: 0.6 },
@@ -2443,6 +2548,7 @@ const colorPalettes = [
     ring1: { color: 0xffcc00, emissive: 0xffcc00 },
     ring2: { color: 0xffff00, emissive: 0xffff00 },
     ring3: { color: 0xffffff, emissive: 0xffffff },
+
     ring4: { color: 0xffaa00, emissive: 0xffaa00 },
     ring5: { color: 0xffff44, emissive: 0xffff44 },
     ring6: { color: 0xffdd00, emissive: 0xffdd00 },
@@ -2456,6 +2562,7 @@ const colorPalettes = [
   {
     name: "Blood Moon",
     skybox: {
+
       baseColor1: { x: 0.08, y: 0.0, z: 0.06 },
       baseColor2: { x: 0.12, y: 0.01, z: 0.10 },
       pulseTint1: { x: 0.9, y: 0.0, z: 0.7 },
@@ -3071,6 +3178,7 @@ for (let i = 0; i < radialCount; i++) {
 }
 
 // === Camera ===
+
 camera.position.set(0, 25, 0);
 controls.target.set(0, 0, 0);
 controls.update();
@@ -3102,6 +3210,7 @@ composer.addPass(outlinePass);
 // === Color Palette Function ===
 function applyColorPalette(paletteIndex) {
   const palette = colorPalettes[paletteIndex % colorPalettes.length];
+
   currentActivePaletteIndex = paletteIndex % colorPalettes.length; // Update currently active palette
   
   // Update skybox shader uniforms
@@ -3180,28 +3289,56 @@ function animate() {
   
   // Better beat detection using bass frequencies (better for rhythm)
   const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
+
   const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
   
   // Rotate camera if rotation is active (with smooth acceleration/deceleration)
-  const targetSpeed = cameraRotationDirection * cameraRotationSpeed;
-  const speedDiff = targetSpeed - currentRotationSpeed;
-  // Smooth interpolation for acceleration/deceleration (0.08 = smooth easing factor)
-  currentRotationSpeed += speedDiff * 0.08;
-  
-  if (Math.abs(currentRotationSpeed) > 0.0001) {
-    const radius = Math.sqrt(camera.position.x ** 2 + camera.position.z ** 2);
-    const currentAngle = Math.atan2(camera.position.z, camera.position.x);
-    const newAngle = currentAngle + currentRotationSpeed;
-    camera.position.x = radius * Math.cos(newAngle);
-    camera.position.z = radius * Math.sin(newAngle);
-    controls.target.set(0, 0, 0);
+  // Skip rotation if split view, mirror mode, or experimental+ is active (camera is locked)
+  if (!splitViewActive && !mirrorModeActive && !experimentalPlusActive) {
+    const targetSpeed = cameraRotationDirection * cameraRotationSpeed;
+    const speedDiff = targetSpeed - currentRotationSpeed;
+    // Smooth interpolation for acceleration/deceleration (0.08 = smooth easing factor)
+    currentRotationSpeed += speedDiff * 0.08;
+    
+    if (Math.abs(currentRotationSpeed) > 0.0001) {
+      const radius = Math.sqrt(camera.position.x ** 2 + camera.position.z ** 2);
+      const currentAngle = Math.atan2(camera.position.z, camera.position.x);
+      const newAngle = currentAngle + currentRotationSpeed;
+      camera.position.x = radius * Math.cos(newAngle);
+      camera.position.z = radius * Math.sin(newAngle);
+      controls.target.set(0, 0, 0);
+    }
   }
   const midAvg = data.reduce((a, b, idx) => idx > 4 && idx < data.length * 0.5 ? a + b : a, 0) / (Math.floor(data.length * 0.5) - 5) / 255;
   
   // Moderate beat sensitivity enhancement - more noticeable but not extreme
   const beatBoost = bassAvg > 0.22 ? 1.0 + bassAvg * 0.5 : 1.0;
+
   
   controls.update();
+  
+  // Set camera to mirror mode position if active (AFTER controls.update to override it)
+  if (mirrorModeActive && !experimentalModeEnabled) {
+    // Set camera to specified mirror mode position (exact values provided by user)
+    // Position: X: -2.308351, Y: -1.939171, Z: 10.211834
+    camera.position.set(-2.308351, -1.939171, 10.211834);
+    // Target: X: 0.000000, Y: 0.000000, Z: 0.000000
+    controls.target.set(0.000000, 0.000000, 0.000000);
+    // Rotation: X: 0.187660, Y: -0.218532, Z: 0.041145
+    camera.rotation.set(0.187660, -0.218532, 0.041145);
+    // FOV: 65.000000
+    camera.fov = 65.000000;
+    camera.updateProjectionMatrix();
+  }
+  
+  // Set camera to startup position (on top of model) if split view is active
+  if (splitViewActive && !experimentalModeEnabled && !experimentalPlusActive) {
+    // Startup camera position: on top of the model
+    camera.position.set(0, 25, 0);
+    controls.target.set(0, 0, 0);
+    camera.fov = 65;
+    camera.updateProjectionMatrix();
+  }
 
   skyUniforms.uTime.value = clock.getElapsedTime();
   skyUniforms.uAudio.value = avg;
@@ -3429,8 +3566,19 @@ function animate() {
     videoOverlayEl.style.transition = "transform 0.08s ease-out"; // Slightly faster for more snappy feel
   }
 
-  // Check for random split view trigger (only when enabled, music is playing, and not in cooldown)
-  if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled) {
+
+  // Check for random experimental+ mode trigger (can trigger when others are active, but not when already active or manual experimental mode is on)
+  if (experimentalPlusEnabled && sound.isPlaying && !experimentalPlusActive && !experimentalModeEnabled) {
+    const timeSinceLastExperimental = Date.now() - experimentalPlusLastTriggered;
+    if (timeSinceLastExperimental > EXPERIMENTAL_PLUS_COOLDOWN) {
+      if (Math.random() < EXPERIMENTAL_PLUS_CHANCE) {
+        activateExperimentalPlus();
+      }
+    }
+  }
+
+  // Check for random split view trigger (cannot trigger when experimental+ is active, but can when it's just enabled)
+  if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled && !experimentalPlusActive) {
     const timeSinceLastSplit = Date.now() - splitViewLastTriggered;
     if (timeSinceLastSplit > SPLIT_VIEW_COOLDOWN) {
       if (Math.random() < SPLIT_VIEW_CHANCE) {
@@ -3439,17 +3587,425 @@ function animate() {
     }
   }
 
+  // Check for random mirror mode trigger (cannot trigger when experimental+ is active, but can when it's just enabled)
+  if (mirrorModeEnabled && sound.isPlaying && !mirrorModeActive && !experimentalModeEnabled && !experimentalPlusActive) {
+    const timeSinceLastMirror = Date.now() - mirrorModeLastTriggered;
+    if (timeSinceLastMirror > MIRROR_MODE_COOLDOWN) {
+      if (Math.random() < MIRROR_MODE_CHANCE) {
+        activateMirrorMode();
+      }
+    }
+  }
+
+  // Update camera debug display (very accurate values)
+  updateCameraDebug();
+  
   // Render split view if active
   if (splitViewActive && !experimentalModeEnabled) {
     renderSplitView();
+  } else if (mirrorModeActive && !experimentalModeEnabled) {
+    renderMirrorMode();
   } else {
   composer.render();
   }
 }
 
+// Camera debug display toggle
+const cameraDebugToggle = document.getElementById('camera-debug-toggle');
+const cameraDebugWrapper = document.getElementById('camera-debug-wrapper');
+if (cameraDebugToggle && cameraDebugWrapper) {
+  cameraDebugToggle.addEventListener('click', () => {
+    cameraDebugWrapper.classList.toggle('closed');
+  });
+}
+
+// Update camera debug display with very accurate values
+function updateCameraDebug() {
+  const debugDisplay = document.getElementById('camera-debug-display');
+  if (!debugDisplay) return;
+  
+  // Skip update if display is closed (performance optimization)
+  if (cameraDebugWrapper && cameraDebugWrapper.classList.contains('closed')) return;
+  
+  // Format values with high precision
+  const posX = camera.position.x.toFixed(6);
+  const posY = camera.position.y.toFixed(6);
+  const posZ = camera.position.z.toFixed(6);
+  const rotX = camera.rotation.x.toFixed(6);
+  const rotY = camera.rotation.y.toFixed(6);
+  const rotZ = camera.rotation.z.toFixed(6);
+  const targetX = controls.target.x.toFixed(6);
+  const targetY = controls.target.y.toFixed(6);
+  const targetZ = controls.target.z.toFixed(6);
+  const fov = camera.fov.toFixed(6);
+  
+  debugDisplay.innerHTML = `
+    <div class="camera-debug-title">CAMERA VALUES (VERY ACCURATE)</div>
+    <div class="camera-debug-section">
+      <div class="camera-debug-label">Position:</div>
+      <div class="camera-debug-value">X: <span id="cam-pos-x">${posX}</span></div>
+      <div class="camera-debug-value">Y: <span id="cam-pos-y">${posY}</span></div>
+      <div class="camera-debug-value">Z: <span id="cam-pos-z">${posZ}</span></div>
+    </div>
+    <div class="camera-debug-section">
+      <div class="camera-debug-label">Rotation:</div>
+      <div class="camera-debug-value">X: <span id="cam-rot-x">${rotX}</span></div>
+      <div class="camera-debug-value">Y: <span id="cam-rot-y">${rotY}</span></div>
+      <div class="camera-debug-value">Z: <span id="cam-rot-z">${rotZ}</span></div>
+    </div>
+    <div class="camera-debug-section">
+      <div class="camera-debug-label">Target:</div>
+      <div class="camera-debug-value">X: <span id="cam-target-x">${targetX}</span></div>
+      <div class="camera-debug-value">Y: <span id="cam-target-y">${targetY}</span></div>
+      <div class="camera-debug-value">Z: <span id="cam-target-z">${targetZ}</span></div>
+    </div>
+    <div class="camera-debug-section">
+      <div class="camera-debug-label">FOV:</div>
+      <div class="camera-debug-value"><span id="cam-fov">${fov}</span></div>
+    </div>
+  `;
+}
+
+// Activate mirror mode effect (with glitch and color swap)
+function activateMirrorMode() {
+  if (mirrorModeActive || experimentalModeEnabled || experimentalPlusActive) return;
+  
+  // Trigger glitch effect
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  // Wait for glitch animation, then activate mirror mode
+  setTimeout(() => {
+    // Store original camera state before changing it
+    if (!window.originalCameraState) {
+      window.originalCameraState = {
+        position: camera.position.clone(),
+        rotation: camera.rotation.clone(),
+        target: controls.target.clone(),
+        fov: camera.fov
+      };
+    }
+    
+    // Disable OrbitControls to prevent interference
+    controls.enabled = false;
+    
+    // Store original palette and pick ONE random palette (same for both halves)
+    mirrorModeOriginalPaletteIndex = currentActivePaletteIndex;
+    let randomPalette = Math.floor(Math.random() * colorPalettes.length);
+    // Make sure it's different from the current palette
+    while (randomPalette === mirrorModeOriginalPaletteIndex) {
+      randomPalette = Math.floor(Math.random() * colorPalettes.length);
+    }
+    mirrorModePaletteIndex = randomPalette;
+    
+    mirrorModeActive = true;
+    mirrorModeLastTriggered = Date.now();
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    // Auto-disable after duration
+    if (mirrorModeTimeoutId) {
+      window.clearTimeout(mirrorModeTimeoutId);
+    }
+    mirrorModeTimeoutId = window.setTimeout(() => {
+      deactivateMirrorMode();
+    }, MIRROR_MODE_DURATION);
+  }, 100);
+}
+
+// Deactivate mirror mode and restore normal view (with glitch)
+function deactivateMirrorMode() {
+  if (!mirrorModeActive) return;
+  
+  // Trigger glitch effect before deactivating
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  // Wait for glitch animation, then restore normal view
+  setTimeout(() => {
+    mirrorModeActive = false;
+    mirrorModePaletteIndex = null; // Clear mirror palette
+    
+    // Restore original camera state
+    if (window.originalCameraState) {
+      camera.position.copy(window.originalCameraState.position);
+      camera.rotation.copy(window.originalCameraState.rotation);
+      controls.target.copy(window.originalCameraState.target);
+      camera.fov = window.originalCameraState.fov;
+      camera.updateProjectionMatrix();
+      controls.enabled = true;
+      controls.update();
+      window.originalCameraState = null;
+    }
+    
+    // Restore original palette
+    applyColorPalette(mirrorModeOriginalPaletteIndex);
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    if (mirrorModeTimeoutId) {
+      window.clearTimeout(mirrorModeTimeoutId);
+      mirrorModeTimeoutId = null;
+    }
+  }, 100);
+}
+
+// === Experimental Plus Mode Functions ===
+function activateExperimentalPlus() {
+  experimentalPlusActive = true;
+  experimentalPlusLastTriggered = Date.now();
+  
+  // Deactivate split view if it's active (experimental+ can interrupt it)
+  if (splitViewActive) {
+    deactivateSplitView();
+  }
+  
+  // Deactivate mirror mode if it's active (experimental+ can interrupt it)
+  if (mirrorModeActive) {
+    deactivateMirrorMode();
+  }
+  
+  // Trigger glitch effect and sound
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  const wrapper = document.getElementById("experimental-screen-wrapper");
+  const container = document.getElementById("container");
+  
+  // Stop any active video overlays and color swaps
+  if (overlayIsActive && overlayVideoEl) {
+    overlayVideoEl.pause();
+    overlayVideoEl.removeAttribute("src");
+    overlayVideoEl.load();
+    if (videoOverlayEl) {
+      videoOverlayEl.classList.remove("visible");
+      if (glitchTimeoutId) {
+        window.clearTimeout(glitchTimeoutId);
+        glitchTimeoutId = null;
+      }
+    }
+    overlayIsActive = false;
+  }
+  
+  if (colorSwapActive) {
+    if (colorSwapTimeoutId) {
+      window.clearTimeout(colorSwapTimeoutId);
+      colorSwapTimeoutId = null;
+    }
+    // Restore original palette
+    applyColorPalette(currentTrackIndex);
+    colorSwapActive = false;
+  }
+  
+  // Wait for glitch animation, then show experimental screen
+  setTimeout(() => {
+    // Hide 3D container, show experimental canvas
+    if (container) container.style.display = "none";
+    
+    if (wrapper) {
+      wrapper.classList.add("active");
+      // Update resolution display
+      const resolutionEl = document.getElementById("experimental-resolution");
+      if (resolutionEl) {
+        resolutionEl.textContent = `${window.innerWidth}×${window.innerHeight}`;
+      }
+    }
+    if (experimentalCanvas) {
+      experimentalCanvas.style.display = "block";
+      // Start visualizer loop
+      startExperimentalVisualizerLoop();
+      // Start updating info displays
+      updateExperimentalInfo();
+    }
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    // Apply audio effects (Sonic boost muffled effect)
+    if (sound.isPlaying) {
+      setTimeout(() => {
+        applyExperimentalAudioEffects();
+      }, 200);
+    }
+    
+    // Apply experimental effects to menu music if it's playing
+    if (menuAudio && !menuAudio.paused) {
+      setTimeout(() => {
+        applyExperimentalMenuMusicEffects();
+      }, 200);
+    }
+    
+    // Start static sound
+    startStaticSound();
+    
+    // Set timeout to deactivate after duration
+    experimentalPlusTimeoutId = window.setTimeout(() => {
+      deactivateExperimentalPlus();
+    }, EXPERIMENTAL_PLUS_DURATION);
+  }, 100);
+}
+
+function deactivateExperimentalPlus() {
+  // Clear timeout if still set
+  if (experimentalPlusTimeoutId) {
+    window.clearTimeout(experimentalPlusTimeoutId);
+    experimentalPlusTimeoutId = null;
+  }
+  
+  // Trigger glitch effect and sound
+  if (videoGlitchOverlayEl) {
+    videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
+    videoGlitchOverlayEl.classList.add("video-glitch-overlay-active");
+  }
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  const wrapper = document.getElementById("experimental-screen-wrapper");
+  
+  // Hide experimental screen first, then show 3D after glitch
+  if (wrapper) {
+    wrapper.classList.remove("active");
+  }
+  if (experimentalCanvas) {
+    experimentalCanvas.style.display = "none";
+  }
+  stopExperimentalVisualizer();
+  
+  // Stop static sound
+  stopStaticSound();
+  
+  // Remove audio effects BEFORE showing 3D container
+  removeExperimentalAudioEffects();
+  
+  // Wait for glitch animation, then show 3D container
+  setTimeout(() => {
+    const container = document.getElementById("container");
+    if (container) container.style.display = "block";
+    
+    // Ensure audio continues playing
+    const wasPlaying = sound.isPlaying;
+    if (wasPlaying && sound.buffer && !sound.isPlaying) {
+      setTimeout(() => {
+        if (sound.buffer && !sound.isPlaying) {
+          sound.play().catch(err => console.warn("Could not resume audio:", err));
+        }
+      }, 100);
+    }
+    
+    // Remove glitch after transition
+    setTimeout(() => {
+      if (videoGlitchOverlayEl) {
+        videoGlitchOverlayEl.classList.remove("video-glitch-overlay-active");
+        videoGlitchOverlayEl.classList.add("video-glitch-overlay-hidden");
+      }
+    }, 500);
+    
+    experimentalPlusActive = false;
+  }, 100);
+}
+
+// Render mirror mode (main visualizer on top, mirrored reflection on bottom)
+// Both halves use the same palette (mirrorModePaletteIndex)
+function renderMirrorMode() {
+  if (mirrorModePaletteIndex === null) {
+    // Fallback to normal render if palette not set
+    composer.render();
+    return;
+  }
+  
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const halfHeight = Math.floor(height / 2);
+  
+  // Store original renderer settings
+  const originalViewport = renderer.getViewport(new THREE.Vector4());
+  const originalScissor = renderer.getScissor(new THREE.Vector4());
+  const originalScissorTest = renderer.getScissorTest();
+  const originalAspect = camera.aspect;
+  const originalScale = scene.scale.clone();
+  
+  // Enable scissor test for viewport clipping
+  renderer.setScissorTest(true);
+  
+  // Render top half (normal view) - full width with swapped palette
+  renderer.setViewport(0, halfHeight, width, halfHeight);
+  renderer.setScissor(0, halfHeight, width, halfHeight);
+  camera.aspect = width / halfHeight;
+  camera.updateProjectionMatrix();
+  scene.scale.set(1, 1, 1); // Normal scale
+  applyColorPalette(mirrorModePaletteIndex); // Same palette for both halves
+  composer.render();
+  
+  // Render bottom half (mirrored/flipped view underneath) - full width with same palette
+  renderer.setViewport(0, 0, width, halfHeight);
+  renderer.setScissor(0, 0, width, halfHeight);
+  
+  // Scale scene to flip vertically (mirror effect)
+  scene.scale.set(1, -1, 1); // Flip Y axis for mirror
+  camera.aspect = width / halfHeight;
+  camera.updateProjectionMatrix();
+  applyColorPalette(mirrorModePaletteIndex); // Same palette for both halves
+  composer.render();
+  
+  // Restore scene scale
+  scene.scale.copy(originalScale);
+  
+  // Restore original settings
+  camera.aspect = originalAspect;
+  camera.updateProjectionMatrix();
+  renderer.setViewport(originalViewport);
+  renderer.setScissor(originalScissor);
+  renderer.setScissorTest(originalScissorTest);
+}
+
 // Activate split view effect (always 2 splits for performance)
 function activateSplitView() {
-  if (splitViewActive || experimentalModeEnabled) return;
+  if (splitViewActive || experimentalModeEnabled || experimentalPlusActive) return;
   
   // Trigger glitch effect
   if (videoGlitchOverlayEl) {
@@ -3465,6 +4021,19 @@ function activateSplitView() {
   
   // Wait for glitch animation, then activate split view
   setTimeout(() => {
+    // Store original camera state before changing it
+    if (!splitViewOriginalCameraState) {
+      splitViewOriginalCameraState = {
+        position: camera.position.clone(),
+        rotation: camera.rotation.clone(),
+        target: controls.target.clone(),
+        fov: camera.fov
+      };
+    }
+    
+    // Disable OrbitControls to prevent interference
+    controls.enabled = false;
+    
     splitViewActive = true;
     splitViewLastTriggered = Date.now();
     originalPaletteIndex = currentActivePaletteIndex;
@@ -3524,6 +4093,18 @@ function deactivateSplitView() {
     splitViewCornerPalettes = null; // Clear split palettes
     splitViewHalfWidth = 0;
     splitViewAspect = 0;
+    
+    // Restore original camera state
+    if (splitViewOriginalCameraState) {
+      camera.position.copy(splitViewOriginalCameraState.position);
+      camera.rotation.copy(splitViewOriginalCameraState.rotation);
+      controls.target.copy(splitViewOriginalCameraState.target);
+      camera.fov = splitViewOriginalCameraState.fov;
+      camera.updateProjectionMatrix();
+      controls.enabled = true;
+      controls.update();
+      splitViewOriginalCameraState = null;
+    }
     
     // Restore original palette
     applyColorPalette(originalPaletteIndex);
@@ -3602,6 +4183,7 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+
   
   // Resize experimental canvas
   if (experimentalCanvas) {
