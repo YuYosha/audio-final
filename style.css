@@ -1246,6 +1246,53 @@ body {
   overflow: hidden;
 }
 
+/* Test Button - Bottom Left */
+#test-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  z-index: 5001;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+#test-btn {
+  background: #000;
+  border: 3px solid #ff0000;
+  border-radius: 0;
+  padding: 12px 24px;
+  cursor: pointer;
+  color: #ff0000;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(255, 0, 0, 0.8),
+    inset 0 0 10px rgba(255, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+  pointer-events: auto;
+  position: relative;
+  z-index: 5002;
+}
+
+#test-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  color: #ffffff;
+  box-shadow: 
+    0 0 30px rgba(255, 0, 0, 1),
+    inset 0 0 15px rgba(255, 0, 0, 0.5);
+  text-shadow: 0 0 15px rgba(255, 0, 0, 1);
+}
+
+#test-btn:active {
+  background: rgba(255, 0, 0, 0.3);
+  transform: scale(0.95);
+}
+
 /* Popups Controls - Right Side (like camera debug but from right) */
 #popups-controls {
   position: fixed;

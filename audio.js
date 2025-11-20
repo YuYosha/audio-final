@@ -579,7 +579,23 @@ popupsToggle?.addEventListener("click", () => {
 });
 
 // === Popups Button Toggle ===
+// Random chance to trigger hacked screen (very very small chance - 0.1%)
+const HACKED_SCREEN_CHANCE = 0.001;
+
+function checkHackedScreenChance() {
+  if (Math.random() < HACKED_SCREEN_CHANCE) {
+    showHackedScreen();
+    return true;
+  }
+  return false;
+}
+
 popupsBtn?.addEventListener("click", () => {
+  // Check for random hacked screen trigger
+  if (checkHackedScreenChance()) {
+    return; // Don't toggle if hacked screen triggered
+  }
+  
   popupsEnabled = !popupsEnabled;
   if (popupsEnabled) {
     popupsBtn.classList.add("active");
@@ -619,6 +635,11 @@ popupsBtn?.addEventListener("click", () => {
 
 // === Experimental Plus Button Toggle ===
 experimentalPlusBtn?.addEventListener("click", () => {
+  // Check for random hacked screen trigger
+  if (checkHackedScreenChance()) {
+    return; // Don't toggle if hacked screen triggered
+  }
+  
   experimentalPlusEnabled = !experimentalPlusEnabled;
   if (experimentalPlusEnabled) {
     experimentalPlusBtn.classList.add("active");
@@ -633,6 +654,11 @@ experimentalPlusBtn?.addEventListener("click", () => {
 
 // === Split Screen Button Toggle ===
 splitScreenBtn?.addEventListener("click", () => {
+  // Check for random hacked screen trigger
+  if (checkHackedScreenChance()) {
+    return; // Don't toggle if hacked screen triggered
+  }
+  
   splitViewEnabled = !splitViewEnabled;
   if (splitViewEnabled) {
     splitScreenBtn.classList.add("active");
@@ -647,6 +673,11 @@ splitScreenBtn?.addEventListener("click", () => {
 
 // === Mirror Mode Button Toggle ===
 mirrorModeBtn?.addEventListener("click", () => {
+  // Check for random hacked screen trigger
+  if (checkHackedScreenChance()) {
+    return; // Don't toggle if hacked screen triggered
+  }
+  
   mirrorModeEnabled = !mirrorModeEnabled;
   if (mirrorModeEnabled) {
     mirrorModeBtn.classList.add("active");
@@ -862,6 +893,11 @@ function drawStaticLine() {
 }
 
 experimentalBtn?.addEventListener("click", () => {
+  // Check for random hacked screen trigger
+  if (checkHackedScreenChance()) {
+    return; // Don't toggle if hacked screen triggered
+  }
+  
   experimentalModeEnabled = !experimentalModeEnabled;
   const wrapper = document.getElementById("experimental-screen-wrapper");
   
@@ -1590,12 +1626,23 @@ function startMenuMusic() {
 }
 
 function pauseMenuMusic() {
-  if (menuAudio && !menuAudio.paused) {
+  if (menuAudio) {
     menuAudio.pause();
   }
 }
 
 function resumeMenuMusic() {
+  // Check if hacked screen is active - don't resume if it is
+  const hackedScreen = document.getElementById('hacked-screen');
+  if (hackedScreen && !hackedScreen.classList.contains('hacked-screen-hidden')) {
+    return; // Don't resume menu music if hacked screen is visible
+  }
+  
+  // Check if warning sound is playing - don't resume if it is
+  if (warningSound && !warningSound.paused) {
+    return; // Don't resume menu music if warning sound is playing
+  }
+  
   if (menuAudio && menuAudio.paused) {
     menuAudio.volume = 0;
     menuAudio.play().catch(err => console.warn("Could not resume menu music:", err));
@@ -1849,7 +1896,24 @@ function setupWelcomePopup() {
 
 // === Warning Popup Management ===
 function startWarningSound() {
-  // Pause menu music while warning sound plays
+  // Check if we should actually play - only if warning popup or hacked screen is visible
+  const warningPopup = document.getElementById('warning-popup');
+  const hackedScreen = document.getElementById('hacked-screen');
+  const isWarningVisible = warningPopup && !warningPopup.classList.contains('warning-popup-hidden');
+  const isHackedVisible = hackedScreen && !hackedScreen.classList.contains('hacked-screen-hidden');
+  const shouldPlay = isWarningVisible || isHackedVisible;
+  
+  if (!shouldPlay) {
+    // Don't play if neither is visible - stop any playing sound
+    if (warningSound && !warningSound.paused) {
+      warningSound.pause();
+      warningSound.currentTime = 0;
+      console.log("Warning sound stopped - neither popup nor hacked screen is visible");
+    }
+    return;
+  }
+  
+  // Pause menu music while warning sound plays (but NOT song audio)
   pauseMenuMusic();
   
   // Create warning sound if it doesn't exist
@@ -1873,7 +1937,32 @@ function startWarningSound() {
     
     warningSound.addEventListener('ended', () => {
       console.log("Warning sound ended (should loop)");
+      // Check if we should still play - only if warning popup or hacked screen is still active
+      const warningPopup = document.getElementById('warning-popup');
+      const hackedScreen = document.getElementById('hacked-screen');
+      const isWarningVisible = warningPopup && !warningPopup.classList.contains('warning-popup-hidden');
+      const isHackedVisible = hackedScreen && !hackedScreen.classList.contains('hacked-screen-hidden');
+      const shouldStillPlay = isWarningVisible || isHackedVisible;
+      
+      if (warningSound && warningSound.loop && shouldStillPlay) {
+        // Restart the loop
+        warningSound.currentTime = 0;
+        warningSound.play().catch(e => console.warn("Warning sound restart failed:", e));
+      } else {
+        // Stop if neither is visible
+        if (warningSound && !warningSound.paused) {
+          warningSound.pause();
+          warningSound.currentTime = 0;
+          console.log("Warning sound stopped in ended handler - neither popup nor hacked screen is visible");
+        }
+      }
     });
+  }
+  
+  // Stop any currently playing warning sound first to avoid overlapping/crackling
+  if (warningSound && !warningSound.paused) {
+    warningSound.pause();
+    warningSound.currentTime = 0;
   }
   
   // Ensure loop is set
@@ -1882,28 +1971,34 @@ function startWarningSound() {
   // Reset to beginning
   warningSound.currentTime = 0;
   
+  // Double-check we should still play before actually playing
+  const warningPopupCheck = document.getElementById('warning-popup');
+  const hackedScreenCheck = document.getElementById('hacked-screen');
+  const isWarningVisibleCheck = warningPopupCheck && !warningPopupCheck.classList.contains('warning-popup-hidden');
+  const isHackedVisibleCheck = hackedScreenCheck && !hackedScreenCheck.classList.contains('hacked-screen-hidden');
+  const shouldStillPlayCheck = isWarningVisibleCheck || isHackedVisibleCheck;
+  
+  if (!shouldStillPlayCheck) {
+    // Don't play if visibility changed
+    return;
+  }
+  
   // Play the sound
   warningSound.play()
     .then(() => {
       console.log("Warning sound started successfully");
-      // Double-check loop is enabled
       warningSound.loop = true;
     })
     .catch(err => {
       console.error("Could not play warning sound:", err);
-      // Retry after a delay
-      setTimeout(() => {
-        if (warningSound) {
-          warningSound.play().catch(e => console.error("Retry failed:", e));
-        }
-      }, 500);
     });
 }
 
 function stopWarningSound() {
-  if (warningSound && !warningSound.paused) {
+  if (warningSound) {
     warningSound.pause();
     warningSound.currentTime = 0;
+    console.log("Warning sound stopped");
   }
   
   // Resume menu music if it was playing before (only if hacked screen is not active)
@@ -1928,6 +2023,14 @@ function showHackedScreen() {
     const controls = document.getElementById("controls");
     if (controls) controls.style.display = "none";
     
+    // Hide popups controls
+    const popupsControls = document.getElementById("popups-controls");
+    if (popupsControls) popupsControls.style.display = "none";
+    
+    // Hide test button
+    const testControls = document.getElementById("test-controls");
+    if (testControls) testControls.style.display = "none";
+    
     // Show hacked screen
     hackedScreen.classList.remove('hacked-screen-hidden');
     hackedScreen.classList.add('hacked-screen-visible');
@@ -1940,6 +2043,12 @@ function showHackedScreen() {
 function showWarningPopup() {
   const warningPopup = document.getElementById('warning-popup');
   if (warningPopup) {
+    // Stop any existing warning sound first (in case it's playing from somewhere else)
+    if (warningSound && !warningSound.paused) {
+      warningSound.pause();
+      warningSound.currentTime = 0;
+    }
+    
     // Add glitch effect
     warningPopup.classList.add('warning-popup-glitching');
     warningPopup.classList.remove('warning-popup-hidden');
@@ -1952,7 +2061,7 @@ function showWarningPopup() {
       glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
     }
     
-    // Start warning sound
+    // Start warning sound (only for warning popup)
     startWarningSound();
     
     // Remove glitch after animation
@@ -1965,7 +2074,8 @@ function showWarningPopup() {
 function hideWarningPopup() {
   const warningPopup = document.getElementById('warning-popup');
   if (warningPopup) {
-    // Don't stop warning sound - it will continue in hacked screen
+    // Stop warning sound when popup closes
+    stopWarningSound();
     
     // Add glitch effect before closing
     warningPopup.classList.add('warning-popup-glitching');
@@ -1976,14 +2086,10 @@ function hideWarningPopup() {
       glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
     }
     
-    // Wait for glitch animation, then hide and show hacked screen
+    // Wait for glitch animation, then hide
     setTimeout(() => {
       warningPopup.classList.remove('warning-popup-visible', 'warning-popup-glitching');
       warningPopup.classList.add('warning-popup-hidden');
-      // Show hacked screen after warning popup closes (for testing)
-      setTimeout(() => {
-        showHackedScreen();
-      }, 500);
     }, 500);
   }
 }
@@ -2022,6 +2128,17 @@ window.addEventListener('load', () => {
   setupWelcomePopup();
   // Setup warning popup event listeners
   setupWarningPopup();
+  
+  // Setup test button for hacked screen
+  const testBtn = document.getElementById("test-btn");
+  if (testBtn) {
+    setupButtonHover(testBtn);
+    setupButtonSelect2(testBtn);
+    
+    testBtn.addEventListener("click", () => {
+      showHackedScreen();
+    });
+  }
   cycleMenuItems();
   preloadAssets();
 });
@@ -3468,6 +3585,24 @@ const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const data = analyser.getFrequencyData();
+  
+  // Check if warning sound should be playing - stop it if neither popup nor hacked screen is visible
+  if (warningSound && !warningSound.paused) {
+    const warningPopup = document.getElementById('warning-popup');
+    const hackedScreen = document.getElementById('hacked-screen');
+    const isWarningVisible = warningPopup && !warningPopup.classList.contains('warning-popup-hidden');
+    const isHackedVisible = hackedScreen && !hackedScreen.classList.contains('hacked-screen-hidden');
+    const shouldPlay = isWarningVisible || isHackedVisible;
+    
+    if (!shouldPlay) {
+      // Stop warning sound if neither is visible
+      warningSound.pause();
+      warningSound.currentTime = 0;
+      console.log("Warning sound stopped in animation loop - neither popup nor hacked screen is visible");
+      // Resume menu music if it should be playing
+      resumeMenuMusic();
+    }
+  }
   
   // Better beat detection using bass frequencies (better for rhythm)
   const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
