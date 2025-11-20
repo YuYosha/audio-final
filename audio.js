@@ -112,6 +112,7 @@ const videoOverlayEl = document.getElementById("video-overlay");
 const overlayVideoEl = document.getElementById("overlay-video");
 const videoGlitchOverlayEl = document.getElementById("video-glitch-overlay");
 
+// Video overlays (for full-screen overlays)
 const overlayVideos = [
  "asgore.mp4",
  "benson.mp4",
@@ -133,6 +134,29 @@ const overlayVideos = [
   "cream.mp4",
   "DC.mp4", 
 ];
+
+// Popup videos (for error window popups - uses PopUps folder)
+const popupVideos = [
+  "asgore.mp4",
+  "benson.mp4",
+  "cream.mp4",
+  "dante.mp4",
+  "DC.mp4",
+  "eggman.mp4",
+  "eggsax.mp4",
+  "goku.mp4",
+  "jojo.mp4",
+  "metal.mp4",
+  "metroman.mp4",
+  "mez.mp4",
+  "p3.mp4",
+  "pbj.mp4",
+  "ratdance.mp4",
+  "rewrite.mp4",
+  "springtrap.mp4",
+  "teto.mp4",
+  "tf2.mp4",
+];
 const VIDEO_CHECK_INTERVAL = 25000; // Increased to 25s - triggers less frequently, more separation
 const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance between video and color swap
 const COLOR_SWAP_DURATION = 7000; // 7 seconds
@@ -144,8 +168,9 @@ let glitchTimeoutId = null;
 let currentActivePaletteIndex = 0; // Track the currently active palette (not just track default)
 
 // Error window popup
-const ERROR_WINDOW_INTERVAL = 4000; // More sporadic - check every 4 seconds
-const ERROR_APPEAR_CHANCE = 0.3; // 30% chance per interval - more sporadic
+const ERROR_WINDOW_INTERVAL = 2500; // Frantic but not spammed - check every 2.5 seconds
+const ERROR_APPEAR_CHANCE = 0.45; // 45% chance per interval - frantic but controlled
+const MAX_ACTIVE_POPUPS = 8; // Allow up to 8 popups on screen at once
 let errorWindowIntervalId = null;
 let activeErrorWindows = []; // Track multiple active windows
 let popupsEnabled = false; // Toggle for popups
@@ -1494,13 +1519,17 @@ function startOverlayVideoLoop() {
         return;
       }
       
-      // Randomly pick a color palette when video loads, but exclude the currently active palette
+      // Randomly pick a color palette when video loads, but exclude the currently active palette AND the original track palette
       let randomPaletteIndex;
       do {
         randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
-      } while (randomPaletteIndex === currentActivePaletteIndex); // Prevent swapping to same palette
+      } while (randomPaletteIndex === currentActivePaletteIndex || randomPaletteIndex === currentTrackIndex); // Prevent swapping to same palette or original track color
       
+      // Apply color swap FIRST (synchronously), then trigger glitch effect
       applyColorPalette(randomPaletteIndex);
+      
+      // Force a reflow to ensure color swap is rendered before glitch
+      void videoOverlayEl.offsetHeight;
       
       overlayIsActive = true;
       videoOverlayEl.classList.add("visible");
@@ -1566,6 +1595,19 @@ function startOverlayVideoLoop() {
       });
     } else {
       // 50% chance: Color swap (when video doesn't appear)
+      // Randomly pick a color palette FIRST, but exclude the currently active palette AND the original track palette
+      let randomPaletteIndex;
+      do {
+        randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
+      } while (randomPaletteIndex === currentActivePaletteIndex || randomPaletteIndex === currentTrackIndex); // Prevent swapping to same palette or original track color
+      
+      // Apply color swap FIRST (synchronously), then trigger glitch effect
+      applyColorPalette(randomPaletteIndex);
+      colorSwapActive = true;
+      
+      // Force a reflow to ensure color swap is rendered before glitch
+      void document.body.offsetHeight;
+      
       // Trigger glitch overlay at start
       if (videoGlitchOverlayEl) {
         videoGlitchOverlayEl.classList.remove("video-glitch-overlay-hidden");
@@ -1575,16 +1617,6 @@ function startOverlayVideoLoop() {
       // Play glitch sound at start
       glitchSound.currentTime = 0;
       glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
-      
-      // Randomly pick a color palette, but exclude the currently active palette
-      let randomPaletteIndex;
-      do {
-        randomPaletteIndex = Math.floor(Math.random() * colorPalettes.length);
-      } while (randomPaletteIndex === currentActivePaletteIndex); // Prevent swapping to same palette
-      
-      applyColorPalette(randomPaletteIndex);
-      
-      colorSwapActive = true;
       
       // Remove glitch after spawn animation (matching error window timing)
       setTimeout(() => {
@@ -1663,15 +1695,16 @@ function startErrorWindowLoop() {
     return;
   }
   
-  if (!overlayVideos.length || errorWindowIntervalId) {
+  if (!popupVideos.length || errorWindowIntervalId) {
     return;
   }
 
   errorWindowIntervalId = window.setInterval(() => {
     if (!sound.isPlaying) return; // Don't show error windows if song isn't playing
+    if (activeErrorWindows.length >= MAX_ACTIVE_POPUPS) return; // Don't create more if max reached
     if (Math.random() > ERROR_APPEAR_CHANCE) return;
     
-    const choice = overlayVideos[Math.floor(Math.random() * overlayVideos.length)];
+    const choice = popupVideos[Math.floor(Math.random() * popupVideos.length)];
     if (!choice) return;
     
     const errorWindowEl = createErrorWindow();
@@ -1742,37 +1775,18 @@ function startErrorWindowLoop() {
     let randomX, randomY;
     let attempts = 0;
     
-    // Helper function to get slightly weighted random position (slight bias towards edges)
-    const getWeightedRandom = (min, max, center) => {
-      // Use a subtle power function to slightly favor edges
-      const power = 1.3; // Lower power = more subtle bias
-      const normalized = Math.random();
-      // Transform to slightly favor edges
-      const weighted = Math.pow(normalized, 1 / power);
-      // Map to range with subtle edge bias
-      const range = max - min;
-      const distanceFromCenter = (weighted - 0.5) * 2; // -1 to 1
-      // Apply subtle bias: slight preference for edges
-      const bias = distanceFromCenter * 0.3; // 30% bias towards edges
-      return center + bias * (range / 2);
-    };
-    
     // Try to find a valid position (avoid overlapping buttons and other windows)
-    while (!validPosition && attempts < 100) {
-      const centerX = window.innerWidth / 2;
-      const centerY = window.innerHeight / 2;
+    // Use truly random positions across the entire screen
+    while (!validPosition && attempts < 200) {
+      // Generate completely random positions across the entire screen
       const minX = padding;
       const maxX = window.innerWidth - randomWidth - padding;
       const minY = padding;
       const maxY = window.innerHeight - randomHeight - padding;
       
-      // Use weighted random to favor positions further from center
-      randomX = getWeightedRandom(minX, maxX, centerX);
-      randomY = getWeightedRandom(minY, maxY, centerY);
-      
-      // Clamp to valid range
-      randomX = Math.max(minX, Math.min(maxX, randomX));
-      randomY = Math.max(minY, Math.min(maxY, randomY));
+      // Truly random position - no bias, no weighting, just pure randomness
+      randomX = minX + Math.random() * (maxX - minX);
+      randomY = minY + Math.random() * (maxY - minY);
       
       // Check if it overlaps with top left (author name)
       const overlapsTopLeft = randomX < avoidTopLeftWidth && randomY < avoidTopLeftHeight;
@@ -1788,7 +1802,7 @@ function startErrorWindowLoop() {
                             randomX + randomWidth > controlsLeft && 
                             randomX < controlsRight;
       
-      // Check if it overlaps with other active error windows
+      // Check if it overlaps with other active error windows (but allow more overlap for frantic feel)
       let overlapsOtherWindow = false;
       const container = document.getElementById("error-windows-container");
       if (container) {
@@ -1796,11 +1810,18 @@ function startErrorWindowLoop() {
         for (const existingWindow of existingWindows) {
           if (existingWindow === errorWindowEl) continue;
           const rect = existingWindow.getBoundingClientRect();
+          // Allow significant overlap for more frantic, chaotic feel - only avoid if mostly overlapping
           const overlapX = !(randomX + randomWidth < rect.left || randomX > rect.right);
           const overlapY = !(randomY + randomHeight < rect.top || randomY > rect.bottom);
+          // Only consider it overlapping if there's more than 50% area overlap (allow lots of chaos!)
           if (overlapX && overlapY) {
-            overlapsOtherWindow = true;
-            break;
+            const overlapArea = Math.max(0, Math.min(randomX + randomWidth, rect.right) - Math.max(randomX, rect.left)) *
+                               Math.max(0, Math.min(randomY + randomHeight, rect.bottom) - Math.max(randomY, rect.top));
+            const windowArea = randomWidth * randomHeight;
+            if (overlapArea > windowArea * 0.5) { // More than 50% overlap - allow lots of partial overlap
+              overlapsOtherWindow = true;
+              break;
+            }
           }
         }
       }
@@ -1812,28 +1833,15 @@ function startErrorWindowLoop() {
       attempts++;
     }
     
-    // If we couldn't find a valid position after 100 attempts, just place it in a safe edge area
+    // If we couldn't find a valid position after 200 attempts, just place it randomly anywhere
     if (!validPosition) {
-      // Place in a corner area (favors edges)
-      const corner = Math.floor(Math.random() * 4);
-      switch(corner) {
-        case 0: // Top-left (but avoid author name)
-          randomX = avoidTopLeftWidth + padding;
-          randomY = avoidTopLeftHeight + padding;
-          break;
-        case 1: // Top-right (but avoid camera controls)
-          randomX = window.innerWidth - avoidTopRightWidth - randomWidth - padding;
-          randomY = avoidTopRightHeight + padding;
-          break;
-        case 2: // Bottom-left
-          randomX = padding;
-          randomY = window.innerHeight - randomHeight - avoidBottomHeight - padding;
-          break;
-        case 3: // Bottom-right
-          randomX = window.innerWidth - randomWidth - padding;
-          randomY = window.innerHeight - randomHeight - avoidBottomHeight - padding;
-          break;
-      }
+      // Just place it completely randomly - don't restrict to corners
+      const minX = padding;
+      const maxX = window.innerWidth - randomWidth - padding;
+      const minY = padding;
+      const maxY = window.innerHeight - randomHeight - padding;
+      randomX = minX + Math.random() * (maxX - minX);
+      randomY = minY + Math.random() * (maxY - minY);
     }
     
     errorWindowEl.style.left = `${randomX}px`;
@@ -1847,7 +1855,7 @@ function startErrorWindowLoop() {
       errorWindowEl.classList.remove("error-window-glitching");
     }, 500);
     
-    errorWindowVideoEl.src = `./video/${choice}`;
+    errorWindowVideoEl.src = `./PopUps/${choice}`;
     errorWindowVideoEl.currentTime = 0;
     errorWindowVideoEl.loop = false; // Don't loop - play once and close
     
