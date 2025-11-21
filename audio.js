@@ -89,31 +89,36 @@ const analyser = new THREE.AudioAnalyser(sound, 256);
 const tracks = [
 
   { label: "Jump UP", file: "JumpUP.mp3" },
-  { label: "Bingo Highway", file: "BingoHighway.mp3" },
-  { label: "Black Knife", file: "BlackKnife.mp3" },
-  { label: "Roulette Road", file: "RouletteRoad.mp3" },
-  { label: "Duel", file: "Duel.mp3" },
+  { label: "Live and Learn", file: "LiveAndLearn.mp3" },
+  { label: "I Feel So Alive", file: "IFeelSoAlive.mp3" },
+  { label: "Citrus", file: "Citrus.mp3" },
+  { label: "Turbulence", file: "Turbulence.mp3" },
 
   { label: "Egg Dragoon", file: "EggDragoon.mp3" },
-  { label: "Shmoovin", file: "Shmoovin.mp3" },
+  { label: "Cracked Empire", file: "CrackedEmpire.mp3" },
   { label: "Running The Bassline", file: "RunningTheBassline.mp3" },
-  { label: "Eggman Expo", file: "EggmanExpo.mp3" },
+  { label: "Terminal Velocity Act1", file: "TerminalVelocityAct1.mp3" },
   { label: "Forever Imperfect", file: "ForeverImperfect.mp3" },
-  { label: "Feel The Fury", file: "FeelTheFury.mp3" },
+  { label: "Break Free", file: "BreakFree.mp3" },
   { label: "Eg Megalovania", file: "EgMegalovania.mp3" },
-  { label: "Vs Metal Sonic", file: "VsMetalSonic.mp3" },
-  { label: "Pumpkin Mansion", file: "PumpkinMansion.mp3" },
+  { label: "Metallic Madness", file: "MetallicMadness.mp3" },
+  { label: "Drift Around", file: "DriftAround.mp3" },
   { label: "Vs Jacinth", file: "VsJacinth.mp3" },
   { label: "Un Gravitify", file: "UnGravitify.mp3" },
-  { label: "Rude Busters", file: "RudeBusters.mp3" },
-  { label: "Vs Sans", file: "VsSans.mp3" },
-  { label: "Trinity Encore", file: "TrinityEncore.mp3" },
-  { label: "Tea Time Waltz", file: "TeaTimeWaltz.mp3" },
+  { label: "Ruder Buster", file: "RuderBuster.mp3" },
+  { label: "Extras", file: "Extras.mp3" },
+  { label: "Jet Black", file: "JetBlack.mp3" },
+  { label: "Aint Nothing Like A Funky Beat", file: "AintNothingLikeAFunkyBeat.mp3" },
   { label: "Touhou", file: "Touhou.mp3" },
-  { label: "In My Way", file: "InMyWay.mp3" },
-  { label: "Random Test Funk", file: "RandomTestFunk.mp3" },
+  { label: "Touch Fluffy Tail", file: "TouchFluffyTail.mp3" },
+  { label: "GET ENUF", file: "GetEnuf.mp3" },
   { label: "Machine Love", file: "MachineLove.mp3" },
   { label: "Blood Drain", file: "BloodDrain.mp3" },
+  { label: "Its Going Down Now", file: "ItsGoingDownNow.mp3" },
+  { label: "Groovy", file: "Groovy.mp3" },
+  { label: "Time To Make History", file: "TimeToMakeHistory.mp3" },
+  { label: "Dare", file: "Dare.mp3" },
+  { label: "Planet wisp act1", file: "PlanetWispAct1.mp3" },
 ];
 
 let currentTrackIndex = 0; // default to "Nikke"
@@ -134,61 +139,107 @@ const videoGlitchOverlayEl = document.getElementById("video-glitch-overlay");
 
 // Video overlays (for full-screen overlays)
 const overlayVideos = [
-
+  "ani1.mp4",
   "asgore.mp4",
   "Blaze.mp4",
+  "candy.mp4",
   "cream.mp4",
   "cream2.mp4",
   "dante.mp4",
   "DC.mp4",
   "eggman.mp4",
   "eggsax.mp4",
+  "faust.mp4",
+  "funGang.mp4",
   "Iguchi.mp4",
+  "joker.mp4",
+  "makoto.mp4",
+  "makotoP3.mp4",
+  "may.mp4",
   "metal.mp4",
-
   "mez.mp4",
+  "morgana.mp4",
+  "objection.mp4",
   "pbj.mp4",
   "plan.mp4",
+  "ram.mp4",
   "rewrite.mp4",
+  "riders.mp4",
+  "riders2.mp4",
   "sabrina.mp4",
+  "scarlet.mp4",
   "Sch.mp4",
+  "sol.mp4",
   "SonicRap.mp4",
+  "sonicZ.mp4",
   "teto.mp4",
   "Tiktok.mp4",
   "Xsonic.mp4",
+  "yukari.mp4",
+  "zzz.mp4",
 ];
 
 // Popup videos (for error window popups - uses PopUps folder)
 const popupVideos = [
+  "aigis.mp4",
+  "ani1.mp4",
   "asgore.mp4",
   "benson.mp4",
   "Blaze.mp4",
+  "candy.mp4",
   "cream.mp4",
-
   "cream2.mp4",
   "dante.mp4",
   "DC.mp4",
+  "dodge.mp4",
   "eggman.mp4",
   "eggsax.mp4",
+  "engage.mp4",
+  "faust.mp4",
+  "funGang.mp4",
   "goku.mp4",
+  "gokuB.mp4",
+  "gold.mp4",
+  "hornet.mp4",
   "Iguchi.mp4",
   "jojo.mp4",
+  "joker.mp4",
+  "makoto.mp4",
+  "makotoP3.mp4",
+  "may.mp4",
   "metal.mp4",
   "metroman.mp4",
   "mez.mp4",
+  "morgana.mp4",
+  "neko.mp4",
+  "objection.mp4",
   "p3.mp4",
   "pbj.mp4",
+  "pipe.mp4",
   "plan.mp4",
+  "ram.mp4",
   "ratdance.mp4",
   "rewrite.mp4",
+  "riders.mp4",
+  "riders2.mp4",
+  "ruby.mp4",
+  "rush.mp4",
   "sabrina.mp4",
+  "scarlet.mp4",
   "Sch.mp4",
+  "silver.mp4",
+  "skull.mp4",
+  "smash.mp4",
+  "sol.mp4",
   "SonicRap.mp4",
+  "sonicZ.mp4",
   "springtrap.mp4",
   "teto.mp4",
   "tf2.mp4",
   "Tiktok.mp4",
   "Xsonic.mp4",
+  "yukari.mp4",
+  "zzz.mp4",
 ];
 const VIDEO_CHECK_INTERVAL = 25000; // Increased to 25s - triggers less frequently, more separation
 const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance between video and color swap
@@ -199,6 +250,13 @@ let overlayIsActive = false;
 let colorSwapActive = false;
 let colorSwapTimeoutId = null;
 let glitchTimeoutId = null;
+
+// Random glitch system for hacked screen
+const HACKED_GLITCH_CHECK_INTERVAL = 5000; // Check every 5 seconds (more frequent)
+const HACKED_GLITCH_CHANCE = 0.25; // 25% chance per check (higher chance)
+const HACKED_GLITCH_COOLDOWN = 8000; // 8 seconds minimum between glitches (shorter cooldown)
+let hackedGlitchLastTriggered = 0;
+let hackedGlitchIntervalId = null;
 
 let currentActivePaletteIndex = 0; // Track the currently active palette (not just track default)
 
@@ -246,6 +304,7 @@ let experimentalSplitter = null; // To split signal without breaking analyser
 let audioContext = null;
 let staticSound = null; // Static sound for experimental mode
 let warningSound = null; // Warning sound for warning popup
+let hackedScreenSound = null; // Warning sound for hacked screen (warning2.mp3)
 
 // Menu music experimental audio effects
 let menuExperimentalLowPassFilter = null;
@@ -1638,6 +1697,11 @@ function resumeMenuMusic() {
     return; // Don't resume menu music if hacked screen is visible
   }
   
+  // Check if hacked screen sound is playing - don't resume if it is
+  if (hackedScreenSound && !hackedScreenSound.paused) {
+    return; // Don't resume menu music if hacked screen sound is playing
+  }
+  
   // Check if warning sound is playing - don't resume if it is
   if (warningSound && !warningSound.paused) {
     return; // Don't resume menu music if warning sound is playing
@@ -2012,8 +2076,50 @@ function stopWarningSound() {
 function showHackedScreen() {
   const hackedScreen = document.getElementById('hacked-screen');
   if (hackedScreen) {
-    // Start warning sound continuously
-    startWarningSound();
+    // Stop ALL audio first - songs, menu music, static, warning popup sound
+    if (sound && sound.isPlaying) {
+      sound.stop();
+    }
+    pauseMenuMusic();
+    if (staticSound && !staticSound.paused) {
+      staticSound.pause();
+    }
+    if (warningSound && !warningSound.paused) {
+      warningSound.pause();
+      warningSound.currentTime = 0;
+    }
+    
+    // Create hacked screen sound if it doesn't exist
+    if (!hackedScreenSound) {
+      hackedScreenSound = new Audio('./sound/warning2.mp3');
+      hackedScreenSound.loop = true;
+      hackedScreenSound.volume = 0.7;
+      
+      hackedScreenSound.addEventListener('error', (e) => {
+        console.error("Hacked screen sound error:", e, hackedScreenSound.error);
+      });
+      
+      hackedScreenSound.addEventListener('play', () => {
+        console.log("Hacked screen sound playing");
+      });
+    }
+    
+    // Stop any currently playing hacked screen sound first
+    if (hackedScreenSound && !hackedScreenSound.paused) {
+      hackedScreenSound.pause();
+      hackedScreenSound.currentTime = 0;
+    }
+    
+    // Ensure loop is set and play
+    hackedScreenSound.loop = true;
+    hackedScreenSound.currentTime = 0;
+    hackedScreenSound.play()
+      .then(() => {
+        console.log("Hacked screen sound started successfully");
+      })
+      .catch(err => {
+        console.error("Could not play hacked screen sound:", err);
+      });
     
     // Hide everything else
     const container = document.getElementById("container");
@@ -2031,13 +2137,102 @@ function showHackedScreen() {
     const testControls = document.getElementById("test-controls");
     if (testControls) testControls.style.display = "none";
     
+    // Add violent glitch effect
+    hackedScreen.classList.add('hacked-screen-glitching');
+    
     // Show hacked screen
     hackedScreen.classList.remove('hacked-screen-hidden');
     hackedScreen.classList.add('hacked-screen-visible');
     hackedScreen.style.display = 'flex';
     
-    console.log("Hacked screen activated");
+    // Play glitch sound
+    if (glitchSound) {
+      glitchSound.currentTime = 0;
+      glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+    }
+    
+    // Remove glitch after longer animation and add bang effect at end
+    setTimeout(() => {
+      // Add bang effect for dramatic transition
+      hackedScreen.classList.add('hacked-screen-bang');
+      
+      // Play glitch sound again for bang
+      if (glitchSound) {
+        glitchSound.currentTime = 0;
+        glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+      }
+      
+      // Remove glitch class and bang effect
+      setTimeout(() => {
+        hackedScreen.classList.remove('hacked-screen-glitching');
+        hackedScreen.classList.remove('hacked-screen-bang');
+      }, 800); // Bang effect lasts 800ms
+    }, 4500); // Initial glitch now 4.5 seconds
+    
+    // Start random glitch interval for hacked screen
+    startHackedGlitchLoop();
+    
+    console.log("Hacked screen activated - all audio stopped, hacked screen sound playing");
   }
+}
+
+// === Random Glitch Loop for Hacked Screen ===
+function startHackedGlitchLoop() {
+  if (hackedGlitchIntervalId) {
+    clearInterval(hackedGlitchIntervalId);
+  }
+  
+  hackedGlitchIntervalId = setInterval(() => {
+    const hackedScreen = document.getElementById('hacked-screen');
+    if (!hackedScreen || hackedScreen.classList.contains('hacked-screen-hidden')) {
+      // Stop interval if hacked screen is not visible
+      if (hackedGlitchIntervalId) {
+        clearInterval(hackedGlitchIntervalId);
+        hackedGlitchIntervalId = null;
+      }
+      return;
+    }
+    
+    // Check cooldown
+    const now = Date.now();
+    if (now - hackedGlitchLastTriggered < HACKED_GLITCH_COOLDOWN) {
+      return;
+    }
+    
+    // Random chance to trigger glitch
+    if (Math.random() < HACKED_GLITCH_CHANCE) {
+      triggerRandomHackedGlitch();
+      hackedGlitchLastTriggered = now;
+    }
+  }, HACKED_GLITCH_CHECK_INTERVAL);
+}
+
+function triggerRandomHackedGlitch() {
+  const hackedScreen = document.getElementById('hacked-screen');
+  if (!hackedScreen || hackedScreen.classList.contains('hacked-screen-hidden')) {
+    return;
+  }
+  
+  // Don't trigger if already glitching from initial effect, bang effect, or another random glitch
+  if (hackedScreen.classList.contains('hacked-screen-glitching') || 
+      hackedScreen.classList.contains('hacked-screen-bang') ||
+      hackedScreen.classList.contains('hacked-screen-random-glitch')) {
+    return;
+  }
+  
+  // Add random glitch effect (shorter than initial)
+  hackedScreen.classList.add('hacked-screen-random-glitch');
+  
+  // Play glitch sound
+  if (glitchSound) {
+    glitchSound.currentTime = 0;
+    glitchSound.play().catch(err => console.warn("Could not play glitch sound:", err));
+  }
+  
+  // Remove glitch after shorter duration
+  setTimeout(() => {
+    hackedScreen.classList.remove('hacked-screen-random-glitch');
+  }, 1500); // Random glitches are shorter - 1.5 seconds
 }
 
 function showWarningPopup() {
@@ -3165,6 +3360,116 @@ const colorPalettes = [
     ring9: { color: 0xdd0000, emissive: 0xdd0000 },
     inner: { color: 0x880000, emissive: 0xaa0000 },
     outline: { visible: "#990000", hidden: "#660000" },
+  },
+  // Palette 25: Persona 3 Reload - Blue/White/Yellow
+  {
+    name: "Persona 3 Reload",
+    skybox: {
+      baseColor1: { x: 0.0, y: 0.04, z: 0.10 },
+      baseColor2: { x: 0.02, y: 0.08, z: 0.15 },
+      pulseTint1: { x: 0.0, y: 0.5, z: 0.9 },
+      pulseTint2: { x: 0.3, y: 0.7, z: 1.0 },
+      toneShift: { x: 0.9, y: 1.5, z: 1.8 },
+    },
+    ring1: { color: 0x0066ff, emissive: 0x0066ff },
+    ring2: { color: 0xffffff, emissive: 0xffffff },
+    ring3: { color: 0x0088ff, emissive: 0x0088ff },
+    ring4: { color: 0xeeeeee, emissive: 0xeeeeee },
+    ring5: { color: 0x0099ff, emissive: 0x0099ff },
+    ring6: { color: 0xffff44, emissive: 0xffff44 },
+    ring7: { color: 0x00aaff, emissive: 0x00aaff },
+    ring8: { color: 0xdddddd, emissive: 0xdddddd },
+    ring9: { color: 0x00ccff, emissive: 0x00ccff },
+    inner: { color: 0x0099ff, emissive: 0x00aaff },
+    outline: { visible: "#0066ff", hidden: "#ffffff" },
+  },
+  // Palette 26: Groovy - Persona 5 style (Black, White, Red)
+  {
+    name: "Groovy",
+    skybox: {
+      baseColor1: { x: 0.0, y: 0.0, z: 0.0 },
+      baseColor2: { x: 0.02, y: 0.0, z: 0.0 },
+      pulseTint1: { x: 0.4, y: 0.0, z: 0.0 },
+      pulseTint2: { x: 0.8, y: 0.0, z: 0.0 },
+      toneShift: { x: 1.5, y: 0.5, z: 0.3 },
+    },
+    ring1: { color: 0xff0000, emissive: 0xff0000 },
+    ring2: { color: 0xffffff, emissive: 0xffffff },
+    ring3: { color: 0x000000, emissive: 0x111111 },
+    ring4: { color: 0xff0033, emissive: 0xff0033 },
+    ring5: { color: 0xeeeeee, emissive: 0xeeeeee },
+    ring6: { color: 0xff0022, emissive: 0xff0022 },
+    ring7: { color: 0xdddddd, emissive: 0xdddddd },
+    ring8: { color: 0xff0011, emissive: 0xff0011 },
+    ring9: { color: 0xcccccc, emissive: 0xcccccc },
+    inner: { color: 0xff0033, emissive: 0xff0055 },
+    outline: { visible: "#ff0000", hidden: "#ffffff" },
+  },
+  // Palette 27: Time To Make History - Persona 3 style (Yellow, Gray, Green)
+  {
+    name: "Time To Make History",
+    skybox: {
+      baseColor1: { x: 0.08, y: 0.08, z: 0.04 },
+      baseColor2: { x: 0.12, y: 0.12, z: 0.06 },
+      pulseTint1: { x: 0.9, y: 0.9, z: 0.3 },
+      pulseTint2: { x: 1.0, y: 1.0, z: 0.5 },
+      toneShift: { x: 1.6, y: 1.6, z: 1.0 },
+    },
+    ring1: { color: 0xffff00, emissive: 0xffff00 },
+    ring2: { color: 0x888888, emissive: 0x888888 },
+    ring3: { color: 0x00ff00, emissive: 0x00ff00 },
+    ring4: { color: 0xffff44, emissive: 0xffff44 },
+    ring5: { color: 0xaaaaaa, emissive: 0xaaaaaa },
+    ring6: { color: 0x44ff44, emissive: 0x44ff44 },
+    ring7: { color: 0xffff88, emissive: 0xffff88 },
+    ring8: { color: 0x666666, emissive: 0x666666 },
+    ring9: { color: 0x88ff88, emissive: 0x88ff88 },
+    inner: { color: 0xffff44, emissive: 0x44ff44 },
+    outline: { visible: "#ffff00", hidden: "#00ff00" },
+  },
+  // Palette 28: Dare - Teal/Turquoise with Coral accents (Bold & Energetic)
+  {
+    name: "Dare",
+    skybox: {
+      baseColor1: { x: 0.0, y: 0.08, z: 0.08 },
+      baseColor2: { x: 0.02, y: 0.12, z: 0.12 },
+      pulseTint1: { x: 0.5, y: 0.8, z: 0.9 },
+      pulseTint2: { x: 0.7, y: 1.0, z: 1.0 },
+      toneShift: { x: 1.2, y: 1.8, z: 1.8 },
+    },
+    ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
+    ring2: { color: 0xff6644, emissive: 0xff6644 },
+    ring3: { color: 0x00dddd, emissive: 0x00dddd },
+    ring4: { color: 0xff7755, emissive: 0xff7755 },
+    ring5: { color: 0x00cccc, emissive: 0x00cccc },
+    ring6: { color: 0xff8866, emissive: 0xff8866 },
+    ring7: { color: 0x00eeee, emissive: 0x00eeee },
+    ring8: { color: 0xff9977, emissive: 0xff9977 },
+    ring9: { color: 0x44ffee, emissive: 0x44ffee },
+    inner: { color: 0x00ffdd, emissive: 0x44ffdd },
+    outline: { visible: "#00ffcc", hidden: "#ff6644" },
+  },
+  // Palette 29: Planet wisp act1 - Deep Purple/Violet with Cyan accents (Otherworldly & Space-like)
+  {
+    name: "Planet wisp act1",
+    skybox: {
+      baseColor1: { x: 0.06, y: 0.0, z: 0.08 },
+      baseColor2: { x: 0.1, y: 0.0, z: 0.12 },
+      pulseTint1: { x: 0.7, y: 0.0, z: 0.9 },
+      pulseTint2: { x: 0.9, y: 0.3, z: 1.0 },
+      toneShift: { x: 1.6, y: 0.8, z: 1.8 },
+    },
+    ring1: { color: 0x9900ff, emissive: 0x9900ff },
+    ring2: { color: 0x00ffff, emissive: 0x00ffff },
+    ring3: { color: 0xaa22ff, emissive: 0xaa22ff },
+    ring4: { color: 0x00dddd, emissive: 0x00dddd },
+    ring5: { color: 0xbb44ff, emissive: 0xbb44ff },
+    ring6: { color: 0x00eeee, emissive: 0x00eeee },
+    ring7: { color: 0xcc66ff, emissive: 0xcc66ff },
+    ring8: { color: 0x00ffff, emissive: 0x00ffff },
+    ring9: { color: 0xdd88ff, emissive: 0xdd88ff },
+    inner: { color: 0xaa44ff, emissive: 0xcc66ff },
+    outline: { visible: "#9900ff", hidden: "#00ffff" },
   },
 ];
 

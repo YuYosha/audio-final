@@ -3631,6 +3631,481 @@ body {
   pointer-events: all;
 }
 
+/* Violent glitch effect when hacked screen appears */
+#hacked-screen.hacked-screen-glitching {
+  animation: hackedViolentGlitch 4.5s steps(45, end);
+  overflow: hidden;
+}
+
+#hacked-screen.hacked-screen-glitching .hacked-screen-backdrop {
+  animation: hackedViolentBackdropGlitch 4.5s steps(33, end), hackedBackdropPulse 3s ease-in-out infinite;
+}
+
+#hacked-screen.hacked-screen-glitching .hacked-screen-glitch-overlay {
+  animation: hackedViolentGlitchOverlay 4.5s steps(40, end), hackedScreenFlicker 0.05s infinite;
+  opacity: 1;
+}
+
+#hacked-screen.hacked-screen-glitching .hacked-screen-content {
+  animation: hackedViolentContentGlitch 4.5s steps(45, end);
+}
+
+#hacked-screen.hacked-screen-glitching .hacked-screen-logo {
+  animation: hackedViolentLogoGlitch 4.5s steps(45, end), hackedLogoShake 0.1s infinite;
+}
+
+/* Bang effect - dramatic transition at end of initial glitch */
+#hacked-screen.hacked-screen-bang {
+  animation: hackedBangEffect 0.8s ease-out;
+}
+
+#hacked-screen.hacked-screen-bang .hacked-screen-backdrop {
+  animation: hackedBangBackdrop 0.8s ease-out, hackedBackdropPulse 3s ease-in-out infinite;
+}
+
+#hacked-screen.hacked-screen-bang .hacked-screen-glitch-overlay {
+  animation: hackedBangOverlay 0.8s ease-out;
+  opacity: 1;
+}
+
+#hacked-screen.hacked-screen-bang .hacked-screen-content {
+  animation: hackedBangContent 0.8s ease-out;
+}
+
+#hacked-screen.hacked-screen-bang .hacked-screen-logo {
+  animation: hackedBangLogo 0.8s ease-out, hackedLogoShake 0.1s infinite;
+}
+
+/* Random glitch effect - shorter glitches while screen is active */
+#hacked-screen.hacked-screen-random-glitch {
+  animation: hackedRandomGlitch 1.5s steps(15, end);
+  overflow: hidden;
+}
+
+#hacked-screen.hacked-screen-random-glitch .hacked-screen-backdrop {
+  animation: hackedRandomBackdropGlitch 1.5s steps(11, end), hackedBackdropPulse 3s ease-in-out infinite;
+}
+
+#hacked-screen.hacked-screen-random-glitch .hacked-screen-glitch-overlay {
+  animation: hackedRandomGlitchOverlay 1.5s steps(13, end), hackedScreenFlicker 0.05s infinite;
+  opacity: 1;
+}
+
+#hacked-screen.hacked-screen-random-glitch .hacked-screen-content {
+  animation: hackedRandomContentGlitch 1.5s steps(15, end);
+}
+
+#hacked-screen.hacked-screen-random-glitch .hacked-screen-logo {
+  animation: hackedRandomLogoGlitch 1.5s steps(15, end), hackedLogoShake 0.1s infinite;
+}
+
+@keyframes hackedViolentGlitch {
+  0% {
+    transform: translate(0, 0);
+    filter: brightness(1) contrast(1) hue-rotate(0deg);
+  }
+  5% {
+    transform: translate(-20px, -15px);
+    filter: brightness(2.5) contrast(1.5) hue-rotate(90deg);
+    clip-path: inset(10% 0 70% 0);
+  }
+  10% {
+    transform: translate(25px, 20px);
+    filter: brightness(1.8) contrast(1.8) hue-rotate(180deg);
+    clip-path: inset(70% 0 5% 0);
+  }
+  15% {
+    transform: translate(-30px, 15px);
+    filter: brightness(3.0) contrast(2.0) hue-rotate(270deg);
+    clip-path: inset(5% 0 60% 0);
+  }
+  20% {
+    transform: translate(20px, -25px);
+    filter: brightness(2.2) contrast(1.6) hue-rotate(0deg);
+    clip-path: inset(50% 0 20% 0);
+  }
+  25% {
+    transform: translate(-25px, -20px);
+    filter: brightness(2.8) contrast(1.9) hue-rotate(90deg);
+    clip-path: inset(15% 0 55% 0);
+  }
+  30% {
+    transform: translate(30px, 25px);
+    filter: brightness(2.0) contrast(1.7) hue-rotate(180deg);
+    clip-path: inset(65% 0 10% 0);
+  }
+  35% {
+    transform: translate(-18px, 18px);
+    filter: brightness(2.6) contrast(2.1) hue-rotate(270deg);
+    clip-path: inset(8% 0 70% 0);
+  }
+  40% {
+    transform: translate(22px, -22px);
+    filter: brightness(1.9) contrast(1.5) hue-rotate(0deg);
+    clip-path: inset(55% 0 15% 0);
+  }
+  45% {
+    transform: translate(-28px, -15px);
+    filter: brightness(2.7) contrast(1.8) hue-rotate(90deg);
+    clip-path: inset(12% 0 50% 0);
+  }
+  50% {
+    transform: translate(18px, 28px);
+    filter: brightness(2.1) contrast(1.6) hue-rotate(180deg);
+    clip-path: inset(60% 0 8% 0);
+  }
+  55% {
+    transform: translate(-22px, 22px);
+    filter: brightness(2.5) contrast(2.0) hue-rotate(270deg);
+    clip-path: inset(6% 0 65% 0);
+  }
+  60% {
+    transform: translate(24px, -18px);
+    filter: brightness(1.8) contrast(1.7) hue-rotate(0deg);
+    clip-path: inset(50% 0 12% 0);
+  }
+  65% {
+    transform: translate(-16px, -24px);
+    filter: brightness(2.4) contrast(1.9) hue-rotate(90deg);
+    clip-path: inset(20% 0 45% 0);
+  }
+  70% {
+    transform: translate(26px, 16px);
+    filter: brightness(2.0) contrast(1.6) hue-rotate(180deg);
+    clip-path: inset(45% 0 25% 0);
+  }
+  75% {
+    transform: translate(-20px, 20px);
+    filter: brightness(2.3) contrast(1.8) hue-rotate(270deg);
+    clip-path: inset(10% 0 40% 0);
+  }
+  80% {
+    transform: translate(15px, -15px);
+    filter: brightness(1.7) contrast(1.5) hue-rotate(0deg);
+    clip-path: inset(40% 0 30% 0);
+  }
+  85% {
+    transform: translate(-12px, -10px);
+    filter: brightness(2.2) contrast(1.7) hue-rotate(90deg);
+    clip-path: inset(25% 0 35% 0);
+  }
+  90% {
+    transform: translate(10px, 12px);
+    filter: brightness(1.9) contrast(1.6) hue-rotate(180deg);
+    clip-path: inset(35% 0 30% 0);
+  }
+  95% {
+    transform: translate(-8px, -8px);
+    filter: brightness(2.0) contrast(1.5) hue-rotate(270deg);
+    clip-path: inset(30% 0 30% 0);
+  }
+  100% {
+    transform: translate(0, 0);
+    filter: brightness(1) contrast(1) hue-rotate(0deg);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes hackedViolentBackdropGlitch {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1) hue-rotate(0deg);
+  }
+  20% {
+    transform: translate(-15px, -10px) scale(1.05);
+    filter: brightness(2.0) hue-rotate(90deg);
+  }
+  40% {
+    transform: translate(20px, 15px) scale(0.98);
+    filter: brightness(1.8) hue-rotate(180deg);
+  }
+  60% {
+    transform: translate(-18px, 12px) scale(1.02);
+    filter: brightness(2.2) hue-rotate(270deg);
+  }
+  80% {
+    transform: translate(12px, -10px) scale(1.01);
+    filter: brightness(1.9) hue-rotate(0deg);
+  }
+}
+
+@keyframes hackedViolentGlitchOverlay {
+  0%, 100% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.3) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.3) 0%, transparent 50%);
+    opacity: 0.6;
+  }
+  15% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 1.0) 0%, rgba(255, 50, 120, 1.0) 20%, rgba(255, 0, 100, 1.0) 35%, rgba(255, 20, 80, 0.95) 50%, rgba(0, 0, 0, 0) 65%),
+      linear-gradient(270deg, rgba(0, 255, 255, 1.0) 0%, rgba(50, 200, 255, 1.0) 25%, rgba(0, 180, 255, 1.0) 45%, rgba(0, 150, 255, 0.95) 60%, rgba(0, 0, 0, 0) 75%);
+    opacity: 1;
+  }
+  30% {
+    background: 
+      linear-gradient(270deg, rgba(255, 0, 150, 1.0) 0%, rgba(255, 50, 120, 1.0) 20%, rgba(255, 0, 100, 1.0) 35%, rgba(255, 20, 80, 0.95) 50%, rgba(0, 0, 0, 0) 65%),
+      linear-gradient(90deg, rgba(0, 255, 255, 1.0) 0%, rgba(50, 200, 255, 1.0) 25%, rgba(0, 180, 255, 1.0) 45%, rgba(0, 150, 255, 0.95) 60%, rgba(0, 0, 0, 0) 75%);
+    opacity: 1;
+  }
+  45% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 0, 1.0) 0%, rgba(255, 100, 0, 1.0) 30%, rgba(255, 0, 50, 1.0) 60%, transparent 80%),
+      linear-gradient(270deg, rgba(0, 0, 255, 1.0) 0%, rgba(0, 255, 255, 1.0) 40%, rgba(255, 0, 255, 1.0) 70%, transparent 90%);
+    opacity: 0.9;
+  }
+  60% {
+    background: 
+      linear-gradient(45deg, rgba(255, 0, 150, 1.0) 0%, transparent 40%),
+      linear-gradient(225deg, rgba(0, 255, 255, 1.0) 0%, transparent 50%);
+    opacity: 1;
+  }
+  75% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.8) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.8) 0%, transparent 50%);
+    opacity: 0.8;
+  }
+  90% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.5) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.5) 0%, transparent 50%);
+    opacity: 0.7;
+  }
+}
+
+@keyframes hackedViolentContentGlitch {
+  0%, 100% {
+    transform: translate(0, 0);
+    filter: brightness(1) contrast(1);
+  }
+  25% {
+    transform: translate(-15px, 10px) scale(0.98);
+    filter: brightness(2.5) contrast(1.8);
+  }
+  50% {
+    transform: translate(20px, -15px) scale(1.02);
+    filter: brightness(2.0) contrast(2.0);
+  }
+  75% {
+    transform: translate(-10px, 12px) scale(1.01);
+    filter: brightness(2.2) contrast(1.6);
+  }
+}
+
+@keyframes hackedViolentLogoGlitch {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1) contrast(1);
+  }
+  20% {
+    transform: translate(-25px, -20px) scale(0.95) rotate(-2deg);
+    filter: brightness(3.0) contrast(2.5);
+  }
+  40% {
+    transform: translate(30px, 25px) scale(1.05) rotate(2deg);
+    filter: brightness(2.5) contrast(2.2);
+  }
+  60% {
+    transform: translate(-20px, 20px) scale(0.98) rotate(-1deg);
+    filter: brightness(2.8) contrast(2.0);
+  }
+  80% {
+    transform: translate(15px, -15px) scale(1.02) rotate(1deg);
+    filter: brightness(2.2) contrast(1.8);
+  }
+}
+
+/* Bang effect keyframes - dramatic transition at end */
+@keyframes hackedBangEffect {
+  0% {
+    transform: scale(1.1) translate(0, 0);
+    filter: brightness(3.0) contrast(2.5);
+  }
+  30% {
+    transform: scale(1.15) translate(-10px, -10px);
+    filter: brightness(4.0) contrast(3.0);
+  }
+  60% {
+    transform: scale(1.05) translate(8px, 8px);
+    filter: brightness(2.5) contrast(2.0);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+    filter: brightness(1) contrast(1);
+  }
+}
+
+@keyframes hackedBangBackdrop {
+  0% {
+    transform: scale(1.2);
+    filter: brightness(3.0) hue-rotate(90deg);
+  }
+  50% {
+    transform: scale(1.1);
+    filter: brightness(2.0) hue-rotate(180deg);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) hue-rotate(0deg);
+  }
+}
+
+@keyframes hackedBangOverlay {
+  0% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 1.0) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 1.0) 0%, transparent 50%);
+    opacity: 1;
+  }
+  50% {
+    background: 
+      linear-gradient(0deg, rgba(255, 255, 255, 1.0) 0%, transparent 70%);
+    opacity: 0.9;
+  }
+  100% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.3) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.3) 0%, transparent 50%);
+    opacity: 0.6;
+  }
+}
+
+@keyframes hackedBangContent {
+  0% {
+    transform: scale(1.1);
+    filter: brightness(3.0) contrast(2.5);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) contrast(1);
+  }
+}
+
+@keyframes hackedBangLogo {
+  0% {
+    transform: scale(1.2) rotate(5deg);
+    filter: brightness(4.0) contrast(3.5);
+  }
+  50% {
+    transform: scale(1.1) rotate(-3deg);
+    filter: brightness(2.5) contrast(2.0);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1) contrast(1);
+  }
+}
+
+/* Random glitch keyframes - shorter glitches while screen is active */
+@keyframes hackedRandomGlitch {
+  0%, 100% {
+    transform: translate(0, 0);
+    filter: brightness(1) contrast(1) hue-rotate(0deg);
+    clip-path: inset(0 0 0 0);
+  }
+  20% {
+    transform: translate(-15px, -10px);
+    filter: brightness(2.5) contrast(1.5) hue-rotate(90deg);
+    clip-path: inset(15% 0 70% 0);
+  }
+  40% {
+    transform: translate(20px, 15px);
+    filter: brightness(2.0) contrast(1.8) hue-rotate(180deg);
+    clip-path: inset(60% 0 15% 0);
+  }
+  60% {
+    transform: translate(-12px, 12px);
+    filter: brightness(2.3) contrast(2.0) hue-rotate(270deg);
+    clip-path: inset(25% 0 50% 0);
+  }
+  80% {
+    transform: translate(10px, -10px);
+    filter: brightness(1.8) contrast(1.6) hue-rotate(0deg);
+    clip-path: inset(40% 0 30% 0);
+  }
+}
+
+@keyframes hackedRandomBackdropGlitch {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1) hue-rotate(0deg);
+  }
+  30% {
+    transform: translate(-10px, -8px) scale(1.03);
+    filter: brightness(2.0) hue-rotate(90deg);
+  }
+  60% {
+    transform: translate(12px, 10px) scale(0.99);
+    filter: brightness(1.8) hue-rotate(180deg);
+  }
+  90% {
+    transform: translate(-8px, 8px) scale(1.01);
+    filter: brightness(1.9) hue-rotate(270deg);
+  }
+}
+
+@keyframes hackedRandomGlitchOverlay {
+  0%, 100% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.3) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.3) 0%, transparent 50%);
+    opacity: 0.6;
+  }
+  25% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.9) 0%, rgba(255, 50, 120, 0.9) 30%, transparent 60%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.9) 0%, rgba(50, 200, 255, 0.9) 35%, transparent 65%);
+    opacity: 1;
+  }
+  50% {
+    background: 
+      linear-gradient(270deg, rgba(255, 0, 150, 0.9) 0%, transparent 50%),
+      linear-gradient(90deg, rgba(0, 255, 255, 0.9) 0%, transparent 50%);
+    opacity: 0.9;
+  }
+  75% {
+    background: 
+      linear-gradient(90deg, rgba(255, 0, 150, 0.6) 0%, transparent 50%),
+      linear-gradient(270deg, rgba(0, 255, 255, 0.6) 0%, transparent 50%);
+    opacity: 0.7;
+  }
+}
+
+@keyframes hackedRandomContentGlitch {
+  0%, 100% {
+    transform: translate(0, 0);
+    filter: brightness(1) contrast(1);
+  }
+  33% {
+    transform: translate(-12px, 8px) scale(0.99);
+    filter: brightness(2.3) contrast(1.7);
+  }
+  66% {
+    transform: translate(15px, -10px) scale(1.01);
+    filter: brightness(2.0) contrast(1.9);
+  }
+}
+
+@keyframes hackedRandomLogoGlitch {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+    filter: brightness(1) contrast(1);
+  }
+  25% {
+    transform: translate(-18px, -15px) scale(0.97) rotate(-1.5deg);
+    filter: brightness(2.8) contrast(2.3);
+  }
+  50% {
+    transform: translate(20px, 18px) scale(1.03) rotate(1.5deg);
+    filter: brightness(2.4) contrast(2.1);
+  }
+  75% {
+    transform: translate(-12px, 15px) scale(0.99) rotate(-1deg);
+    filter: brightness(2.2) contrast(1.9);
+  }
+}
+
 .hacked-screen-backdrop {
   position: absolute;
   inset: 0;
