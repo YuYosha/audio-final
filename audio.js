@@ -2316,6 +2316,74 @@ function setupWarningPopup() {
   }
 }
 
+// === Extras Popup Management ===
+function showExtrasPopup() {
+  const extrasPopup = document.getElementById('extras-popup');
+  if (!extrasPopup) {
+    return;
+  }
+  
+  // Force display first, before any class changes
+  extrasPopup.style.display = 'flex';
+  
+  // Use requestAnimationFrame to ensure display is set before class changes
+  requestAnimationFrame(() => {
+    // Remove hidden class
+    extrasPopup.classList.remove('extras-popup-hidden');
+    // Add visible class
+    extrasPopup.classList.add('extras-popup-visible');
+    // Force display again to ensure it's visible
+    extrasPopup.style.display = 'flex';
+  });
+  
+  // Double-check after a short delay
+  setTimeout(() => {
+    if (extrasPopup.classList.contains('extras-popup-visible')) {
+      extrasPopup.style.display = 'flex';
+    } else {
+      extrasPopup.style.display = 'flex';
+      extrasPopup.classList.add('extras-popup-visible');
+    }
+  }, 50);
+}
+
+function hideExtrasPopup() {
+  const extrasPopup = document.getElementById('extras-popup');
+  if (!extrasPopup) return;
+  
+  extrasPopup.classList.remove('extras-popup-visible');
+  extrasPopup.classList.add('extras-popup-hidden');
+  
+  // Set display to none after transition
+  setTimeout(() => {
+    extrasPopup.style.display = 'none';
+  }, 400);
+}
+
+// Setup extras popup close button
+function setupExtrasPopup() {
+  const extrasCloseBtn = document.getElementById('extras-popup-close-btn');
+  if (extrasCloseBtn) {
+    setupButtonHover(extrasCloseBtn);
+    setupButtonSelect2(extrasCloseBtn);
+    
+    extrasCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hideExtrasPopup();
+    });
+  }
+
+  // Close extras popup when clicking outside
+  const extrasPopup = document.getElementById('extras-popup');
+  if (extrasPopup) {
+    extrasPopup.addEventListener('click', (e) => {
+      if (e.target === extrasPopup) {
+        hideExtrasPopup();
+      }
+    });
+  }
+}
+
 // Start preloading assets - ensure DOM is ready
 window.addEventListener('load', () => {
   console.log("Window loaded, starting preload");
@@ -2324,13 +2392,40 @@ window.addEventListener('load', () => {
   // Setup warning popup event listeners
   setupWarningPopup();
   
-  // Setup test button for hacked screen
-  const testBtn = document.getElementById("test-btn");
-  if (testBtn) {
-    setupButtonHover(testBtn);
-    setupButtonSelect2(testBtn);
+  // Setup extras controls toggle
+  const extrasControls = document.getElementById("extras-controls");
+  const extrasToggle = document.getElementById("extras-toggle");
+  let extrasPopupShownThisSession = false; // Track if popup shown this page load
+  
+  if (extrasControls && extrasToggle) {
+    extrasToggle.addEventListener("click", () => {
+      const wasCollapsed = extrasControls.classList.contains("collapsed");
+      extrasControls.classList.toggle("collapsed");
+      
+      // Check if extras is being opened (was collapsed, now it's open)
+      if (wasCollapsed) {
+        // Show extras popup only the first time extras is opened per page load
+        if (!extrasPopupShownThisSession) {
+          extrasPopupShownThisSession = true;
+          // Small delay to ensure extras panel animation starts first
+          setTimeout(() => {
+            showExtrasPopup();
+          }, 500);
+        }
+      }
+    });
+  }
+  
+  // Setup extras popup
+  setupExtrasPopup();
+  
+  // Setup hacked button for hacked screen
+  const hackedBtn = document.getElementById("hacked-btn");
+  if (hackedBtn) {
+    setupButtonHover(hackedBtn);
+    setupButtonSelect2(hackedBtn);
     
-    testBtn.addEventListener("click", () => {
+    hackedBtn.addEventListener("click", () => {
       showHackedScreen();
     });
   }

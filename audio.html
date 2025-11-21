@@ -44,10 +44,20 @@
     </button>
   </div>
   
-  <!-- Test Button for Hacked Screen -->
-  <div id="test-controls">
-    <button id="test-btn" aria-label="Test hacked screen">TEST</button>
+  <!-- Extras Controls - Left Side -->
+  <div id="extras-controls" class="collapsed">
+    <button id="extras-toggle" aria-label="Toggle extras menu">
+      EXTRAS
+      <span id="extras-toggle-arrow">▶</span>
+    </button>
+    <div id="extras-content">
+      <div id="extras-header">
+        <div id="extras-title">Extras</div>
+      </div>
+      <button id="hacked-btn" aria-label="Test hacked screen">HACKED</button>
+    </div>
   </div>
+  
   <div id="loading-screen">
     <!-- Left side - Character/Illustration area -->
     <div id="loading-left-panel">
@@ -218,6 +228,30 @@
           <li>Residual code behavior unable to be explained by conventional optimization theory</li>
         </ul>
         <p class="warning-footer">Additional issues are expected and not yet documented due to lack of sufficient survivors willing to file reports.</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Extras Popup -->
+  <div id="extras-popup" class="extras-popup-hidden">
+    <div class="extras-popup-content">
+      <div class="extras-popup-header">
+        <div class="extras-popup-header-title">
+          <span class="extras-popup-symbol">◆</span>
+          <span>EXTRAS</span>
+        </div>
+        <button id="extras-popup-close-btn" aria-label="Close extras popup">×</button>
+      </div>
+      <div class="extras-popup-body">
+        <h1 class="extras-popup-title">EXTRAS</h1>
+        <p class="extras-popup-text">This module grants manual access to rare systems, hidden features, and low-probability event triggers normally activated only by chance operations. Many of these elements have extremely limited appearance rates, and under standard conditions users may never encounter them naturally.</p>
+        <p class="extras-popup-text">The Extras tab serves two main purposes:</p>
+        <div class="extras-popup-section">
+          <p class="extras-popup-bullet">• <strong>Testing & Development</strong> – Provides immediate access to visual effects, animations, shaders, UI variations, audio experiments, and other randomized subsystems without requiring statistical waiting periods. (Some features have been temporarily removed for stability and future functional integration.)</p>
+          <p class="extras-popup-bullet">• <strong>Creative Appreciation</strong> – A lot of time, energy, and maybe even too much caffeine went into small visual touches, alternate animations, experimental shaders, sound variations, and other fun ideas that most users would never see because of their extremely low appearance rates. This tab lets you bypass luck entirely and actually look at the cool stuff without needing the universe to align. It's a space to enjoy the little things — the polish, the experimentation, the "I spent two hours on this and someone better see it" details that would otherwise get lost in the black hole of probability.</p>
+        </div>
+        <p class="extras-popup-note">Note: Some elements within this module may be unfinished, unstable, or behave unpredictably. This is an expected part of the environment.</p>
+        <p class="extras-popup-footer">Welcome to the hidden sector of the project — where the "1% chance" features finally get time in the spotlight.</p>
       </div>
     </div>
   </div>
