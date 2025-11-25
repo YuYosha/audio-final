@@ -88,7 +88,7 @@ const analyser = new THREE.AudioAnalyser(sound, 256);
 
 const tracks = [
 
-  { label: "Jump UP", file: "JumpUP.mp3" },
+  { label: "Jump UP", file: "JumpUp.mp3" },
   { label: "Live and Learn", file: "LiveAndLearn.mp3" },
   { label: "I Feel So Alive", file: "IFeelSoAlive.mp3" },
   { label: "Citrus", file: "Citrus.mp3" },
