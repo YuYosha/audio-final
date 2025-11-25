@@ -9,7 +9,7 @@ let currentText = '';
 let talkSound = null;
 
 const dialogueLines = [
-  { text: "Hey this is a test dont be such a bitch about it", expression: "sassy" },
+  { text: "Hey this is a test its in development and not finished........ like at all", expression: "sassy" },
   { text: "maybe when i stop being lazy i will finish the rest", expression: "happy" },
   { text: "bye", expression: "sassy" }
 ];
@@ -144,29 +144,37 @@ function typeWriterWord(element, text, index, expression) {
 }
 
 function setCharacterExpression(expression) {
-  // Hide all expression gifs
+  // Hide all expression gifs immediately
   document.querySelectorAll('.dialogue-gif').forEach(gif => {
+    gif.style.opacity = '0';
     gif.classList.remove('gif-active');
   });
   
-  // Show the active expression
-  const expressionGif = document.getElementById(`dialogue-${expression}`);
-  if (expressionGif) {
-    expressionGif.classList.add('gif-active');
-  }
+  // Small delay to ensure previous gif is hidden before showing new one
+  setTimeout(() => {
+    const expressionGif = document.getElementById(`dialogue-${expression}`);
+    if (expressionGif) {
+      expressionGif.style.opacity = '1';
+      expressionGif.classList.add('gif-active');
+    }
+  }, 10);
 }
 
 function setCharacterIdle(expression) {
-  // Hide all expression gifs
+  // Hide all expression gifs immediately
   document.querySelectorAll('.dialogue-gif').forEach(gif => {
+    gif.style.opacity = '0';
     gif.classList.remove('gif-active');
   });
   
-  // Show the idle variant
-  const idleGif = document.getElementById(`dialogue-${expression}Idle`);
-  if (idleGif) {
-    idleGif.classList.add('gif-active');
-  }
+  // Small delay to ensure previous gif is hidden before showing new one
+  setTimeout(() => {
+    const idleGif = document.getElementById(`dialogue-${expression}Idle`);
+    if (idleGif) {
+      idleGif.style.opacity = '1';
+      idleGif.classList.add('gif-active');
+    }
+  }, 10);
 }
 
 function advanceDialogue() {
