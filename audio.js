@@ -190,7 +190,7 @@ const popupVideos = [
   "cream.mp4",
   "cream2.mp4",
   "dante.mp4",
-  "DC.mp4",
+  "DC.mp4", 
   "dodge.mp4",
   "eggman.mp4",
   "eggsax.mp4",
@@ -326,6 +326,17 @@ const errorWindowColors = [
   { border: '#ff0088', glow: 'rgba(255, 0, 136, 0.8)', inset: 'rgba(255, 0, 136, 0.3)', shadow: 'rgba(255, 0, 136, 0.5)' }, // Pink
   { border: '#8800ff', glow: 'rgba(136, 0, 255, 0.8)', inset: 'rgba(136, 0, 255, 0.3)', shadow: 'rgba(136, 0, 255, 0.5)' }, // Purple
 ];
+
+// === Loading Screen Management ===
+let assetsLoaded = false;
+let menuCycleInterval = null;
+let waitAudio = null;
+let discAudio = null;
+let waitAudioContext = null;
+let waitAnalyser = null;
+let waitDataArray = null;
+let visualizerAnimationId = null;
+let menuAudio = null;
 
 function updateTrackLabel(state = "ready") {
   if (!trackNameEl) return;
@@ -1591,16 +1602,6 @@ function updateExperimentalInfo() {
   }
 }
 
-// === Loading Screen Management ===
-let assetsLoaded = false;
-let menuCycleInterval = null;
-let waitAudio = null;
-let discAudio = null;
-let waitAudioContext = null;
-let waitAnalyser = null;
-let waitDataArray = null;
-let visualizerAnimationId = null;
-let menuAudio = null;
 
 function hideLoadingScreen() {
   const loadingScreenEl = document.getElementById("loading-screen");
@@ -1850,6 +1851,7 @@ function preloadAssets() {
   waitAudio = new Audio('./sound/wait.mp3');
   waitAudio.loop = true;
   waitAudio.volume = 0.4;
+  waitAudio.preload = 'auto';
   
   discAudio = new Audio('./sound/disc.mp3');
   discAudio.volume = 0.7;
@@ -1864,45 +1866,195 @@ function preloadAssets() {
   source.connect(waitAnalyser);
   waitAnalyser.connect(waitAudioContext.destination);
   
-  // Play wait sound
-  waitAudio.play().catch(err => console.warn("Could not play wait sound:", err));
+  // Function to play wait sound with retry logic
+  const playWaitSound = async () => {
+    try {
+      // Resume audio context if suspended
+      if (waitAudioContext.state === 'suspended') {
+        await waitAudioContext.resume();
+      }
+      
+      // Ensure audio is loaded
+      if (waitAudio.readyState < 2) {
+        // Wait for audio to be ready
+        await new Promise((resolve) => {
+          const onCanPlay = () => {
+            waitAudio.removeEventListener('canplaythrough', onCanPlay);
+            resolve();
+          };
+          waitAudio.addEventListener('canplaythrough', onCanPlay);
+          // Fallback timeout
+          setTimeout(resolve, 2000);
+        });
+      }
+      
+      // Try to play
+      await waitAudio.play();
+    } catch (err) {
+      console.warn("Could not play wait sound:", err);
+      // Retry after a short delay
+      setTimeout(() => {
+        playWaitSound().catch(() => {
+          console.warn("Retry failed to play wait sound");
+        });
+      }, 500);
+    }
+  };
+  
+  // Play wait sound when ready
+  if (waitAudio.readyState >= 2) {
+    playWaitSound();
+  } else {
+    waitAudio.addEventListener('canplaythrough', () => {
+      playWaitSound();
+    }, { once: true });
+    // Also try immediately in case it's already loaded
+    playWaitSound();
+  }
+  
+  // Also try to play on any user interaction (for autoplay policy)
+  const resumeOnInteraction = () => {
+    if (waitAudioContext && waitAudioContext.state === 'suspended') {
+      waitAudioContext.resume().then(() => {
+        if (waitAudio && waitAudio.paused) {
+          waitAudio.play().catch(() => {});
+        }
+      });
+    }
+    // Remove listener after first interaction
+    document.removeEventListener('click', resumeOnInteraction);
+    document.removeEventListener('touchstart', resumeOnInteraction);
+    document.removeEventListener('keydown', resumeOnInteraction);
+  };
+  
+  document.addEventListener('click', resumeOnInteraction, { once: true });
+  document.addEventListener('touchstart', resumeOnInteraction, { once: true });
+  document.addEventListener('keydown', resumeOnInteraction, { once: true });
   
   // Start visualizer after a short delay to ensure canvas is ready
   setTimeout(() => {
     setupLoadingVisualizer();
   }, 100);
   
-  // Load the first track
-  loadTrack(currentTrackIndex, false);
-  
-  // Always hide after 25 seconds, regardless of load status
-  console.log("Setting timeout to hide loading screen in 25 seconds");
-  
-  // Start loading bar animation
+  // Initialize loading bar to 0%
   const loadingBarFill = document.getElementById("loading-bar-fill");
   if (loadingBarFill) {
-    // Ensure it starts at 0%
     loadingBarFill.style.width = "0%";
-    // Use requestAnimationFrame to ensure the initial state is applied before animating
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        loadingBarFill.style.transition = "width 25s linear";
-        loadingBarFill.style.width = "100%";
-      });
-    });
+    loadingBarFill.style.transition = "width 0.3s ease";
   }
   
-  // Play disc sound slightly earlier (0.8 seconds before hiding)
-  setTimeout(() => {
-    if (discAudio) {
-      discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
-    }
-  }, 24200);
+  // Track loading progress
+  let loadingProgress = {
+    waitAudio: false,
+    discAudio: false,
+    firstTrack: false
+  };
   
+  const checkAllLoaded = () => {
+    if (loadingProgress.waitAudio && loadingProgress.discAudio && loadingProgress.firstTrack) {
+      console.log("All assets loaded - hiding loading screen");
+      // Ensure loading bar is at 100%
+      if (loadingBarFill) {
+        loadingBarFill.style.width = "100%";
+      }
+      // Play disc sound before hiding
+      if (discAudio) {
+        discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
+      }
+      // Small delay to let disc sound play
+      setTimeout(() => {
+        hideLoadingScreen();
+      }, 800);
+    }
+  };
+  
+  // Update loading bar based on actual progress
+  const updateLoadingBar = () => {
+    if (loadingBarFill) {
+      const loaded = Object.values(loadingProgress).filter(Boolean).length;
+      const total = Object.keys(loadingProgress).length;
+      const percent = (loaded / total) * 100;
+      loadingBarFill.style.width = `${percent}%`;
+    }
+  };
+  
+  // Wait for waitAudio to be ready
+  if (waitAudio.readyState >= 2) {
+    loadingProgress.waitAudio = true;
+    updateLoadingBar();
+    checkAllLoaded();
+  } else {
+    waitAudio.addEventListener('canplaythrough', () => {
+      loadingProgress.waitAudio = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    }, { once: true });
+  }
+  
+  // Wait for discAudio to be ready
+  discAudio.preload = 'auto';
+  if (discAudio.readyState >= 2) {
+    loadingProgress.discAudio = true;
+    updateLoadingBar();
+    checkAllLoaded();
+  } else {
+    discAudio.addEventListener('canplaythrough', () => {
+      loadingProgress.discAudio = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    }, { once: true });
+  }
+  
+  // Load the first track and wait for it to complete
+  const firstTrackLoadToken = ++activeLoadToken;
+  
+  isTrackLoading = true;
+  sound.stop();
+  sound.buffer = null;
+  updateTrackLabel("loading");
+  
+  // Apply color palette based on track index
+  applyColorPalette(currentTrackIndex);
+  
+  audioLoader.load(
+    `./music/${tracks[currentTrackIndex].file}`,
+    (buffer) => {
+      if (firstTrackLoadToken !== activeLoadToken) return;
+      isTrackLoading = false;
+      sound.setBuffer(buffer);
+      sound.setLoop(true);
+      sound.setVolume(0.8);
+      updateTrackLabel();
+      updateButtonStates();
+      
+      loadingProgress.firstTrack = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    },
+    undefined,
+    (error) => {
+      if (firstTrackLoadToken !== activeLoadToken) return;
+      isTrackLoading = false;
+      updateTrackLabel("error");
+      console.error(`Failed to load ${tracks[currentTrackIndex].file}`, error);
+      // Still mark as loaded to allow continuing (with error state)
+      loadingProgress.firstTrack = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    }
+  );
+  
+  // Fallback timeout (60 seconds max) in case something goes wrong
   setTimeout(() => {
-    console.log("Timeout fired - hiding loading screen");
-    hideLoadingScreen();
-  }, 25000);
+    if (!assetsLoaded) {
+      console.warn("Loading timeout reached - forcing hide");
+      // Mark everything as loaded to proceed
+      loadingProgress.waitAudio = true;
+      loadingProgress.discAudio = true;
+      loadingProgress.firstTrack = true;
+      hideLoadingScreen();
+    }
+  }, 60000);
 }
 
 // === Welcome Popup Management ===
@@ -2466,7 +2618,7 @@ function startOverlayVideoLoop() {
     
     // Restore original palette based on current track
     applyColorPalette(currentTrackIndex);
-
+    
     
     // Add glitch effect before closing (matching error window behavior - identical to error windows)
     if (videoGlitchOverlayEl) {
@@ -2880,693 +3032,6 @@ function startErrorWindowLoop() {
     });
   }, ERROR_WINDOW_INTERVAL);
 }
-
-// === Color Palettes ===
-const colorPalettes = [
-
-  // Palette 0: Vibrant Cyan/Magenta - High contrast electric
-  {
-
-    name: "Electric",
-    skybox: {
-
-      baseColor1: { x: 0.0, y: 0.025, z: 0.08 },
-      baseColor2: { x: 0.0, y: 0.08, z: 0.12 },
-      pulseTint1: { x: 0.0, y: 0.3, z: 0.7 },
-      pulseTint2: { x: 0.0, y: 0.6, z: 1.0 },
-      toneShift: { x: 0.5, y: 1.0, z: 1.8 },
-    },
-    ring1: { color: 0x00ffff, emissive: 0x00ffff },
-    ring2: { color: 0xff00ff, emissive: 0xff00ff },
-    ring3: { color: 0xffffff, emissive: 0xffffff },
-    ring4: { color: 0x00ccff, emissive: 0x00ccff },
-
-    ring5: { color: 0xff00cc, emissive: 0xff00cc },
-    ring6: { color: 0x44ffff, emissive: 0x44ffff },
-    ring7: { color: 0xff44ff, emissive: 0xff44ff },
-    ring8: { color: 0x00ffcc, emissive: 0x00ffcc },
-    ring9: { color: 0xcc00ff, emissive: 0xcc00ff },
-    inner: { color: 0x00ffff, emissive: 0x44ffff },
-    outline: { visible: "#00ffff", hidden: "#ff00ff" },
-  },
-  // Palette 1: Intense Fire Red/Orange - Pure heat
-  {
-    name: "Inferno",
-    skybox: {
-
-      baseColor1: { x: 0.08, y: 0.0, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.03, z: 0.0 },
-      pulseTint1: { x: 0.7, y: 0.15, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 0.4, z: 0.0 },
-      toneShift: { x: 1.8, y: 1.0, z: 0.5 },
-    },
-    ring1: { color: 0xff0000, emissive: 0xff0000 },
-    ring2: { color: 0xff4400, emissive: 0xff4400 },
-    ring3: { color: 0xffff00, emissive: 0xffff00 },
-    ring4: { color: 0xff6600, emissive: 0xff6600 },
-
-    ring5: { color: 0xff2200, emissive: 0xff2200 },
-    ring6: { color: 0xffaa00, emissive: 0xffaa00 },
-    ring7: { color: 0xff8800, emissive: 0xff8800 },
-    ring8: { color: 0xff1100, emissive: 0xff1100 },
-    ring9: { color: 0xffcc00, emissive: 0xffcc00 },
-    inner: { color: 0xff4400, emissive: 0xff6600 },
-    outline: { visible: "#ff0000", hidden: "#ff4400" },
-  },
-  // Palette 2: Neon Green/Purple - Cyberpunk
-  {
-    name: "Cyber",
-    skybox: {
-
-      baseColor1: { x: 0.025, y: 0.0, z: 0.08 },
-      baseColor2: { x: 0.08, y: 0.0, z: 0.12 },
-      pulseTint1: { x: 0.3, y: 0.0, z: 0.7 },
-      pulseTint2: { x: 0.7, y: 0.0, z: 1.0 },
-      toneShift: { x: 1.4, y: 0.5, z: 1.8 },
-    },
-    ring1: { color: 0x00ff00, emissive: 0x00ff00 },
-    ring2: { color: 0xff00ff, emissive: 0xff00ff },
-    ring3: { color: 0xffff00, emissive: 0xffff00 },
-    ring4: { color: 0x00ff88, emissive: 0x00ff88 },
-    ring5: { color: 0xff00aa, emissive: 0xff00aa },
-    ring6: { color: 0x88ff00, emissive: 0x88ff00 },
-    ring7: { color: 0xcc00ff, emissive: 0xcc00ff },
-    ring8: { color: 0x00ff44, emissive: 0x00ff44 },
-    ring9: { color: 0xff44ff, emissive: 0xff44ff },
-    inner: { color: 0x00ff88, emissive: 0x44ffaa },
-    outline: { visible: "#00ff00", hidden: "#ff00ff" },
-  },
-  // Palette 3: Pure Electric Blue/Yellow - Lightning
-  {
-    name: "Lightning",
-    skybox: {
-
-      baseColor1: { x: 0.0, y: 0.04, z: 0.08 },
-      baseColor2: { x: 0.015, y: 0.08, z: 0.12 },
-      pulseTint1: { x: 0.0, y: 0.5, z: 0.8 },
-      pulseTint2: { x: 0.3, y: 0.8, z: 1.0 },
-      toneShift: { x: 0.8, y: 1.6, z: 1.8 },
-    },
-    ring1: { color: 0x0066ff, emissive: 0x0066ff },
-    ring2: { color: 0xffff00, emissive: 0xffff00 },
-    ring3: { color: 0xffffff, emissive: 0xffffff },
-    ring4: { color: 0x0088ff, emissive: 0x0088ff },
-    ring5: { color: 0xffff44, emissive: 0xffff44 },
-    ring6: { color: 0x00aaff, emissive: 0x00aaff },
-    ring7: { color: 0xffff88, emissive: 0xffff88 },
-    ring8: { color: 0x0099ff, emissive: 0x0099ff },
-    ring9: { color: 0xffff00, emissive: 0xffff00 },
-    inner: { color: 0x0088ff, emissive: 0x00aaff },
-    outline: { visible: "#0066ff", hidden: "#ffff00" },
-  },
-  // Palette 4: Hot Pink/Orange - Sunset
-  {
-    name: "Sunset",
-    skybox: {
-
-      baseColor1: { x: 0.08, y: 0.02, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.06, z: 0.02 },
-      pulseTint1: { x: 0.8, y: 0.3, z: 0.1 },
-      pulseTint2: { x: 1.0, y: 0.5, z: 0.3 },
-      toneShift: { x: 1.8, y: 1.3, z: 0.8 },
-    },
-    ring1: { color: 0xff0088, emissive: 0xff0088 },
-    ring2: { color: 0xff4400, emissive: 0xff4400 },
-    ring3: { color: 0xffff44, emissive: 0xffff44 },
-    ring4: { color: 0xff0066, emissive: 0xff0066 },
-    ring5: { color: 0xff6600, emissive: 0xff6600 },
-    ring6: { color: 0xffaa44, emissive: 0xffaa44 },
-    ring7: { color: 0xff0088, emissive: 0xff0088 },
-    ring8: { color: 0xff8800, emissive: 0xff8800 },
-    ring9: { color: 0xff4488, emissive: 0xff4488 },
-    inner: { color: 0xff0044, emissive: 0xff6644 },
-    outline: { visible: "#ff0088", hidden: "#ff4400" },
-  },
-  // Palette 5: Neon Cyan/Green - Aqua
-  {
-    name: "Aqua",
-    skybox: {
-
-      baseColor1: { x: 0.0, y: 0.04, z: 0.06 },
-      baseColor2: { x: 0.0, y: 0.08, z: 0.10 },
-      pulseTint1: { x: 0.0, y: 0.5, z: 0.6 },
-      pulseTint2: { x: 0.3, y: 0.8, z: 0.9 },
-      toneShift: { x: 0.7, y: 1.6, z: 1.7 },
-    },
-    ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
-
-    ring2: { color: 0x00ff88, emissive: 0x00ff88 },
-    ring3: { color: 0x88ffff, emissive: 0x88ffff },
-    ring4: { color: 0x00ffaa, emissive: 0x00ffaa },
-
-    ring5: { color: 0x44ffdd, emissive: 0x44ffdd },
-    ring6: { color: 0x66ffee, emissive: 0x66ffee },
-    ring7: { color: 0x00ffcc, emissive: 0x00ffcc },
-
-    ring8: { color: 0x00ff66, emissive: 0x00ff66 },
-    ring9: { color: 0x44ffff, emissive: 0x44ffff },
-
-    inner: { color: 0x00ffcc, emissive: 0x44ffdd },
-    outline: { visible: "#00ffcc", hidden: "#00ff88" },
-  },
-
-  // Palette 6: Deep Purple/Pink - Cosmic
-  {
-
-    name: "Cosmic",
-    skybox: {
-
-      baseColor1: { x: 0.06, y: 0.0, z: 0.08 },
-      baseColor2: { x: 0.10, y: 0.02, z: 0.12 },
-      pulseTint1: { x: 0.6, y: 0.0, z: 0.8 },
-      pulseTint2: { x: 0.85, y: 0.3, z: 1.0 },
-      toneShift: { x: 1.5, y: 0.8, z: 1.8 },
-    },
-    ring1: { color: 0x8800ff, emissive: 0x8800ff },
-    ring2: { color: 0xff00aa, emissive: 0xff00aa },
-    ring3: { color: 0xff88ff, emissive: 0xff88ff },
-    ring4: { color: 0xaa00ff, emissive: 0xaa00ff },
-    ring5: { color: 0xff44cc, emissive: 0xff44cc },
-    ring6: { color: 0xcc66ff, emissive: 0xcc66ff },
-    ring7: { color: 0x9900ff, emissive: 0x9900ff },
-    ring8: { color: 0xff0088, emissive: 0xff0088 },
-    ring9: { color: 0xdd44ff, emissive: 0xdd44ff },
-    inner: { color: 0xaa00ff, emissive: 0xcc44ff },
-    outline: { visible: "#8800ff", hidden: "#ff00aa" },
-  },
-  // Palette 7: Lime/Blue - Neon
-  {
-    name: "Neon",
-    skybox: {
-      baseColor1: { x: 0.02, y: 0.05, z: 0.06 },
-      baseColor2: { x: 0.04, y: 0.10, z: 0.12 },
-      pulseTint1: { x: 0.3, y: 0.7, z: 0.7 },
-      pulseTint2: { x: 0.6, y: 1.0, z: 1.0 },
-      toneShift: { x: 1.2, y: 1.8, z: 1.8 },
-    },
-    ring1: { color: 0x00ff00, emissive: 0x00ff00 },
-    ring2: { color: 0x0088ff, emissive: 0x0088ff },
-    ring3: { color: 0xffff88, emissive: 0xffff88 },
-    ring4: { color: 0x44ff00, emissive: 0x44ff00 },
-    ring5: { color: 0x00aaff, emissive: 0x00aaff },
-    ring6: { color: 0x88ff44, emissive: 0x88ff44 },
-    ring7: { color: 0x00ccff, emissive: 0x00ccff },
-    ring8: { color: 0x66ff00, emissive: 0x66ff00 },
-    ring9: { color: 0x0099ff, emissive: 0x0099ff },
-    inner: { color: 0x00ff44, emissive: 0x00aa88 },
-    outline: { visible: "#00ff00", hidden: "#0088ff" },
-  },
-  // Palette 8: Pure Red/Pink - Hot
-  {
-    name: "Hot",
-    skybox: {
-      baseColor1: { x: 0.08, y: 0.0, z: 0.04 },
-      baseColor2: { x: 0.12, y: 0.02, z: 0.08 },
-      pulseTint1: { x: 0.9, y: 0.1, z: 0.6 },
-      pulseTint2: { x: 1.0, y: 0.3, z: 0.85 },
-      toneShift: { x: 1.8, y: 0.9, z: 1.5 },
-    },
-    ring1: { color: 0xff0000, emissive: 0xff0000 },
-    ring2: { color: 0xff0088, emissive: 0xff0088 },
-    ring3: { color: 0xff4488, emissive: 0xff4488 },
-    ring4: { color: 0xff2200, emissive: 0xff2200 },
-    ring5: { color: 0xff0066, emissive: 0xff0066 },
-    ring6: { color: 0xff6688, emissive: 0xff6688 },
-    ring7: { color: 0xff4400, emissive: 0xff4400 },
-    ring8: { color: 0xff00aa, emissive: 0xff00aa },
-    ring9: { color: 0xff8844, emissive: 0xff8844 },
-
-    inner: { color: 0xff0044, emissive: 0xff4488 },
-    outline: { visible: "#ff0000", hidden: "#ff0088" },
-  },
-
-  // Palette 9: Emerald/Teal - Ocean
-  {
-
-    name: "Ocean",
-    skybox: {
-
-      baseColor1: { x: 0.0, y: 0.06, z: 0.05 },
-      baseColor2: { x: 0.0, y: 0.12, z: 0.10 },
-      pulseTint1: { x: 0.0, y: 0.7, z: 0.6 },
-      pulseTint2: { x: 0.3, y: 1.0, z: 0.9 },
-      toneShift: { x: 0.7, y: 1.8, z: 1.7 },
-    },
-    ring1: { color: 0x00ff88, emissive: 0x00ff88 },
-    ring2: { color: 0x00ccff, emissive: 0x00ccff },
-    ring3: { color: 0x44ffaa, emissive: 0x44ffaa },
-    ring4: { color: 0x00ffaa, emissive: 0x00ffaa },
-    ring5: { color: 0x00aaff, emissive: 0x00aaff },
-    ring6: { color: 0x66ffcc, emissive: 0x66ffcc },
-    ring7: { color: 0x00ff66, emissive: 0x00ff66 },
-    ring8: { color: 0x0088ff, emissive: 0x0088ff },
-    ring9: { color: 0x44ffdd, emissive: 0x44ffdd },
-    inner: { color: 0x00ffaa, emissive: 0x44ffcc },
-    outline: { visible: "#00ff88", hidden: "#00ccff" },
-  },
-  // Palette 10: Gold/Yellow - Royal
-  {
-    name: "Royal",
-    skybox: {
-      baseColor1: { x: 0.06, y: 0.05, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.10, z: 0.02 },
-      pulseTint1: { x: 0.8, y: 0.7, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 1.0, z: 0.4 },
-      toneShift: { x: 1.8, y: 1.8, z: 1.0 },
-    },
-    ring1: { color: 0xffcc00, emissive: 0xffcc00 },
-    ring2: { color: 0xffff00, emissive: 0xffff00 },
-    ring3: { color: 0xffffff, emissive: 0xffffff },
-
-    ring4: { color: 0xffaa00, emissive: 0xffaa00 },
-    ring5: { color: 0xffff44, emissive: 0xffff44 },
-    ring6: { color: 0xffdd00, emissive: 0xffdd00 },
-    ring7: { color: 0xffff88, emissive: 0xffff88 },
-    ring8: { color: 0xff9900, emissive: 0xff9900 },
-    ring9: { color: 0xffff00, emissive: 0xffff00 },
-    inner: { color: 0xffcc00, emissive: 0xffff44 },
-    outline: { visible: "#ffcc00", hidden: "#ffff00" },
-  },
-  // Palette 11: Crimson/Violet - Blood Moon
-  {
-    name: "Blood Moon",
-    skybox: {
-
-      baseColor1: { x: 0.08, y: 0.0, z: 0.06 },
-      baseColor2: { x: 0.12, y: 0.01, z: 0.10 },
-      pulseTint1: { x: 0.9, y: 0.0, z: 0.7 },
-      pulseTint2: { x: 1.0, y: 0.2, z: 0.9 },
-      toneShift: { x: 1.8, y: 0.7, z: 1.6 },
-    },
-    ring1: { color: 0xcc0000, emissive: 0xcc0000 },
-    ring2: { color: 0x8800ff, emissive: 0x8800ff },
-    ring3: { color: 0xff4488, emissive: 0xff4488 },
-    ring4: { color: 0xaa0000, emissive: 0xaa0000 },
-    ring5: { color: 0x9900ff, emissive: 0x9900ff },
-    ring6: { color: 0xff0066, emissive: 0xff0066 },
-    ring7: { color: 0xaa00cc, emissive: 0xaa00cc },
-    ring8: { color: 0xcc0044, emissive: 0xcc0044 },
-    ring9: { color: 0xbb00ff, emissive: 0xbb00ff },
-    inner: { color: 0xcc0044, emissive: 0xcc4488 },
-    outline: { visible: "#cc0000", hidden: "#8800ff" },
-  },
-  // Palette 12: White/Silver - Frost (changed from cyan to white/silver)
-  {
-    name: "Frost",
-    skybox: {
-      baseColor1: { x: 0.04, y: 0.04, z: 0.05 },
-      baseColor2: { x: 0.06, y: 0.06, z: 0.08 },
-      pulseTint1: { x: 0.5, y: 0.5, z: 0.6 },
-      pulseTint2: { x: 0.8, y: 0.8, z: 0.9 },
-      toneShift: { x: 1.4, y: 1.4, z: 1.6 },
-    },
-    ring1: { color: 0xffffff, emissive: 0xffffff },
-    ring2: { color: 0xcccccc, emissive: 0xcccccc },
-    ring3: { color: 0xeeeeee, emissive: 0xeeeeee },
-    ring4: { color: 0xdddddd, emissive: 0xdddddd },
-    ring5: { color: 0xbbbbbb, emissive: 0xbbbbbb },
-    ring6: { color: 0xffffff, emissive: 0xffffff },
-    ring7: { color: 0xaaaaaa, emissive: 0xaaaaaa },
-    ring8: { color: 0xeeeeee, emissive: 0xeeeeee },
-    ring9: { color: 0xcccccc, emissive: 0xcccccc },
-    inner: { color: 0xdddddd, emissive: 0xeeeeee },
-    outline: { visible: "#ffffff", hidden: "#cccccc" },
-  },
-  // Palette 13: Acid Green/Purple - Toxic (changed from lime/yellow to acid green/purple)
-  {
-    name: "Toxic",
-    skybox: {
-      baseColor1: { x: 0.02, y: 0.06, z: 0.04 },
-      baseColor2: { x: 0.04, y: 0.11, z: 0.08 },
-      pulseTint1: { x: 0.3, y: 0.9, z: 0.5 },
-      pulseTint2: { x: 0.6, y: 1.0, z: 0.8 },
-      toneShift: { x: 1.1, y: 1.9, z: 1.4 },
-    },
-    ring1: { color: 0x66ff00, emissive: 0x66ff00 },
-    ring2: { color: 0xaa00ff, emissive: 0xaa00ff },
-    ring3: { color: 0x88ff44, emissive: 0x88ff44 },
-    ring4: { color: 0x44ff00, emissive: 0x44ff00 },
-    ring5: { color: 0xcc00ff, emissive: 0xcc00ff },
-    ring6: { color: 0x99ff66, emissive: 0x99ff66 },
-    ring7: { color: 0xbb44ff, emissive: 0xbb44ff },
-    ring8: { color: 0x55ff00, emissive: 0x55ff00 },
-    ring9: { color: 0xdd66ff, emissive: 0xdd66ff },
-    inner: { color: 0x66ff00, emissive: 0x88ff44 },
-    outline: { visible: "#66ff00", hidden: "#aa00ff" },
-  },
-  // Palette 14: Dark Blue/Cyan - Mystic (changed from purple/teal to dark blue/cyan)
-  {
-    name: "Mystic",
-    skybox: {
-      baseColor1: { x: 0.0, y: 0.02, z: 0.08 },
-      baseColor2: { x: 0.01, y: 0.05, z: 0.12 },
-      pulseTint1: { x: 0.0, y: 0.3, z: 0.9 },
-      pulseTint2: { x: 0.2, y: 0.6, z: 1.0 },
-      toneShift: { x: 0.8, y: 1.2, z: 1.8 },
-    },
-    ring1: { color: 0x0000ff, emissive: 0x0000ff },
-    ring2: { color: 0x00ffff, emissive: 0x00ffff },
-    ring3: { color: 0x0044ff, emissive: 0x0044ff },
-    ring4: { color: 0x0022ff, emissive: 0x0022ff },
-    ring5: { color: 0x00ccff, emissive: 0x00ccff },
-    ring6: { color: 0x0066ff, emissive: 0x0066ff },
-    ring7: { color: 0x00ddff, emissive: 0x00ddff },
-    ring8: { color: 0x0011ff, emissive: 0x0011ff },
-    ring9: { color: 0x44eeff, emissive: 0x44eeff },
-    inner: { color: 0x0022ff, emissive: 0x0044ff },
-    outline: { visible: "#0000ff", hidden: "#00ffff" },
-  },
-  // Palette 15: Red/White - Cherry (changed from orange/cyan to red/white)
-  {
-    name: "Cherry",
-    skybox: {
-      baseColor1: { x: 0.08, y: 0.03, z: 0.03 },
-      baseColor2: { x: 0.12, y: 0.06, z: 0.06 },
-      pulseTint1: { x: 1.0, y: 0.4, z: 0.4 },
-      pulseTint2: { x: 1.0, y: 0.8, z: 0.8 },
-      toneShift: { x: 1.8, y: 1.5, z: 1.5 },
-    },
-    ring1: { color: 0xff0000, emissive: 0xff0000 },
-    ring2: { color: 0xffffff, emissive: 0xffffff },
-    ring3: { color: 0xff4444, emissive: 0xff4444 },
-    ring4: { color: 0xff2222, emissive: 0xff2222 },
-    ring5: { color: 0xeeeeee, emissive: 0xeeeeee },
-    ring6: { color: 0xff6666, emissive: 0xff6666 },
-    ring7: { color: 0xdddddd, emissive: 0xdddddd },
-    ring8: { color: 0xff1111, emissive: 0xff1111 },
-    ring9: { color: 0xffffff, emissive: 0xffffff },
-    inner: { color: 0xff2222, emissive: 0xff4444 },
-    outline: { visible: "#ff0000", hidden: "#ffffff" },
-  },
-  // Palette 16: Magenta/Blue - Neon Dreams
-  {
-    name: "Neon Dreams",
-    skybox: {
-      baseColor1: { x: 0.05, y: 0.0, z: 0.08 },
-      baseColor2: { x: 0.09, y: 0.02, z: 0.12 },
-      pulseTint1: { x: 0.7, y: 0.0, z: 0.9 },
-      pulseTint2: { x: 0.9, y: 0.3, z: 1.0 },
-      toneShift: { x: 1.6, y: 0.8, z: 1.8 },
-    },
-    ring1: { color: 0xff00ff, emissive: 0xff00ff },
-    ring2: { color: 0x0088ff, emissive: 0x0088ff },
-    ring3: { color: 0xff44ff, emissive: 0xff44ff },
-    ring4: { color: 0xff00cc, emissive: 0xff00cc },
-    ring5: { color: 0x00aaff, emissive: 0x00aaff },
-    ring6: { color: 0xff66ff, emissive: 0xff66ff },
-    ring7: { color: 0x0099ff, emissive: 0x0099ff },
-    ring8: { color: 0xff00aa, emissive: 0xff00aa },
-    ring9: { color: 0x44aaff, emissive: 0x44aaff },
-    inner: { color: 0xff00cc, emissive: 0xff44ff },
-    outline: { visible: "#ff00ff", hidden: "#0088ff" },
-  },
-  // Palette 17: Amber/Red - Ember
-  {
-    name: "Ember",
-    skybox: {
-      baseColor1: { x: 0.08, y: 0.03, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.07, z: 0.01 },
-      pulseTint1: { x: 1.0, y: 0.5, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 0.7, z: 0.2 },
-      toneShift: { x: 1.8, y: 1.5, z: 0.9 },
-    },
-    ring1: { color: 0xff4400, emissive: 0xff4400 },
-    ring2: { color: 0xff0000, emissive: 0xff0000 },
-    ring3: { color: 0xff8800, emissive: 0xff8800 },
-    ring4: { color: 0xff6600, emissive: 0xff6600 },
-    ring5: { color: 0xff2200, emissive: 0xff2200 },
-    ring6: { color: 0xffaa00, emissive: 0xffaa00 },
-    ring7: { color: 0xff1100, emissive: 0xff1100 },
-    ring8: { color: 0xff7700, emissive: 0xff7700 },
-    ring9: { color: 0xff5500, emissive: 0xff5500 },
-    inner: { color: 0xff6600, emissive: 0xff8800 },
-    outline: { visible: "#ff4400", hidden: "#ff0000" },
-  },
-  // Palette 18: Turquoise/Pink - Tropical
-  {
-    name: "Tropical",
-    skybox: {
-      baseColor1: { x: 0.03, y: 0.05, z: 0.06 },
-      baseColor2: { x: 0.06, y: 0.09, z: 0.11 },
-      pulseTint1: { x: 0.4, y: 0.6, z: 0.7 },
-      pulseTint2: { x: 0.7, y: 0.9, z: 1.0 },
-      toneShift: { x: 1.3, y: 1.6, z: 1.7 },
-    },
-    ring1: { color: 0x00ffaa, emissive: 0x00ffaa },
-    ring2: { color: 0xff0088, emissive: 0xff0088 },
-    ring3: { color: 0x44ffcc, emissive: 0x44ffcc },
-    ring4: { color: 0x00ffcc, emissive: 0x00ffcc },
-    ring5: { color: 0xff44aa, emissive: 0xff44aa },
-    ring6: { color: 0x66ffdd, emissive: 0x66ffdd },
-    ring7: { color: 0xff0066, emissive: 0xff0066 },
-    ring8: { color: 0x00ffdd, emissive: 0x00ffdd },
-    ring9: { color: 0xff66bb, emissive: 0xff66bb },
-    inner: { color: 0x00ffcc, emissive: 0x44ffdd },
-    outline: { visible: "#00ffaa", hidden: "#ff0088" },
-  },
-  // Palette 19: Navy/Orange - Galaxy (changed from indigo/yellow to navy/orange)
-  {
-    name: "Galaxy",
-    skybox: {
-      baseColor1: { x: 0.02, y: 0.02, z: 0.08 },
-      baseColor2: { x: 0.05, y: 0.05, z: 0.12 },
-      pulseTint1: { x: 0.2, y: 0.2, z: 0.9 },
-      pulseTint2: { x: 0.5, y: 0.5, z: 1.0 },
-      toneShift: { x: 1.0, y: 1.0, z: 1.8 },
-    },
-    ring1: { color: 0x000044, emissive: 0x0000aa },
-    ring2: { color: 0xff8800, emissive: 0xff8800 },
-    ring3: { color: 0x000066, emissive: 0x0000cc },
-    ring4: { color: 0x000022, emissive: 0x000088 },
-    ring5: { color: 0xffaa00, emissive: 0xffaa00 },
-    ring6: { color: 0x000088, emissive: 0x0000ee },
-    ring7: { color: 0xffcc00, emissive: 0xffcc00 },
-    ring8: { color: 0x000011, emissive: 0x000066 },
-    ring9: { color: 0xff9900, emissive: 0xff9900 },
-    inner: { color: 0x000022, emissive: 0x000066 },
-    outline: { visible: "#000044", hidden: "#ff8800" },
-  },
-  // Palette 20: Green/Orange - Citrus
-  {
-    name: "Citrus",
-    skybox: {
-      baseColor1: { x: 0.02, y: 0.06, z: 0.01 },
-      baseColor2: { x: 0.05, y: 0.11, z: 0.03 },
-      pulseTint1: { x: 0.3, y: 0.9, z: 0.4 },
-      pulseTint2: { x: 0.6, y: 1.0, z: 0.7 },
-      toneShift: { x: 1.1, y: 1.9, z: 1.3 },
-    },
-    ring1: { color: 0x00ff00, emissive: 0x00ff00 },
-    ring2: { color: 0xff6600, emissive: 0xff6600 },
-    ring3: { color: 0x44ff44, emissive: 0x44ff44 },
-    ring4: { color: 0x00ff44, emissive: 0x00ff44 },
-    ring5: { color: 0xff8800, emissive: 0xff8800 },
-    ring6: { color: 0x66ff66, emissive: 0x66ff66 },
-    ring7: { color: 0xffaa00, emissive: 0xffaa00 },
-    ring8: { color: 0x00ff66, emissive: 0x00ff66 },
-    ring9: { color: 0xffcc00, emissive: 0xffcc00 },
-    inner: { color: 0x00ff44, emissive: 0x44ff66 },
-    outline: { visible: "#00ff00", hidden: "#ff6600" },
-  },
-  // Palette 21: Rose/Teal - Vintage
-  {
-    name: "Vintage",
-    skybox: {
-      baseColor1: { x: 0.06, y: 0.03, z: 0.05 },
-      baseColor2: { x: 0.10, y: 0.06, z: 0.09 },
-      pulseTint1: { x: 0.8, y: 0.4, z: 0.6 },
-      pulseTint2: { x: 1.0, y: 0.7, z: 0.85 },
-      toneShift: { x: 1.7, y: 1.3, z: 1.5 },
-    },
-    ring1: { color: 0xff6688, emissive: 0xff6688 },
-    ring2: { color: 0x00ccaa, emissive: 0x00ccaa },
-    ring3: { color: 0xff8899, emissive: 0xff8899 },
-    ring4: { color: 0xff4466, emissive: 0xff4466 },
-    ring5: { color: 0x00aa88, emissive: 0x00aa88 },
-    ring6: { color: 0xffaabb, emissive: 0xffaabb },
-    ring7: { color: 0x00ddcc, emissive: 0x00ddcc },
-    ring8: { color: 0xff5577, emissive: 0xff5577 },
-    ring9: { color: 0x44ccbb, emissive: 0x44ccbb },
-    inner: { color: 0xff6688, emissive: 0xff8899 },
-    outline: { visible: "#ff6688", hidden: "#00ccaa" },
-  },
-  // Palette 22: Rainbow Multi-Color - Prism (changed from cyan/magenta to rainbow spectrum)
-  {
-    name: "Prism",
-    skybox: {
-      baseColor1: { x: 0.04, y: 0.04, z: 0.04 },
-      baseColor2: { x: 0.08, y: 0.08, z: 0.08 },
-      pulseTint1: { x: 0.5, y: 0.5, z: 0.5 },
-      pulseTint2: { x: 1.0, y: 1.0, z: 1.0 },
-      toneShift: { x: 1.5, y: 1.5, z: 1.5 },
-    },
-    ring1: { color: 0xff0000, emissive: 0xff0000 },
-    ring2: { color: 0xff8800, emissive: 0xff8800 },
-    ring3: { color: 0xffff00, emissive: 0xffff00 },
-    ring4: { color: 0x00ff00, emissive: 0x00ff00 },
-    ring5: { color: 0x0088ff, emissive: 0x0088ff },
-    ring6: { color: 0x0000ff, emissive: 0x0000ff },
-    ring7: { color: 0x8800ff, emissive: 0x8800ff },
-    ring8: { color: 0xff0088, emissive: 0xff0088 },
-    ring9: { color: 0xffffff, emissive: 0xffffff },
-    inner: { color: 0x00ff00, emissive: 0x0088ff },
-    outline: { visible: "#ff0000", hidden: "#8800ff" },
-  },
-  // Palette 23: Dark Purple/Pink - Synthwave (changed from purple/green to dark purple/pink)
-  {
-    name: "Synthwave",
-    skybox: {
-      baseColor1: { x: 0.06, y: 0.0, z: 0.07 },
-      baseColor2: { x: 0.10, y: 0.02, z: 0.11 },
-      pulseTint1: { x: 0.8, y: 0.0, z: 0.8 },
-      pulseTint2: { x: 1.0, y: 0.3, z: 1.0 },
-      toneShift: { x: 1.7, y: 0.8, z: 1.7 },
-    },
-    ring1: { color: 0x4400aa, emissive: 0x4400aa },
-    ring2: { color: 0xff00cc, emissive: 0xff00cc },
-    ring3: { color: 0x6600cc, emissive: 0x6600cc },
-    ring4: { color: 0x5500bb, emissive: 0x5500bb },
-    ring5: { color: 0xff44dd, emissive: 0xff44dd },
-    ring6: { color: 0x7700dd, emissive: 0x7700dd },
-    ring7: { color: 0xff66ee, emissive: 0xff66ee },
-    ring8: { color: 0x330099, emissive: 0x330099 },
-    ring9: { color: 0xff88ff, emissive: 0xff88ff },
-    inner: { color: 0x5500bb, emissive: 0x7700dd },
-    outline: { visible: "#4400aa", hidden: "#ff00cc" },
-  },
-  // Palette 24: Deep Crimson/Dark Red - Blood Drain
-  {
-    name: "Blood Drain",
-    skybox: {
-      baseColor1: { x: 0.08, y: 0.0, z: 0.0 },
-      baseColor2: { x: 0.12, y: 0.0, z: 0.01 },
-      pulseTint1: { x: 0.9, y: 0.0, z: 0.0 },
-      pulseTint2: { x: 1.0, y: 0.1, z: 0.1 },
-      toneShift: { x: 1.8, y: 0.5, z: 0.5 },
-    },
-    ring1: { color: 0x990000, emissive: 0x990000 },
-    ring2: { color: 0x660000, emissive: 0x660000 },
-    ring3: { color: 0xcc0000, emissive: 0xcc0000 },
-    ring4: { color: 0x880000, emissive: 0x880000 },
-    ring5: { color: 0xaa0000, emissive: 0xaa0000 },
-    ring6: { color: 0x440000, emissive: 0x440000 },
-    ring7: { color: 0xcc1111, emissive: 0xcc1111 },
-    ring8: { color: 0x770000, emissive: 0x770000 },
-    ring9: { color: 0xdd0000, emissive: 0xdd0000 },
-    inner: { color: 0x880000, emissive: 0xaa0000 },
-    outline: { visible: "#990000", hidden: "#660000" },
-  },
-  // Palette 25: Persona 3 Reload - Blue/White/Yellow
-  {
-    name: "Persona 3 Reload",
-    skybox: {
-      baseColor1: { x: 0.0, y: 0.04, z: 0.10 },
-      baseColor2: { x: 0.02, y: 0.08, z: 0.15 },
-      pulseTint1: { x: 0.0, y: 0.5, z: 0.9 },
-      pulseTint2: { x: 0.3, y: 0.7, z: 1.0 },
-      toneShift: { x: 0.9, y: 1.5, z: 1.8 },
-    },
-    ring1: { color: 0x0066ff, emissive: 0x0066ff },
-    ring2: { color: 0xffffff, emissive: 0xffffff },
-    ring3: { color: 0x0088ff, emissive: 0x0088ff },
-    ring4: { color: 0xeeeeee, emissive: 0xeeeeee },
-    ring5: { color: 0x0099ff, emissive: 0x0099ff },
-    ring6: { color: 0xffff44, emissive: 0xffff44 },
-    ring7: { color: 0x00aaff, emissive: 0x00aaff },
-    ring8: { color: 0xdddddd, emissive: 0xdddddd },
-    ring9: { color: 0x00ccff, emissive: 0x00ccff },
-    inner: { color: 0x0099ff, emissive: 0x00aaff },
-    outline: { visible: "#0066ff", hidden: "#ffffff" },
-  },
-  // Palette 26: Groovy - Persona 5 style (Black, White, Red)
-  {
-    name: "Groovy",
-    skybox: {
-      baseColor1: { x: 0.0, y: 0.0, z: 0.0 },
-      baseColor2: { x: 0.02, y: 0.0, z: 0.0 },
-      pulseTint1: { x: 0.4, y: 0.0, z: 0.0 },
-      pulseTint2: { x: 0.8, y: 0.0, z: 0.0 },
-      toneShift: { x: 1.5, y: 0.5, z: 0.3 },
-    },
-    ring1: { color: 0xff0000, emissive: 0xff0000 },
-    ring2: { color: 0xffffff, emissive: 0xffffff },
-    ring3: { color: 0x000000, emissive: 0x111111 },
-    ring4: { color: 0xff0033, emissive: 0xff0033 },
-    ring5: { color: 0xeeeeee, emissive: 0xeeeeee },
-    ring6: { color: 0xff0022, emissive: 0xff0022 },
-    ring7: { color: 0xdddddd, emissive: 0xdddddd },
-    ring8: { color: 0xff0011, emissive: 0xff0011 },
-    ring9: { color: 0xcccccc, emissive: 0xcccccc },
-    inner: { color: 0xff0033, emissive: 0xff0055 },
-    outline: { visible: "#ff0000", hidden: "#ffffff" },
-  },
-  // Palette 27: Time To Make History - Persona 3 style (Yellow, Gray, Green)
-  {
-    name: "Time To Make History",
-    skybox: {
-      baseColor1: { x: 0.08, y: 0.08, z: 0.04 },
-      baseColor2: { x: 0.12, y: 0.12, z: 0.06 },
-      pulseTint1: { x: 0.9, y: 0.9, z: 0.3 },
-      pulseTint2: { x: 1.0, y: 1.0, z: 0.5 },
-      toneShift: { x: 1.6, y: 1.6, z: 1.0 },
-    },
-    ring1: { color: 0xffff00, emissive: 0xffff00 },
-    ring2: { color: 0x888888, emissive: 0x888888 },
-    ring3: { color: 0x00ff00, emissive: 0x00ff00 },
-    ring4: { color: 0xffff44, emissive: 0xffff44 },
-    ring5: { color: 0xaaaaaa, emissive: 0xaaaaaa },
-    ring6: { color: 0x44ff44, emissive: 0x44ff44 },
-    ring7: { color: 0xffff88, emissive: 0xffff88 },
-    ring8: { color: 0x666666, emissive: 0x666666 },
-    ring9: { color: 0x88ff88, emissive: 0x88ff88 },
-    inner: { color: 0xffff44, emissive: 0x44ff44 },
-    outline: { visible: "#ffff00", hidden: "#00ff00" },
-  },
-  // Palette 28: Dare - Teal/Turquoise with Coral accents (Bold & Energetic)
-  {
-    name: "Dare",
-    skybox: {
-      baseColor1: { x: 0.0, y: 0.08, z: 0.08 },
-      baseColor2: { x: 0.02, y: 0.12, z: 0.12 },
-      pulseTint1: { x: 0.5, y: 0.8, z: 0.9 },
-      pulseTint2: { x: 0.7, y: 1.0, z: 1.0 },
-      toneShift: { x: 1.2, y: 1.8, z: 1.8 },
-    },
-    ring1: { color: 0x00ffcc, emissive: 0x00ffcc },
-    ring2: { color: 0xff6644, emissive: 0xff6644 },
-    ring3: { color: 0x00dddd, emissive: 0x00dddd },
-    ring4: { color: 0xff7755, emissive: 0xff7755 },
-    ring5: { color: 0x00cccc, emissive: 0x00cccc },
-    ring6: { color: 0xff8866, emissive: 0xff8866 },
-    ring7: { color: 0x00eeee, emissive: 0x00eeee },
-    ring8: { color: 0xff9977, emissive: 0xff9977 },
-    ring9: { color: 0x44ffee, emissive: 0x44ffee },
-    inner: { color: 0x00ffdd, emissive: 0x44ffdd },
-    outline: { visible: "#00ffcc", hidden: "#ff6644" },
-  },
-  // Palette 29: Planet wisp act1 - Deep Purple/Violet with Cyan accents (Otherworldly & Space-like)
-  {
-    name: "Planet wisp act1",
-    skybox: {
-      baseColor1: { x: 0.06, y: 0.0, z: 0.08 },
-      baseColor2: { x: 0.1, y: 0.0, z: 0.12 },
-      pulseTint1: { x: 0.7, y: 0.0, z: 0.9 },
-      pulseTint2: { x: 0.9, y: 0.3, z: 1.0 },
-      toneShift: { x: 1.6, y: 0.8, z: 1.8 },
-    },
-    ring1: { color: 0x9900ff, emissive: 0x9900ff },
-    ring2: { color: 0x00ffff, emissive: 0x00ffff },
-    ring3: { color: 0xaa22ff, emissive: 0xaa22ff },
-    ring4: { color: 0x00dddd, emissive: 0x00dddd },
-    ring5: { color: 0xbb44ff, emissive: 0xbb44ff },
-    ring6: { color: 0x00eeee, emissive: 0x00eeee },
-    ring7: { color: 0xcc66ff, emissive: 0xcc66ff },
-    ring8: { color: 0x00ffff, emissive: 0x00ffff },
-    ring9: { color: 0xdd88ff, emissive: 0xdd88ff },
-    inner: { color: 0xaa44ff, emissive: 0xcc66ff },
-    outline: { visible: "#9900ff", hidden: "#00ffff" },
-  },
-];
 
 // === Shader Skybox (stronger beat pulse) ===
 const skyUniforms = {
