@@ -297,14 +297,19 @@
   <!-- Dialogue Box (RPG style - slides from top) -->
   <div id="dialogue-box" class="dialogue-hidden">
     <div class="dialogue-content">
-      <div class="dialogue-character-container">
-        <!-- All character gifs in same position for seamless switching -->
-        <img id="dialogue-happy" class="dialogue-gif" src="./platFrames/happy.gif" alt="Happy">
-        <img id="dialogue-happyIdle" class="dialogue-gif" src="./platFrames/happyIdle.gif" alt="Happy Idle">
-        <img id="dialogue-sassy" class="dialogue-gif" src="./platFrames/sassy.gif" alt="Sassy">
-        <img id="dialogue-sassyIdle" class="dialogue-gif" src="./platFrames/sassyIdle.gif" alt="Sassy Idle">
+      <div class="dialogue-character-wrapper">
+        <div class="dialogue-parallelogram-white"></div>
+        <div class="dialogue-parallelogram-blue"></div>
+        <div class="dialogue-character-container">
+          <!-- All character gifs in same position for seamless switching -->
+          <img id="dialogue-happy" class="dialogue-gif" src="./platFrames/happy.gif" alt="Happy">
+          <img id="dialogue-happyIdle" class="dialogue-gif" src="./platFrames/happyIdle.gif" alt="Happy Idle">
+          <img id="dialogue-sassy" class="dialogue-gif" src="./platFrames/sassy.gif" alt="Sassy">
+          <img id="dialogue-sassyIdle" class="dialogue-gif" src="./platFrames/sassyIdle.gif" alt="Sassy Idle">
+        </div>
       </div>
       <div class="dialogue-text-container">
+        <div class="dialogue-name-bar">Platinum</div>
         <div id="dialogue-text" class="dialogue-text"></div>
         <div class="dialogue-prompt">Press SPACE to continue</div>
       </div>
