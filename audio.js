@@ -1450,17 +1450,7 @@ function hideLoadingScreen() {
       menuCycleInterval = null;
     }
     
-    // Stop wait sound
-    if (waitAudio) {
-      waitAudio.pause();
-      waitAudio.currentTime = 0;
-    }
-    
-    // Stop visualizer
-    if (visualizerAnimationId) {
-      cancelAnimationFrame(visualizerAnimationId);
-      visualizerAnimationId = null;
-    }
+    // Visualizer and wait audio are no longer used
     
     loadingScreenEl.classList.add("hidden");
     
@@ -1589,188 +1579,15 @@ function cycleMenuItems() {
   }, 800);
 }
 
-// Setup 2D line visualizer for loading screen
-function setupLoadingVisualizer() {
-  const canvas = document.getElementById('loading-visualizer');
-  if (!canvas) return;
-  
-  // Use viewport dimensions for fixed positioning
-  canvas.width = window.innerWidth * 0.65;
-  canvas.height = 200;
-  
-  const ctx = canvas.getContext('2d');
-  
-  function drawVisualizer() {
-    if (!waitAnalyser || !waitDataArray || assetsLoaded) return;
-    
-    waitAnalyser.getByteFrequencyData(waitDataArray);
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Subtle gradient background that matches Persona 3 style
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, 'rgba(0, 212, 255, 0.03)');
-    gradient.addColorStop(0.5, 'rgba(0, 212, 255, 0.08)');
-    gradient.addColorStop(1, 'rgba(0, 212, 255, 0.03)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    ctx.strokeStyle = '#00d4ff';
-    ctx.lineWidth = 2.5;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = '#00d4ff';
-    
-    const bufferLength = waitDataArray.length;
-    const sliceWidth = canvas.width / bufferLength;
-    let x = 0;
-    
-    ctx.beginPath();
-    
-    // Make it more sporadic by using every other sample and adding randomness
-    for (let i = 0; i < bufferLength; i += 2) {
-      const v = waitDataArray[i] / 255.0;
-      // Add sporadic jumps - multiply by random factor between 0.8 and 1.5
-      const randomFactor = 0.8 + (Math.random() * 0.7);
-      const sporadicV = Math.min(1, v * randomFactor * 1.3);
-      const y = (sporadicV * canvas.height * 0.7) + (canvas.height * 0.15);
-      
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        // Add some randomness to x position for more sporadic effect
-        const randomX = x + (Math.random() - 0.5) * sliceWidth * 0.3;
-        ctx.lineTo(randomX, y);
-      }
-      
-      x += sliceWidth * 2;
-    }
-    
-    ctx.stroke();
-    
-    // Draw a second subtle accent line that matches Persona 3 style
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = 'rgba(0, 212, 255, 0.6)';
-    ctx.beginPath();
-    
-    x = 0;
-    for (let i = 0; i < bufferLength; i += 3) {
-      const v = waitDataArray[i] / 255.0;
-      const randomFactor = 0.7 + (Math.random() * 0.6);
-      const sporadicV = Math.min(1, v * randomFactor * 1.2);
-      const y = (sporadicV * canvas.height * 0.7) + (canvas.height * 0.15);
-      
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        const randomX = x + (Math.random() - 0.5) * sliceWidth * 0.4;
-        ctx.lineTo(randomX, y);
-      }
-      
-      x += sliceWidth * 3;
-    }
-    
-    ctx.stroke();
-    
-    visualizerAnimationId = requestAnimationFrame(drawVisualizer);
-  }
-  
-  drawVisualizer();
-}
+// Visualizer removed - no longer using waitAudio
 
 // Preload first track and wait for it to be ready
 function preloadAssets() {
   console.log("preloadAssets called");
   
-  // Setup loading screen audio with Web Audio API for visualization
-  waitAudio = new Audio('./sound/wait.mp3');
-  waitAudio.loop = true;
-  waitAudio.volume = 0.4;
-  waitAudio.preload = 'auto';
-  
   discAudio = new Audio('./sound/disc.mp3');
   discAudio.volume = 0.7;
-  
-  // Setup Web Audio API for visualizer
-  waitAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-  waitAnalyser = waitAudioContext.createAnalyser();
-  waitAnalyser.fftSize = 256;
-  waitDataArray = new Uint8Array(waitAnalyser.frequencyBinCount);
-  
-  const source = waitAudioContext.createMediaElementSource(waitAudio);
-  source.connect(waitAnalyser);
-  waitAnalyser.connect(waitAudioContext.destination);
-  
-  // Function to play wait sound with retry logic
-  const playWaitSound = async () => {
-    try {
-      // Resume audio context if suspended
-      if (waitAudioContext.state === 'suspended') {
-        await waitAudioContext.resume();
-      }
-      
-      // Ensure audio is loaded
-      if (waitAudio.readyState < 2) {
-        // Wait for audio to be ready
-        await new Promise((resolve) => {
-          const onCanPlay = () => {
-            waitAudio.removeEventListener('canplaythrough', onCanPlay);
-            resolve();
-          };
-          waitAudio.addEventListener('canplaythrough', onCanPlay);
-          // Fallback timeout
-          setTimeout(resolve, 2000);
-        });
-      }
-      
-      // Try to play
-      await waitAudio.play();
-    } catch (err) {
-      console.warn("Could not play wait sound:", err);
-      // Retry after a short delay
-      setTimeout(() => {
-        playWaitSound().catch(() => {
-          console.warn("Retry failed to play wait sound");
-        });
-      }, 500);
-    }
-  };
-  
-  // Play wait sound when ready
-  if (waitAudio.readyState >= 2) {
-    playWaitSound();
-  } else {
-    waitAudio.addEventListener('canplaythrough', () => {
-      playWaitSound();
-    }, { once: true });
-    // Also try immediately in case it's already loaded
-    playWaitSound();
-  }
-  
-  // Also try to play on any user interaction (for autoplay policy)
-  const resumeOnInteraction = () => {
-    if (waitAudioContext && waitAudioContext.state === 'suspended') {
-      waitAudioContext.resume().then(() => {
-        if (waitAudio && waitAudio.paused) {
-          waitAudio.play().catch(() => {});
-        }
-      });
-    }
-    // Remove listener after first interaction
-    document.removeEventListener('click', resumeOnInteraction);
-    document.removeEventListener('touchstart', resumeOnInteraction);
-    document.removeEventListener('keydown', resumeOnInteraction);
-  };
-  
-  document.addEventListener('click', resumeOnInteraction, { once: true });
-  document.addEventListener('touchstart', resumeOnInteraction, { once: true });
-  document.addEventListener('keydown', resumeOnInteraction, { once: true });
-  
-  // Start visualizer after a short delay to ensure canvas is ready
-  setTimeout(() => {
-    setupLoadingVisualizer();
-  }, 100);
+  discAudio.preload = 'auto';
   
   // Initialize loading bar to 0%
   const loadingBarFill = document.getElementById("loading-bar-fill");
@@ -1781,26 +1598,56 @@ function preloadAssets() {
   
   // Track loading progress
   let loadingProgress = {
-    waitAudio: false,
     discAudio: false,
     firstTrack: false
   };
   
   const checkAllLoaded = () => {
-    if (loadingProgress.waitAudio && loadingProgress.discAudio && loadingProgress.firstTrack) {
-      console.log("All assets loaded - hiding loading screen");
+    if (loadingProgress.discAudio && loadingProgress.firstTrack) {
+      console.log("✅ All assets loaded - showing START button");
       // Ensure loading bar is at 100%
       if (loadingBarFill) {
         loadingBarFill.style.width = "100%";
       }
-      // Play disc sound before hiding
-      if (discAudio) {
-        discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
+      // Show START button instead of hiding loading screen
+      showStartButton();
+    }
+  };
+  
+  // Function to show START button when loading is complete
+  const showStartButton = () => {
+    const startButton = document.getElementById("loading-start-button");
+    if (startButton) {
+      startButton.style.display = "block";
+      startButton.classList.add("fade-in");
+      
+      // Add click handler to hide loading screen
+      startButton.addEventListener("click", () => {
+        // Play disc sound
+        if (discAudio) {
+          discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
+        }
+        // Hide loading screen after short delay
+        setTimeout(() => {
+          hideLoadingScreen();
+        }, 300);
+      }, { once: true });
+      
+      // Setup hover sound for start button
+      if (hoverSound) {
+        startButton.addEventListener('mouseenter', () => {
+          hoverSound.currentTime = 0;
+          hoverSound.play().catch(err => console.warn("Could not play hover sound:", err));
+        });
       }
-      // Small delay to let disc sound play
-      setTimeout(() => {
-        hideLoadingScreen();
-      }, 800);
+      
+      // Setup select sound for start button
+      if (selectSound) {
+        startButton.addEventListener('click', () => {
+          selectSound.currentTime = 0;
+          selectSound.play().catch(err => console.warn("Could not play select sound:", err));
+        });
+      }
     }
   };
   
@@ -1813,19 +1660,6 @@ function preloadAssets() {
       loadingBarFill.style.width = `${percent}%`;
     }
   };
-  
-  // Wait for waitAudio to be ready
-  if (waitAudio.readyState >= 2) {
-    loadingProgress.waitAudio = true;
-    updateLoadingBar();
-    checkAllLoaded();
-  } else {
-    waitAudio.addEventListener('canplaythrough', () => {
-      loadingProgress.waitAudio = true;
-      updateLoadingBar();
-      checkAllLoaded();
-    }, { once: true });
-  }
   
   // Wait for discAudio to be ready
   discAudio.preload = 'auto';
