@@ -293,11 +293,30 @@
       <div class="hacked-screen-glitch-bars"></div>
     </div>
   </div>
+  
+  <!-- Dialogue Box (RPG style - slides from top) -->
+  <div id="dialogue-box" class="dialogue-hidden">
+    <div class="dialogue-content">
+      <div class="dialogue-character-container">
+        <!-- All character gifs in same position for seamless switching -->
+        <img id="dialogue-happy" class="dialogue-gif" src="./platFrames/happy.gif" alt="Happy">
+        <img id="dialogue-happyIdle" class="dialogue-gif" src="./platFrames/happyIdle.gif" alt="Happy Idle">
+        <img id="dialogue-sassy" class="dialogue-gif" src="./platFrames/sassy.gif" alt="Sassy">
+        <img id="dialogue-sassyIdle" class="dialogue-gif" src="./platFrames/sassyIdle.gif" alt="Sassy Idle">
+      </div>
+      <div class="dialogue-text-container">
+        <div id="dialogue-text" class="dialogue-text"></div>
+        <div class="dialogue-prompt">Press SPACE to continue</div>
+      </div>
+    </div>
+  </div>
+  
   <script src="./js/multimedia.js"></script>
   <script src="./js/palettes.js"></script>
   <script src="./js/errorWindowColors.js"></script>
   <script src="./js/ringsConfig.js"></script>
   <script src="./js/skyboxConfig.js"></script>
   <script type="module" src="./audio.js"></script>
+  <script src="./dialogue.js"></script>
 </body>
 </html>

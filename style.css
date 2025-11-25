@@ -5871,3 +5871,165 @@ body {
     0 0 8px rgba(0, 212, 255, 0.6),
     1px 1px 2px rgba(0, 0, 0, 0.8);
 }
+
+/* === Dialogue Box (Persona 3 Reload Style - Slides from Top) === */
+#dialogue-box {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10003;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
+  padding: 20px 20px 0 20px;
+}
+
+#dialogue-box.dialogue-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  pointer-events: none;
+}
+
+#dialogue-box.dialogue-visible {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+  pointer-events: all;
+}
+
+.dialogue-content {
+  width: 100%;
+  max-width: 1000px;
+  background: linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 0.98) 100%);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 20px 25px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.8),
+    0 0 40px rgba(100, 150, 255, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  pointer-events: all;
+  margin-top: 20px;
+}
+
+/* Persona 3 Reload style corner decorations */
+.dialogue-content::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 30px;
+  height: 30px;
+  border-top: 4px solid rgba(255, 255, 255, 0.6);
+  border-left: 4px solid rgba(255, 255, 255, 0.6);
+  border-radius: 4px 0 0 0;
+}
+
+.dialogue-content::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 30px;
+  height: 30px;
+  border-top: 4px solid rgba(255, 255, 255, 0.6);
+  border-right: 4px solid rgba(255, 255, 255, 0.6);
+  border-radius: 0 4px 0 0;
+}
+
+.dialogue-character-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialogue-gif {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.dialogue-gif.gif-active {
+  opacity: 1;
+}
+
+.dialogue-text-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+  justify-content: space-between;
+}
+
+.dialogue-text {
+  color: #ffffff;
+  font-family: 'Segoe UI', 'Arial', sans-serif;
+  font-size: 20px;
+  line-height: 1.6;
+  text-shadow: 
+    1px 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 5px rgba(255, 255, 255, 0.2);
+  min-height: 80px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.dialogue-prompt {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  text-align: right;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: dialoguePromptBlink 1.5s ease-in-out infinite;
+  align-self: flex-end;
+}
+
+@keyframes dialoguePromptBlink {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Background pattern overlay for Persona 3 Reload aesthetic */
+.dialogue-content {
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(255, 255, 255, 0.02) 2px,
+      rgba(255, 255, 255, 0.02) 4px
+    ),
+    linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 0.98) 100%);
+}
