@@ -3044,69 +3044,43 @@ const skyUniforms = {
   uToneShift: { value: new THREE.Vector3(0.6, 0.8, 1.5) },
 };
 
-const skyShader = {
-  vertexShader: `
-    varying vec3 vWorldPosition;
-    void main() {
-      vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `,
-  fragmentShader: `
-    varying vec3 vWorldPosition;
-    uniform float uTime;
-    uniform float uAudio;
-    uniform vec3 uBaseColor1;
-    uniform vec3 uBaseColor2;
-    uniform vec3 uPulseTint1;
-    uniform vec3 uPulseTint2;
-    uniform vec3 uToneShift;
+// Utility function to load shader files
+async function loadShader(path) {
+  const response = await fetch(path);
+  if (!response.ok) {
+    throw new Error(`Failed to load shader: ${path}`);
+  }
+  return await response.text();
+}
 
-    float hash(vec3 p) {
-      p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
-      p *= 17.0;
-      return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-    }
+// Load shaders and initialize skybox
+let skyBox = null;
+async function initSkybox() {
+  try {
+    const vertexShader = await loadShader('./shaders/sky.vert');
+    const fragmentShader = await loadShader('./shaders/sky.frag');
 
-    void main() {
-      vec3 dir = normalize(vWorldPosition);
-      float t = uTime * 0.05;
+    const skyGeo = new THREE.BoxGeometry(200, 200, 200);
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: skyUniforms,
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+    });
+    skyBox = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(skyBox);
+  } catch (error) {
+    console.error('Error loading skybox shaders:', error);
+    // Fallback: create a basic skybox without shaders
+    const skyGeo = new THREE.BoxGeometry(200, 200, 200);
+    const skyMat = new THREE.MeshBasicMaterial({ color: 0x000010, side: THREE.BackSide });
+    skyBox = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(skyBox);
+  }
+}
 
-      // Enhanced visibility for grid
-      float stripes = abs(sin(dir.y * 100.0 + t * 30.0)) * 0.18;
-      float grid = abs(sin(dir.x * 50.0 + t * 40.0) * sin(dir.z * 50.0 - t * 40.0)) * 0.18;
-      float n = hash(dir * 100.0 + t * 10.0) * 0.03;
-
-      // Base darker gradient (using uniforms)
-      vec3 baseColor = mix(uBaseColor1, uBaseColor2, dir.y * 0.5 + 0.5);
-
-      // Punchier pulse with palette tones
-      float pulse = smoothstep(0.0, 1.0, uAudio) * 0.5;
-      vec3 pulseTint = mix(uPulseTint1, uPulseTint2, pulse);
-      baseColor += pulseTint * pulse;
-
-      // Beat glow around grid lines
-      float glow = pow(stripes + grid, 2.0) * (0.4 + pulse * 1.6);
-      vec3 color = baseColor + vec3(glow + n) * 1.1;
-
-      // Add subtle tone-shift to make pulse visible (using uniform)
-      color = mix(color, color * uToneShift, pulse * 0.6);
-
-      gl_FragColor = vec4(color, 1.0);
-    }
-  `,
-};
-
-const skyGeo = new THREE.BoxGeometry(200, 200, 200);
-const skyMat = new THREE.ShaderMaterial({
-  side: THREE.BackSide,
-  uniforms: skyUniforms,
-  vertexShader: skyShader.vertexShader,
-  fragmentShader: skyShader.fragmentShader,
-});
-const skyBox = new THREE.Mesh(skyGeo, skyMat);
-scene.add(skyBox);
+// Initialize skybox
+initSkybox();
 
 // === Outer Rings ===
 const bars = [];
