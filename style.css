@@ -5905,13 +5905,14 @@ body {
   max-width: 1000px;
   background: linear-gradient(135deg, rgba(20, 20, 30, 0.98) 0%, rgba(15, 15, 25, 0.98) 100%);
   border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  padding: 25px 0 0 0;
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 0;
   display: flex;
   position: relative;
   overflow: visible;
   pointer-events: all;
-  margin-top: 45px;
+  margin-top: 70px;
   box-shadow: 
     0 4px 30px rgba(0, 0, 0, 0.8),
     0 0 40px rgba(100, 150, 255, 0.3),
@@ -5921,8 +5922,8 @@ body {
 .dialogue-character-wrapper {
   position: absolute;
   left: -60px;
-  top: -25px;
-  bottom: -25px;
+  top: -40px;
+  bottom: -10px;
   width: 280px;
   display: flex;
   align-items: center;
@@ -5959,6 +5960,10 @@ body {
 .dialogue-name-bar {
   background: linear-gradient(135deg, rgba(40, 80, 140, 0.95) 0%, rgba(30, 60, 120, 0.95) 100%);
   border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 3px solid rgba(255, 255, 255, 0.3);
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  border-right: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px 12px 0 0;
   padding: 12px 20px 12px 40px;
   color: #ffffff;
   font-family: 'Press Start 2P', monospace;
@@ -5968,7 +5973,6 @@ body {
   text-shadow: 
     2px 2px 4px rgba(0, 0, 0, 0.8),
     0 0 10px rgba(255, 255, 255, 0.3);
-  border-radius: 0;
 }
 
 .dialogue-character-container {
