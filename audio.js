@@ -86,161 +86,7 @@ const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
 const analyser = new THREE.AudioAnalyser(sound, 256);
 
-const tracks = [
 
-  { label: "Jump UP", file: "JumpUp.mp3" },
-  { label: "Live and Learn", file: "LiveAndLearn.mp3" },
-  { label: "I Feel So Alive", file: "IFeelSoAlive.mp3" },
-  { label: "Citrus", file: "Citrus.mp3" },
-  { label: "Turbulence", file: "Turbulence.mp3" },
-
-  { label: "Egg Dragoon", file: "EggDragoon.mp3" },
-  { label: "Cracked Empire", file: "CrackedEmpire.mp3" },
-  { label: "Running The Bassline", file: "RunningTheBassline.mp3" },
-  { label: "Terminal Velocity Act1", file: "TerminalVelocityAct1.mp3" },
-  { label: "Forever Imperfect", file: "ForeverImperfect.mp3" },
-  { label: "Break Free", file: "BreakFree.mp3" },
-  { label: "Eg Megalovania", file: "EgMegalovania.mp3" },
-  { label: "Metallic Madness", file: "MetallicMadness.mp3" },
-  { label: "Drift Around", file: "DriftAround.mp3" },
-  { label: "Vs Jacinth", file: "VsJacinth.mp3" },
-  { label: "Un Gravitify", file: "UnGravitify.mp3" },
-  { label: "Ruder Buster", file: "RuderBuster.mp3" },
-  { label: "Extras", file: "Extras.mp3" },
-  { label: "Jet Black", file: "JetBlack.mp3" },
-  { label: "Aint Nothing Like A Funky Beat", file: "AintNothingLikeAFunkyBeat.mp3" },
-  { label: "Touhou", file: "Touhou.mp3" },
-  { label: "Touch Fluffy Tail", file: "TouchFluffyTail.mp3" },
-  { label: "GET ENUF", file: "GetEnuf.mp3" },
-  { label: "Machine Love", file: "MachineLove.mp3" },
-  { label: "Blood Drain", file: "BloodDrain.mp3" },
-  { label: "Its Going Down Now", file: "ItsGoingDownNow.mp3" },
-  { label: "Groovy", file: "Groovy.mp3" },
-  { label: "Time To Make History", file: "TimeToMakeHistory.mp3" },
-  { label: "Dare", file: "Dare.mp3" },
-  { label: "Planet wisp act1", file: "PlanetWispAct1.mp3" },
-];
-
-let currentTrackIndex = 0; // default to "Nikke"
-let isTrackLoading = false;
-let pendingAutoplay = false;
-let activeLoadToken = 0;
-
-const trackNameEl = document.getElementById("track-name");
-const playBtn = document.getElementById("play-btn");
-const stopBtn = document.getElementById("stop-btn");
-const nextBtn = document.getElementById("next-btn");
-const prevBtn = document.getElementById("prev-btn");
-const videoOverlayEl = document.getElementById("video-overlay");
-const overlayVideoEl = document.getElementById("overlay-video");
-
-const videoGlitchOverlayEl = document.getElementById("video-glitch-overlay");
-
-
-// Video overlays (for full-screen overlays)
-const overlayVideos = [
-  "ani1.mp4",
-  "asgore.mp4",
-  "Blaze.mp4",
-  "candy.mp4",
-  "cream.mp4",
-  "cream2.mp4",
-  "dante.mp4",
-  "DC.mp4",
-  "eggman.mp4",
-  "eggsax.mp4",
-  "faust.mp4",
-  "funGang.mp4",
-  "Iguchi.mp4",
-  "joker.mp4",
-  "makoto.mp4",
-  "makotoP3.mp4",
-  "may.mp4",
-  "metal.mp4",
-  "mez.mp4",
-  "morgana.mp4",
-  "objection.mp4",
-  "pbj.mp4",
-  "plan.mp4",
-  "ram.mp4",
-  "rewrite.mp4",
-  "riders.mp4",
-  "riders2.mp4",
-  "sabrina.mp4",
-  "scarlet.mp4",
-  "Sch.mp4",
-  "sol.mp4",
-  "SonicRap.mp4",
-  "sonicZ.mp4",
-  "teto.mp4",
-  "Tiktok.mp4",
-  "Xsonic.mp4",
-  "yukari.mp4",
-  "zzz.mp4",
-];
-
-// Popup videos (for error window popups - uses PopUps folder)
-const popupVideos = [
-  "aigis.mp4",
-  "ani1.mp4",
-  "asgore.mp4",
-  "benson.mp4",
-  "Blaze.mp4",
-  "candy.mp4",
-  "cream.mp4",
-  "cream2.mp4",
-  "dante.mp4",
-  "DC.mp4", 
-  "dodge.mp4",
-  "eggman.mp4",
-  "eggsax.mp4",
-  "engage.mp4",
-  "faust.mp4",
-  "funGang.mp4",
-  "goku.mp4",
-  "gokuB.mp4",
-  "gold.mp4",
-  "hornet.mp4",
-  "Iguchi.mp4",
-  "jojo.mp4",
-  "joker.mp4",
-  "makoto.mp4",
-  "makotoP3.mp4",
-  "may.mp4",
-  "metal.mp4",
-  "metroman.mp4",
-  "mez.mp4",
-  "morgana.mp4",
-  "neko.mp4",
-  "objection.mp4",
-  "p3.mp4",
-  "pbj.mp4",
-  "pipe.mp4",
-  "plan.mp4",
-  "ram.mp4",
-  "ratdance.mp4",
-  "rewrite.mp4",
-  "riders.mp4",
-  "riders2.mp4",
-  "ruby.mp4",
-  "rush.mp4",
-  "sabrina.mp4",
-  "scarlet.mp4",
-  "Sch.mp4",
-  "silver.mp4",
-  "skull.mp4",
-  "smash.mp4",
-  "sol.mp4",
-  "SonicRap.mp4",
-  "sonicZ.mp4",
-  "springtrap.mp4",
-  "teto.mp4",
-  "tf2.mp4",
-  "Tiktok.mp4",
-  "Xsonic.mp4",
-  "yukari.mp4",
-  "zzz.mp4",
-];
 const VIDEO_CHECK_INTERVAL = 25000; // Increased to 25s - triggers less frequently, more separation
 const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance between video and color swap
 const COLOR_SWAP_DURATION = 7000; // 7 seconds
@@ -315,17 +161,7 @@ let menuExperimentalMerger = null;
 let menuExperimentalSplitter = null;
 let menuAudioSource = null; // MediaElementSourceNode for menu audio
 
-// Color variations for error windows
-const errorWindowColors = [
-  { border: '#ff0000', glow: 'rgba(255, 0, 0, 0.8)', inset: 'rgba(255, 0, 0, 0.3)', shadow: 'rgba(255, 0, 0, 0.5)' }, // Red
-  { border: '#ff00ff', glow: 'rgba(255, 0, 255, 0.8)', inset: 'rgba(255, 0, 255, 0.3)', shadow: 'rgba(255, 0, 255, 0.5)' }, // Magenta
-  { border: '#00ffff', glow: 'rgba(0, 255, 255, 0.8)', inset: 'rgba(0, 255, 255, 0.3)', shadow: 'rgba(0, 255, 255, 0.5)' }, // Cyan
-  { border: '#ffff00', glow: 'rgba(255, 255, 0, 0.8)', inset: 'rgba(255, 255, 0, 0.3)', shadow: 'rgba(255, 255, 0, 0.5)' }, // Yellow
-  { border: '#00ff00', glow: 'rgba(0, 255, 0, 0.8)', inset: 'rgba(0, 255, 0, 0.3)', shadow: 'rgba(0, 255, 0, 0.5)' }, // Green
-  { border: '#ff8800', glow: 'rgba(255, 136, 0, 0.8)', inset: 'rgba(255, 136, 0, 0.3)', shadow: 'rgba(255, 136, 0, 0.5)' }, // Orange
-  { border: '#ff0088', glow: 'rgba(255, 0, 136, 0.8)', inset: 'rgba(255, 0, 136, 0.3)', shadow: 'rgba(255, 0, 136, 0.5)' }, // Pink
-  { border: '#8800ff', glow: 'rgba(136, 0, 255, 0.8)', inset: 'rgba(136, 0, 255, 0.3)', shadow: 'rgba(136, 0, 255, 0.5)' }, // Purple
-];
+// Color variations for error windows (loaded from js/errorWindowColors.js)
 
 // === Loading Screen Management ===
 let assetsLoaded = false;
@@ -3034,15 +2870,8 @@ function startErrorWindowLoop() {
 }
 
 // === Shader Skybox (stronger beat pulse) ===
-const skyUniforms = {
-  uTime: { value: 0 },
-  uAudio: { value: 0.0 },
-  uBaseColor1: { value: new THREE.Vector3(0.0, 0.02, 0.05) },
-  uBaseColor2: { value: new THREE.Vector3(0.0, 0.05, 0.09) },
-  uPulseTint1: { value: new THREE.Vector3(0.0, 0.2, 0.5) },
-  uPulseTint2: { value: new THREE.Vector3(0.0, 0.5, 0.9) },
-  uToneShift: { value: new THREE.Vector3(0.6, 0.8, 1.5) },
-};
+// Skybox uniforms initialized from js/skyboxConfig.js
+const skyUniforms = createSkyUniforms(THREE);
 
 // Utility function to load shader files
 async function loadShader(path) {
@@ -3083,9 +2912,8 @@ async function initSkybox() {
 initSkybox();
 
 // === Outer Rings ===
+// Rings configuration constants loaded from js/ringsConfig.js
 const bars = [];
-const outerRadius = 6;
-const outerCount = 256;
 
 for (let i = 0; i < outerCount; i++) {
   const geometry = new THREE.BoxGeometry(0.08, 0.3, 0.08);
@@ -3282,11 +3110,9 @@ for (let i = 0; i < outerCount; i++) {
 }
 
 // === Inner "city" ===
+// Rings configuration constants (radialCount, layers, minRadius) loaded from js/ringsConfig.js
 const innerBuildings = [];
-const radialCount = 128;
-const layers = 14;
 const maxRadius = outerRadius * 0.85;
-const minRadius = 0.3;
 
 for (let i = 0; i < radialCount; i++) {
   const angle = (i / radialCount) * Math.PI * 2;
