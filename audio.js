@@ -1596,50 +1596,76 @@ function preloadAssets() {
     loadingBarFill.style.transition = "width 0.3s ease";
   }
   
-  // Track loading progress - add video tracking
+  // Track loading progress - comprehensive asset tracking
   let loadingProgress = {
     discAudio: false,
     firstTrack: false,
+    skyboxShaders: false,
     overlayVideos: false,
     popupVideos: false
   };
   
-  // Helper function to preload a single video (optimized for speed)
+  // Helper function to preload a single video (FULL preload for complete readiness)
   const preloadVideo = (src) => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
-      video.preload = 'metadata'; // Only load metadata, not full video - MUCH faster!
+      video.preload = 'auto'; // Full preload - ensures video is completely ready
       video.muted = true; // Mute to allow autoplay policies
       
-      // Use loadedmetadata instead of canplaythrough - much faster!
-      // This just verifies the video exists and can be loaded, without downloading the full file
-      const handleLoadedMetadata = () => {
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      // Use canplaythrough to ensure video can play without buffering
+      // This ensures the video is FULLY loaded and ready for immediate playback
+      const handleCanPlayThrough = () => {
+        video.removeEventListener('canplaythrough', handleCanPlayThrough);
         video.removeEventListener('error', handleError);
+        video.removeEventListener('progress', handleProgress);
         resolve(video);
       };
       
+      // Track progress for large videos
+      let lastProgress = 0;
+      const handleProgress = () => {
+        if (video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          const duration = video.duration;
+          if (duration > 0) {
+            const progress = (bufferedEnd / duration) * 100;
+            if (progress - lastProgress > 10) {
+              lastProgress = progress;
+              console.log(`Loading ${src}: ${Math.round(progress)}%`);
+            }
+          }
+        }
+      };
+      
       const handleError = (error) => {
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('canplaythrough', handleCanPlayThrough);
         video.removeEventListener('error', handleError);
+        video.removeEventListener('progress', handleProgress);
         console.warn(`Failed to preload video: ${src}`, error);
         // Still resolve even on error to not block loading
         resolve(null);
       };
       
-      video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+      video.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
       video.addEventListener('error', handleError, { once: true });
+      video.addEventListener('progress', handleProgress);
       
       video.src = src;
       video.load();
       
-      // Much shorter timeout - metadata loads quickly (5 seconds max per video)
+      // Longer timeout for full video loading (60 seconds per video for large files)
       setTimeout(() => {
-        if (video.readyState < 1) {
-          console.warn(`Video metadata load timeout: ${src}`);
-          handleError(new Error('Timeout'));
+        if (video.readyState < 4) {
+          console.warn(`Video full load timeout: ${src} (readyState: ${video.readyState})`);
+          // If we have some data loaded, still resolve (partial load is better than nothing)
+          if (video.readyState >= 2) {
+            console.log(`Video ${src} partially loaded (readyState: ${video.readyState}), proceeding...`);
+            handleCanPlayThrough();
+          } else {
+            handleError(new Error('Timeout'));
+          }
         }
-      }, 5000);
+      }, 60000);
     });
   };
   
@@ -1677,12 +1703,12 @@ function preloadAssets() {
       return;
     }
     
-    console.log(`Preloading ${videos.length} overlay videos (metadata only - fast mode)...`);
+    console.log(`Preloading ${videos.length} overlay videos (FULL preload - ensuring complete readiness)...`);
     
     try {
-      // Load in batches to avoid overwhelming the browser
-      await preloadVideosInBatches(videos, './video', 15);
-      console.log("✅ All overlay videos preloaded");
+      // Load in smaller batches to avoid overwhelming the browser with full video loads
+      await preloadVideosInBatches(videos, './video', 8);
+      console.log("✅ All overlay videos fully preloaded and ready");
       loadingProgress.overlayVideos = true;
       updateLoadingBar();
       checkAllLoaded();
@@ -1715,12 +1741,12 @@ function preloadAssets() {
       return;
     }
     
-    console.log(`Preloading ${videos.length} popup videos (metadata only - fast mode)...`);
+    console.log(`Preloading ${videos.length} popup videos (FULL preload - ensuring complete readiness)...`);
     
     try {
-      // Load in batches to avoid overwhelming the browser
-      await preloadVideosInBatches(videos, './PopUps', 15);
-      console.log("✅ All popup videos preloaded");
+      // Load in smaller batches to avoid overwhelming the browser with full video loads
+      await preloadVideosInBatches(videos, './PopUps', 8);
+      console.log("✅ All popup videos fully preloaded and ready");
       loadingProgress.popupVideos = true;
       updateLoadingBar();
       checkAllLoaded();
@@ -1732,14 +1758,70 @@ function preloadAssets() {
     }
   };
   
+  // Preload UI sounds (hover, select, select2, glitch)
+  const preloadUISounds = () => {
+    console.log("Preloading UI sounds...");
+    const uiSounds = [hoverSound, selectSound, select2Sound, glitchSound];
+    let loadedCount = 0;
+    const totalSounds = uiSounds.length;
+    
+    const checkUISoundsLoaded = () => {
+      loadedCount++;
+      if (loadedCount === totalSounds) {
+        console.log("✅ All UI sounds loaded");
+        loadingProgress.uiSounds = true;
+        updateLoadingBar();
+        checkAllLoaded();
+      }
+    };
+    
+    uiSounds.forEach((sound, index) => {
+      if (!sound) {
+        checkUISoundsLoaded();
+        return;
+      }
+      
+      sound.preload = 'auto';
+      if (sound.readyState >= 2) {
+        checkUISoundsLoaded();
+      } else {
+        sound.addEventListener('canplaythrough', checkUISoundsLoaded, { once: true });
+        sound.addEventListener('error', () => {
+          console.warn(`UI sound ${index} failed to load, continuing...`);
+          checkUISoundsLoaded();
+        }, { once: true });
+      }
+    });
+  };
+  
+  // Preload skybox shaders
+  const preloadSkyboxShaders = async () => {
+    try {
+      console.log("Preloading skybox shaders...");
+      await initSkybox();
+      console.log("✅ Skybox shaders loaded");
+      loadingProgress.skyboxShaders = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    } catch (error) {
+      console.error("Error loading skybox shaders:", error);
+      // Mark as done even on error (fallback material will be used)
+      loadingProgress.skyboxShaders = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    }
+  };
+  
   const checkAllLoaded = () => {
     const allLoaded = loadingProgress.discAudio && 
+                     loadingProgress.uiSounds &&
                      loadingProgress.firstTrack && 
+                     loadingProgress.skyboxShaders &&
                      loadingProgress.overlayVideos && 
                      loadingProgress.popupVideos;
     
     if (allLoaded) {
-      console.log("✅ All assets loaded (including videos) - showing START button");
+      console.log("✅ ALL assets fully loaded (audio, shaders, videos) - showing START button");
       // Ensure loading bar is at 100%
       if (loadingBarFill) {
         loadingBarFill.style.width = "100%";
@@ -1849,8 +1931,12 @@ function preloadAssets() {
     }
   );
   
-  // Start preloading videos in parallel (async, doesn't block other loading)
-  // Videos now load much faster with metadata-only preloading
+  // Start preloading all assets in parallel (async, doesn't block other loading)
+  // UI sounds and shaders load first (they're small and critical)
+  preloadUISounds();
+  preloadSkyboxShaders();
+  
+  // Videos load in parallel (full preload for complete readiness)
   Promise.all([
     preloadOverlayVideos(),
     preloadPopupVideos()
@@ -1862,18 +1948,21 @@ function preloadAssets() {
     checkAllLoaded();
   });
   
-  // Fallback timeout (30 seconds max) - reduced since metadata loading is much faster
+  // Extended fallback timeout (5 minutes) for full video preloading
+  // This ensures we give enough time for large video files to fully load
   setTimeout(() => {
     if (!assetsLoaded) {
-      console.warn("Loading timeout reached - forcing hide");
-      // Mark everything as loaded to proceed
+      console.warn("Loading timeout reached (5 minutes) - forcing completion");
+      // Mark everything as loaded to proceed (some videos may be partially loaded)
       loadingProgress.discAudio = true;
+      loadingProgress.uiSounds = true;
       loadingProgress.firstTrack = true;
+      loadingProgress.skyboxShaders = true;
       loadingProgress.overlayVideos = true;
       loadingProgress.popupVideos = true;
       checkAllLoaded();
     }
-  }, 30000);
+  }, 300000); // 5 minutes = 300000ms for full video preloading
 }
 
 // === Welcome Popup Management ===
@@ -2891,8 +2980,8 @@ scene.add(skyBox);
   }
 }
 
-// Initialize skybox
-initSkybox();
+// Skybox will be initialized during preloadAssets() to track loading progress
+// initSkybox() is called in preloadAssets() now
 
 // === Outer Rings ===
 // Rings configuration constants loaded from js/ringsConfig.js
