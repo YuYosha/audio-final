@@ -6042,9 +6042,9 @@ body {
 
 .dialogue-text {
   color: #ffffff;
-  font-family: 'Segoe UI', 'Arial', sans-serif;
-  font-size: 20px;
-  line-height: 1.6;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  line-height: 1.8;
   text-shadow: 
     1px 1px 3px rgba(0, 0, 0, 0.9),
     0 0 8px rgba(255, 255, 255, 0.4),
@@ -6052,7 +6052,7 @@ body {
   min-height: 80px;
   display: flex;
   align-items: flex-start;
-  font-weight: 500;
+  letter-spacing: 0.5px;
 }
 
 .dialogue-prompt {
