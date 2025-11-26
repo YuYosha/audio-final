@@ -76,14 +76,12 @@ function showDialogueBox() {
 // Sync layered box heights with content
 function syncLayeredBoxesHeight() {
   const content = document.querySelector('.dialogue-content');
-  const purpleBox = document.querySelector('.dialogue-box-purple');
   const whiteBox = document.querySelector('.dialogue-box-white');
   
-  if (content && purpleBox && whiteBox) {
+  if (content && whiteBox) {
     const updateHeight = () => {
       const height = content.offsetHeight;
       if (height > 0) {
-        purpleBox.style.height = height + 'px';
         whiteBox.style.height = height + 'px';
       }
     };
