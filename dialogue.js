@@ -30,7 +30,7 @@ const dialogueLines = [
   { text: "That is the experimental tab filled with undercooked and incredibly unstable settings", expression: "sassy" },
   { text: "My favorite", expression: "glad" },
   { text: "Open it to know more about it", expression: "glad" },
-  { text: "Also extras tab is the green button on the left press on it to know what it dose", expression: "happy" },
+  { text: "Also extras tab is the green button on the left press on it to know what it does", expression: "happy" },
   { text: "If you wanna know what I think", expression: "glad" },
   { text: "Yours truly", expression: "sassy" },
   { text: "Toggle my thoughts on the extras tab", expression: "sassy" },

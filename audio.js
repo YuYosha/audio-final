@@ -1596,15 +1596,150 @@ function preloadAssets() {
     loadingBarFill.style.transition = "width 0.3s ease";
   }
   
-  // Track loading progress
+  // Track loading progress - add video tracking
   let loadingProgress = {
     discAudio: false,
-    firstTrack: false
+    firstTrack: false,
+    overlayVideos: false,
+    popupVideos: false
+  };
+  
+  // Helper function to preload a single video (optimized for speed)
+  const preloadVideo = (src) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.preload = 'metadata'; // Only load metadata, not full video - MUCH faster!
+      video.muted = true; // Mute to allow autoplay policies
+      
+      // Use loadedmetadata instead of canplaythrough - much faster!
+      // This just verifies the video exists and can be loaded, without downloading the full file
+      const handleLoadedMetadata = () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('error', handleError);
+        resolve(video);
+      };
+      
+      const handleError = (error) => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        video.removeEventListener('error', handleError);
+        console.warn(`Failed to preload video: ${src}`, error);
+        // Still resolve even on error to not block loading
+        resolve(null);
+      };
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+      video.addEventListener('error', handleError, { once: true });
+      
+      video.src = src;
+      video.load();
+      
+      // Much shorter timeout - metadata loads quickly (5 seconds max per video)
+      setTimeout(() => {
+        if (video.readyState < 1) {
+          console.warn(`Video metadata load timeout: ${src}`);
+          handleError(new Error('Timeout'));
+        }
+      }, 5000);
+    });
+  };
+  
+  // Preload videos in batches for better performance
+  const preloadVideosInBatches = async (videoList, folder, batchSize = 10) => {
+    const batches = [];
+    for (let i = 0; i < videoList.length; i += batchSize) {
+      batches.push(videoList.slice(i, i + batchSize));
+    }
+    
+    // Load batches in parallel but limit concurrent batches to avoid overwhelming
+    for (const batch of batches) {
+      await Promise.all(batch.map(videoFile => preloadVideo(`${folder}/${videoFile}`)));
+    }
+  };
+  
+  // Preload all overlay videos (optimized)
+  const preloadOverlayVideos = async () => {
+    // Try to access overlayVideos - it should be available from multimedia.js
+    let videos;
+    try {
+      // Try direct access first (as used elsewhere in the code)
+      videos = typeof overlayVideos !== 'undefined' ? overlayVideos : 
+               (typeof window !== 'undefined' ? window.overlayVideos : undefined);
+    } catch (e) {
+      console.warn("Could not access overlayVideos:", e);
+      videos = undefined;
+    }
+    
+    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+      console.warn("overlayVideos not available, skipping preload");
+      loadingProgress.overlayVideos = true;
+      updateLoadingBar();
+      checkAllLoaded();
+      return;
+    }
+    
+    console.log(`Preloading ${videos.length} overlay videos (metadata only - fast mode)...`);
+    
+    try {
+      // Load in batches to avoid overwhelming the browser
+      await preloadVideosInBatches(videos, './video', 15);
+      console.log("✅ All overlay videos preloaded");
+      loadingProgress.overlayVideos = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    } catch (error) {
+      console.error("Error preloading overlay videos:", error);
+      loadingProgress.overlayVideos = true; // Mark as done even on error
+      updateLoadingBar();
+      checkAllLoaded();
+    }
+  };
+  
+  // Preload all popup videos (optimized)
+  const preloadPopupVideos = async () => {
+    // Try to access popupVideos - it should be available from multimedia.js
+    let videos;
+    try {
+      // Try direct access first (as used elsewhere in the code)
+      videos = typeof popupVideos !== 'undefined' ? popupVideos : 
+               (typeof window !== 'undefined' ? window.popupVideos : undefined);
+    } catch (e) {
+      console.warn("Could not access popupVideos:", e);
+      videos = undefined;
+    }
+    
+    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+      console.warn("popupVideos not available, skipping preload");
+      loadingProgress.popupVideos = true;
+      updateLoadingBar();
+      checkAllLoaded();
+      return;
+    }
+    
+    console.log(`Preloading ${videos.length} popup videos (metadata only - fast mode)...`);
+    
+    try {
+      // Load in batches to avoid overwhelming the browser
+      await preloadVideosInBatches(videos, './PopUps', 15);
+      console.log("✅ All popup videos preloaded");
+      loadingProgress.popupVideos = true;
+      updateLoadingBar();
+      checkAllLoaded();
+    } catch (error) {
+      console.error("Error preloading popup videos:", error);
+      loadingProgress.popupVideos = true; // Mark as done even on error
+      updateLoadingBar();
+      checkAllLoaded();
+    }
   };
   
   const checkAllLoaded = () => {
-    if (loadingProgress.discAudio && loadingProgress.firstTrack) {
-      console.log("✅ All assets loaded - showing START button");
+    const allLoaded = loadingProgress.discAudio && 
+                     loadingProgress.firstTrack && 
+                     loadingProgress.overlayVideos && 
+                     loadingProgress.popupVideos;
+    
+    if (allLoaded) {
+      console.log("✅ All assets loaded (including videos) - showing START button");
       // Ensure loading bar is at 100%
       if (loadingBarFill) {
         loadingBarFill.style.width = "100%";
@@ -1624,12 +1759,12 @@ function preloadAssets() {
       // Add click handler to hide loading screen
       startButton.addEventListener("click", () => {
         // Play disc sound
-        if (discAudio) {
-          discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
-        }
+      if (discAudio) {
+        discAudio.play().catch(err => console.warn("Could not play disc sound:", err));
+      }
         // Hide loading screen after short delay
-        setTimeout(() => {
-          hideLoadingScreen();
+      setTimeout(() => {
+        hideLoadingScreen();
         }, 300);
       }, { once: true });
       
@@ -1714,17 +1849,31 @@ function preloadAssets() {
     }
   );
   
-  // Fallback timeout (60 seconds max) in case something goes wrong
+  // Start preloading videos in parallel (async, doesn't block other loading)
+  // Videos now load much faster with metadata-only preloading
+  Promise.all([
+    preloadOverlayVideos(),
+    preloadPopupVideos()
+  ]).catch(err => {
+    console.error("Video preloading error:", err);
+    // Mark videos as loaded even if there are errors to not block the app
+    loadingProgress.overlayVideos = true;
+    loadingProgress.popupVideos = true;
+    checkAllLoaded();
+  });
+  
+  // Fallback timeout (30 seconds max) - reduced since metadata loading is much faster
   setTimeout(() => {
     if (!assetsLoaded) {
       console.warn("Loading timeout reached - forcing hide");
       // Mark everything as loaded to proceed
-      loadingProgress.waitAudio = true;
       loadingProgress.discAudio = true;
       loadingProgress.firstTrack = true;
-      hideLoadingScreen();
+      loadingProgress.overlayVideos = true;
+      loadingProgress.popupVideos = true;
+      checkAllLoaded();
     }
-  }, 60000);
+  }, 30000);
 }
 
 // === Welcome Popup Management ===
@@ -2723,15 +2872,15 @@ async function initSkybox() {
     const vertexShader = await loadShader('./shaders/sky.vert');
     const fragmentShader = await loadShader('./shaders/sky.frag');
 
-    const skyGeo = new THREE.BoxGeometry(200, 200, 200);
-    const skyMat = new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      uniforms: skyUniforms,
+const skyGeo = new THREE.BoxGeometry(200, 200, 200);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: skyUniforms,
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
-    });
+});
     skyBox = new THREE.Mesh(skyGeo, skyMat);
-    scene.add(skyBox);
+scene.add(skyBox);
   } catch (error) {
     console.error('Error loading skybox shaders:', error);
     // Fallback: create a basic skybox without shaders
