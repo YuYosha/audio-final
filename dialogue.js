@@ -9,9 +9,35 @@ let currentText = '';
 let talkSound = null;
 
 const dialogueLines = [
-  { text: "Hey this is a test its in development and not finished........ like at all", expression: "sassy" },
-  { text: "maybe when i stop being lazy i will finish the rest", expression: "happy" },
-  { text: "bye", expression: "sassy" }
+  { text: "WHO IS MAKING ALL THAT NOICE!", expression: "angry" },
+  { text: "I WAS HAVING A NAP GOD DAMNIT WHAT IS IT!!", expression: "angry" },
+  { text: "Ohhh", expression: "worried" },
+  { text: "Ohhhhhh........", expression: "worried" },
+  { text: "Its a new user....wait let me get the script", expression: "confused" },
+  { text: "UMM..............oh yeah", expression: "confused" },
+  { text: "Welcome im Platinum your tutorial guide and local ai", expression: "sassy" },
+  { text: "I will be teaching you how this...thing works", expression: "happy" },
+  { text: "First off its 3D!", expression: "exited" },
+  { text: "So move your mouse and you can move the camara", expression: "glad" },
+  { text: "Ok first thing is first", expression: "happy" },
+  { text: "You can play and stop any song of your choice at the bottom of the screen", expression: "happy" },
+  { text: "There you can also find some buttons for changing songs too", expression: "happy" },
+  { text: "On the top right there are some buttons left,stop,right", expression: "glad" },
+  { text: "Those make the camara move automatically to the side it says", expression: "glad" },
+  { text: "...", expression: "glad" },
+  { text: "Am I missing anything....", expression: "confused" },
+  { text: "Oh yeah the red arrow at the bottom right", expression: "worried" },
+  { text: "That is the experimental tab filled with undercooked and incredibly unstable settings", expression: "sassy" },
+  { text: "My favorite", expression: "glad" },
+  { text: "Open it to know more about it", expression: "glad" },
+  { text: "Also extras tab is the green button on the left press on it to know what it dose", expression: "happy" },
+  { text: "If you wanna know what I think", expression: "glad" },
+  { text: "Yours truly", expression: "sassy" },
+  { text: "Toggle my thoughts on the extras tab", expression: "sassy" },
+  { text: "....Thats it", expression: "confused" },
+  { text: "........So yeah", expression: "confused" },
+  { text: "......Umm idk what to do now", expression: "confused" },
+  { text: "#U@# OFF", expression: "angry" }
 ];
 
 // Watch for warning popup closing
@@ -170,37 +196,68 @@ function typeWriterWord(element, text, index, expression) {
 }
 
 function setCharacterExpression(expression) {
-  // Hide all expression gifs immediately
-  document.querySelectorAll('.dialogue-gif').forEach(gif => {
-    gif.style.opacity = '0';
-    gif.classList.remove('gif-active');
-  });
+  const expressionGif = document.getElementById(`dialogue-${expression}`);
+  if (!expressionGif) return;
   
-  // Small delay to ensure previous gif is hidden before showing new one
-  setTimeout(() => {
-    const expressionGif = document.getElementById(`dialogue-${expression}`);
-    if (expressionGif) {
+  // Get currently active gif to crossfade from
+  const currentlyActive = document.querySelector('.dialogue-gif.gif-active');
+  
+  if (currentlyActive && currentlyActive !== expressionGif) {
+    // Smooth crossfade: fade out old, fade in new simultaneously
+    currentlyActive.style.opacity = '0';
+    currentlyActive.classList.remove('gif-active');
+    
+    // Start fading in the new one immediately for crossfade effect
+    expressionGif.style.opacity = '0';
+    requestAnimationFrame(() => {
       expressionGif.style.opacity = '1';
       expressionGif.classList.add('gif-active');
-    }
-  }, 10);
+    });
+  } else {
+    // No active gif, just fade in
+    expressionGif.style.opacity = '0';
+    requestAnimationFrame(() => {
+      expressionGif.style.opacity = '1';
+      expressionGif.classList.add('gif-active');
+    });
+  }
 }
 
 function setCharacterIdle(expression) {
-  // Hide all expression gifs immediately
-  document.querySelectorAll('.dialogue-gif').forEach(gif => {
-    gif.style.opacity = '0';
-    gif.classList.remove('gif-active');
-  });
+  // Handle special case for "confused" - filename has typo "confusedIdel"
+  let idleId = `dialogue-${expression}Idle`;
+  if (expression === 'confused') {
+    idleId = 'dialogue-confusedIdle'; // File is confusedIdel.gif but ID should be confusedIdle
+  }
   
-  // Small delay to ensure previous gif is hidden before showing new one
-  setTimeout(() => {
-    const idleGif = document.getElementById(`dialogue-${expression}Idle`);
-    if (idleGif) {
+  const idleGif = document.getElementById(idleId);
+  if (!idleGif) {
+    console.warn(`Idle GIF not found for expression: ${expression} (looking for: ${idleId})`);
+    return;
+  }
+  
+  // Get currently active gif to crossfade from
+  const currentlyActive = document.querySelector('.dialogue-gif.gif-active');
+  
+  if (currentlyActive && currentlyActive !== idleGif) {
+    // Smooth crossfade: fade out old, fade in new simultaneously
+    currentlyActive.style.opacity = '0';
+    currentlyActive.classList.remove('gif-active');
+    
+    // Start fading in the new one immediately for crossfade effect
+    idleGif.style.opacity = '0';
+    requestAnimationFrame(() => {
       idleGif.style.opacity = '1';
       idleGif.classList.add('gif-active');
-    }
-  }, 10);
+    });
+  } else {
+    // No active gif, just fade in
+    idleGif.style.opacity = '0';
+    requestAnimationFrame(() => {
+      idleGif.style.opacity = '1';
+      idleGif.classList.add('gif-active');
+    });
+  }
 }
 
 function advanceDialogue() {
@@ -237,10 +294,25 @@ function advanceDialogue() {
   currentDialogueIndex++;
   
   if (currentDialogueIndex < dialogueLines.length) {
-    displayDialogueLine(currentDialogueIndex);
+    // Show idle briefly before switching to next line's active expression
+    const currentLine = dialogueLines[currentDialogueIndex - 1];
+    if (currentLine) {
+      setCharacterIdle(currentLine.expression);
+    }
+    
+    // Small delay before showing next line
+    setTimeout(() => {
+      displayDialogueLine(currentDialogueIndex);
+    }, 200);
   } else {
     // All lines complete, hide dialogue box
-    hideDialogueBox();
+    const lastLine = dialogueLines[dialogueLines.length - 1];
+    if (lastLine) {
+      setCharacterIdle(lastLine.expression);
+    }
+    setTimeout(() => {
+      hideDialogueBox();
+    }, 300);
   }
 }
 
@@ -265,7 +337,7 @@ function loadTalkSound() {
   if (!talkSound) {
     talkSound = new Audio('./sound/talk.mp3');
     talkSound.loop = true;
-    talkSound.volume = 0.5;
+    talkSound.volume = 0.75;
   }
 }
 
