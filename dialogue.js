@@ -7,6 +7,9 @@ let isTyping = false;
 let currentTypingTimeout = null;
 let currentText = '';
 let talkSound = null;
+let experimentalTabDialogueShown = false; // Track if experimental tab dialogue has been shown
+let extrasPopupDialogueShown = false; // Track if extras popup dialogue has been shown
+let extrasPopupDialogueTimeout = null; // Timeout for extras popup dialogue
 
 const dialogueLines = [
   { text: "WHO IS MAKING ALL THAT NOICE!", expression: "angry" },
@@ -38,6 +41,34 @@ const dialogueLines = [
   { text: "........So yeah", expression: "confused" },
   { text: "......Umm idk what to do now", expression: "confused" },
   { text: "#U@# OFF", expression: "angry" }
+];
+
+// Experimental tab dialogue - triggers when experimental tab is opened for first time
+const experimentalTabDialogueLines = [
+  { text: "Ohh boy the experimental tab", expression: "worried" },
+  { text: "As said before its unstable but ill explain what it does", expression: "confused" },
+  { text: "PopUps is just visual flair", expression: "glad" },
+  { text: "As its name implies it makes pop ups show up using videos tho you can close them", expression: "glad" },
+  { text: "Experimental and Experimental+", expression: "confused" },
+  { text: "It changes visuals entirely the regular one is inmediate, the + makes it a random chance of change", expression: "happy" },
+  { text: "Mirror mode activates the chance to split the screen in half and duplicate visuals temporarily", expression: "glad" },
+  { text: "And Split screen is the same thing but horizontally and a different visual", expression: "happy" },
+  { text: "most of these are temporary and chance based", expression: "glad" },
+  { text: "DO NOT SPAM USE THESE", expression: "angry" },
+  { text: "ITS UNSTABLE", expression: "angry" },
+  { text: "YOU ARE WARNED!", expression: "angry" }
+];
+
+// Extras popup dialogue - triggers 2 seconds after extras popup closes
+const extrasPopupDialogueLines = [
+  { text: "Ok quickly the extras tab", expression: "sassy" },
+  { text: "Hacked is an incredibly rare scree that has a chance to show up 1/10000 clicks on the experimental tab", expression: "confused" },
+  { text: "Its also a soft lock so you will have to reload the page if you use it", expression: "worried" },
+  { text: "Last but not least", expression: "sassy" },
+  { text: "EXTRA TEXT", expression: "exited" },
+  { text: "This amazing button adds extra lines of dialogue from yours truly giving my opinions and some minor commentary here and there", expression: "sassy" },
+  { text: "That's all the script says.....", expression: "confused" },
+  { text: "Have fun!!!", expression: "exited" }
 ];
 
 // Watch for warning popup closing
@@ -133,6 +164,7 @@ function hideDialogueBox() {
   
   // Reset state
   currentDialogueIndex = 0;
+  currentDialogueArray = dialogueLines; // Reset to default
   isTyping = false;
   if (currentTypingTimeout) {
     clearTimeout(currentTypingTimeout);
@@ -140,13 +172,16 @@ function hideDialogueBox() {
   }
 }
 
-function displayDialogueLine(index) {
-  if (index >= dialogueLines.length) {
+let currentDialogueArray = dialogueLines; // Track which dialogue array is being used
+
+function displayDialogueLine(index, dialogueArray = null) {
+  const arrayToUse = dialogueArray || currentDialogueArray;
+  if (index >= arrayToUse.length) {
     hideDialogueBox();
     return;
   }
   
-  const line = dialogueLines[index];
+  const line = arrayToUse[index];
   const textElement = document.getElementById('dialogue-text');
   
   if (!textElement) return;
@@ -163,7 +198,7 @@ function displayDialogueLine(index) {
   typeWriterWord(textElement, line.text, 0, line.expression);
 }
 
-function typeWriterWord(element, text, index, expression) {
+function typeWriterWord(element, text, index, expression, dialogueArray = dialogueLines) {
   if (!isTyping || index >= text.length) {
     // Finished typing this line
     isTyping = false;
@@ -191,7 +226,7 @@ function typeWriterWord(element, text, index, expression) {
   
   // Continue typing letter by letter
   currentTypingTimeout = setTimeout(() => {
-    typeWriterWord(element, text, index + 1, expression);
+    typeWriterWord(element, text, index + 1, expression, dialogueArray);
   }, delay);
 }
 
@@ -263,7 +298,7 @@ function setCharacterIdle(expression) {
 function advanceDialogue() {
   // If currently typing, finish typing immediately
   if (isTyping) {
-    const line = dialogueLines[currentDialogueIndex];
+    const line = currentDialogueArray[currentDialogueIndex];
     if (line) {
       const textElement = document.getElementById('dialogue-text');
       if (textElement) {
@@ -293,9 +328,9 @@ function advanceDialogue() {
   // Move to next line
   currentDialogueIndex++;
   
-  if (currentDialogueIndex < dialogueLines.length) {
+  if (currentDialogueIndex < currentDialogueArray.length) {
     // Show idle briefly before switching to next line's active expression
-    const currentLine = dialogueLines[currentDialogueIndex - 1];
+    const currentLine = currentDialogueArray[currentDialogueIndex - 1];
     if (currentLine) {
       setCharacterIdle(currentLine.expression);
     }
@@ -306,12 +341,14 @@ function advanceDialogue() {
     }, 200);
   } else {
     // All lines complete, hide dialogue box
-    const lastLine = dialogueLines[dialogueLines.length - 1];
+    const lastLine = currentDialogueArray[currentDialogueArray.length - 1];
     if (lastLine) {
       setCharacterIdle(lastLine.expression);
     }
     setTimeout(() => {
       hideDialogueBox();
+      // Reset to default dialogue array after hiding
+      currentDialogueArray = dialogueLines;
     }, 300);
   }
 }
@@ -359,11 +396,144 @@ function stopTalkSound() {
   }
 }
 
+// Watch for random bullshit tab (popups-controls) opening
+function watchForExperimentalTab() {
+  const popupsControls = document.getElementById('popups-controls');
+  if (!popupsControls) return;
+  
+  // Create a MutationObserver to watch for class changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const isCollapsed = popupsControls.classList.contains('collapsed');
+        
+        // If popups tab just opened (not collapsed) and dialogue hasn't been shown yet
+        if (!isCollapsed && !experimentalTabDialogueShown) {
+          experimentalTabDialogueShown = true;
+          // Wait a moment for the tab to fully open, then show dialogue
+          setTimeout(() => {
+            showExperimentalTabDialogue();
+          }, 500);
+        }
+      }
+    });
+  });
+  
+  observer.observe(popupsControls, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+}
+
+function showExperimentalTabDialogue() {
+  const dialogueBox = document.getElementById('dialogue-box');
+  if (!dialogueBox) return;
+  
+  // Set the experimental tab dialogue as the current array
+  currentDialogueArray = experimentalTabDialogueLines;
+  currentDialogueIndex = 0;
+  
+  // Show dialogue box if it's hidden
+  if (dialogueBox.classList.contains('dialogue-hidden')) {
+    dialogueBox.classList.remove('dialogue-hidden');
+    dialogueBox.classList.add('dialogue-visible');
+  }
+  
+  // Start displaying dialogue after slide animation
+  setTimeout(() => {
+    displayDialogueLine(0, experimentalTabDialogueLines);
+  }, 300);
+}
+
+// Watch for extras popup closing
+function watchForExtrasPopup() {
+  const extrasPopup = document.getElementById('extras-popup');
+  if (!extrasPopup) return;
+  
+  // Create a MutationObserver to watch for class changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const isVisible = extrasPopup.classList.contains('extras-popup-visible');
+        const isHidden = extrasPopup.classList.contains('extras-popup-hidden');
+        
+        // If extras popup just closed and dialogue hasn't been shown yet
+        if (isHidden && !isVisible && !extrasPopupDialogueShown) {
+          extrasPopupDialogueShown = true;
+          
+          // Clear any existing timeout to prevent multiple triggers
+          if (extrasPopupDialogueTimeout) {
+            clearTimeout(extrasPopupDialogueTimeout);
+          }
+          
+          // Wait 2 seconds after extras popup closes
+          extrasPopupDialogueTimeout = setTimeout(() => {
+            showExtrasPopupDialogue();
+          }, 2000);
+        }
+      }
+    });
+  });
+  
+  observer.observe(extrasPopup, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+}
+
+function showExtrasPopupDialogue() {
+  const dialogueBox = document.getElementById('dialogue-box');
+  if (!dialogueBox) return;
+  
+  // Set the extras popup dialogue as the current array
+  currentDialogueArray = extrasPopupDialogueLines;
+  currentDialogueIndex = 0;
+  
+  // Show dialogue box if it's hidden
+  if (dialogueBox.classList.contains('dialogue-hidden')) {
+    dialogueBox.classList.remove('dialogue-hidden');
+    dialogueBox.classList.add('dialogue-visible');
+  }
+  
+  // Start displaying dialogue after slide animation
+  setTimeout(() => {
+    displayDialogueLine(0, extrasPopupDialogueLines);
+  }, 300);
+}
+
+// Skip dialogue function
+function skipDialogue() {
+  // Stop any typing
+  if (currentTypingTimeout) {
+    clearTimeout(currentTypingTimeout);
+    currentTypingTimeout = null;
+  }
+  
+  // Stop talk sound
+  stopTalkSound();
+  
+  // Hide dialogue box immediately
+  hideDialogueBox();
+}
+
+// Setup skip button
+function setupSkipButton() {
+  const skipBtn = document.getElementById('dialogue-skip-btn');
+  if (skipBtn) {
+    skipBtn.addEventListener('click', () => {
+      skipDialogue();
+    });
+  }
+}
+
 // Initialize when DOM is ready
 function initDialogueSystem() {
   loadTalkSound();
   setupDialogueKeyboard();
+  setupSkipButton();
   watchForWarningPopup();
+  watchForExperimentalTab();
+  watchForExtrasPopup();
 }
 
 if (document.readyState === 'loading') {

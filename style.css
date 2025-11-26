@@ -6038,6 +6038,47 @@ body {
   box-shadow: 
     0 0 clamp(12px, 1.58vw, 15px) rgba(100, 200, 255, 0.6);
   position: relative;
+  z-index: 3;
+}
+
+.dialogue-skip-btn {
+  position: absolute;
+  top: clamp(2px, 0.42vw, 4px);
+  right: clamp(4px, 0.63vw, 6px);
+  background: rgba(0, 0, 0, 0.7);
+  border: clamp(2px, 0.42vw, 4px) solid #ff4444;
+  border-radius: clamp(4px, 0.53vw, 6px);
+  padding: clamp(6px, 0.84vw, 8px) clamp(10px, 1.37vw, 12px);
+  color: #ffaaaa;
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(6px, 0.84vw, 8px);
+  text-transform: uppercase;
+  letter-spacing: clamp(0.5px, 0.07vw, 1px);
+  cursor: pointer;
+  z-index: 4;
+  transition: all 0.2s ease;
+  text-shadow: 
+    clamp(1px, 0.21vw, 2px) clamp(1px, 0.21vw, 2px) 0px rgba(0, 0, 0, 1),
+    0 0 clamp(4px, 0.53vw, 6px) rgba(255, 68, 68, 0.6);
+  pointer-events: all;
+  box-shadow: 
+    0 0 clamp(6px, 0.84vw, 8px) rgba(255, 68, 68, 0.5),
+    inset 0 0 clamp(4px, 0.53vw, 6px) rgba(255, 68, 68, 0.2);
+}
+
+.dialogue-skip-btn:hover {
+  background: rgba(255, 68, 68, 0.3);
+  color: #ffffff;
+  border-color: #ff6666;
+  box-shadow: 
+    0 0 clamp(10px, 1.37vw, 12px) rgba(255, 68, 68, 0.8),
+    inset 0 0 clamp(6px, 0.84vw, 8px) rgba(255, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.dialogue-skip-btn:active {
+  background: rgba(255, 68, 68, 0.5);
+  transform: translateY(0) scale(0.98);
 }
 
 
@@ -6086,6 +6127,7 @@ body {
   min-height: clamp(200px, 23.58vw, 224px);
   justify-content: space-between;
   padding: 0;
+  position: relative;
 }
 
 .dialogue-text-container > .dialogue-text,
