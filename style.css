@@ -5907,6 +5907,34 @@ body {
   transform: scale(0.85);
 }
 
+.dialogue-box-purple {
+  position: absolute;
+  width: 100%;
+  background: #aa80ff;
+  border: none;
+  border-radius: 12px;
+  top: -16px;
+  left: -45px;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.dialogue-box-white {
+  position: absolute;
+  width: 100%;
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  top: 18px;
+  left: 18px;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
 .dialogue-content {
   width: 100%;
   max-width: 950px;

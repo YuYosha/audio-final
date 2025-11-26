@@ -61,11 +61,39 @@ function showDialogueBox() {
   dialogueBox.classList.remove('dialogue-hidden');
   dialogueBox.classList.add('dialogue-visible');
   
+  // Sync layered boxes height with content
+  setTimeout(() => {
+    syncLayeredBoxesHeight();
+  }, 100);
+  
   // Start with first line
   currentDialogueIndex = 0;
   setTimeout(() => {
     displayDialogueLine(currentDialogueIndex);
   }, 300);
+}
+
+// Sync layered box heights with content
+function syncLayeredBoxesHeight() {
+  const content = document.querySelector('.dialogue-content');
+  const purpleBox = document.querySelector('.dialogue-box-purple');
+  const whiteBox = document.querySelector('.dialogue-box-white');
+  
+  if (content && purpleBox && whiteBox) {
+    const updateHeight = () => {
+      const height = content.offsetHeight;
+      if (height > 0) {
+        purpleBox.style.height = height + 'px';
+        whiteBox.style.height = height + 'px';
+      }
+    };
+    
+    // Update multiple times to ensure proper sizing
+    updateHeight();
+    setTimeout(updateHeight, 50);
+    setTimeout(updateHeight, 200);
+    setTimeout(updateHeight, 400);
+  }
 }
 
 function hideDialogueBox() {
