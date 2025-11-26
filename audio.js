@@ -114,6 +114,10 @@ let errorWindowIntervalId = null;
 let activeErrorWindows = []; // Track multiple active windows
 let popupsEnabled = false; // Toggle for popups
 const popupsBtn = document.getElementById("popups-btn");
+
+// Cache DOM elements accessed in animation loop for performance
+const warningPopupEl = document.getElementById('warning-popup');
+const hackedScreenEl = document.getElementById('hacked-screen');
 let experimentalModeEnabled = false; // Toggle for experimental visualizer (old button - manual toggle)
 const experimentalBtn = document.getElementById("experimental-btn");
 let experimentalPlusEnabled = false; // Toggle for experimental+ effect (enables random triggering)
@@ -614,6 +618,56 @@ function startExperimentalVisualizerLoop() {
   experimentalCanvas.height = window.innerHeight;
   const ctx = experimentalCanvas.getContext('2d');
   
+  // Cache gradient and other expensive-to-create objects
+  let cachedGradient = null;
+  let cachedCanvasSize = { width: experimentalCanvas.width, height: experimentalCanvas.height };
+  const underlyingAnalyser = analyser.analyser || analyser;
+  const bufferLength = underlyingAnalyser.frequencyBinCount || 256;
+  
+  // Reusable arrays to avoid allocations
+  const timeData = new Uint8Array(bufferLength);
+  const rawPoints = new Array(bufferLength);
+  let smoothedPoints = new Array(bufferLength);
+  let tempPoints = new Array(bufferLength);
+  
+  // Cache layer styling
+  const numLayers = 3;
+  const layerOpacities = [1.0, 0.6, 0.4];
+  const layerOffsets = [0, 2, 4];
+  const whiteTones = [245, 235, 225];
+  const rgbaCache = [
+    'rgba(245, 245, 245, 1.0)',
+    'rgba(235, 235, 235, 0.6)',
+    'rgba(225, 225, 225, 0.4)'
+  ];
+  const shadowColorCache = [
+    'rgba(255, 255, 255, 0.2)',
+    'rgba(255, 255, 255, 0.12)',
+    'rgba(255, 255, 255, 0.08)'
+  ];
+  
+  // Create or update gradient only when canvas size changes
+  const updateGradient = () => {
+    if (cachedCanvasSize.width !== experimentalCanvas.width || cachedCanvasSize.height !== experimentalCanvas.height) {
+      cachedCanvasSize = { width: experimentalCanvas.width, height: experimentalCanvas.height };
+      cachedGradient = null;
+    }
+    
+    if (!cachedGradient) {
+      cachedGradient = ctx.createRadialGradient(
+        experimentalCanvas.width / 2,
+        experimentalCanvas.height / 2,
+        0,
+        experimentalCanvas.width / 2,
+        experimentalCanvas.height / 2,
+        Math.max(experimentalCanvas.width, experimentalCanvas.height) * 0.7
+      );
+      cachedGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      cachedGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    }
+    return cachedGradient;
+  };
+  
   function drawLoop() {
     if (!experimentalModeEnabled && !experimentalPlusActive) {
       // Stop loop when experimental mode is off
@@ -633,26 +687,11 @@ function startExperimentalVisualizerLoop() {
     ctx.fillStyle = '#0a0a0a';
     ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
     
-    // Add subtle vignette gradient
-    const gradient = ctx.createRadialGradient(
-      experimentalCanvas.width / 2,
-      experimentalCanvas.height / 2,
-      0,
-      experimentalCanvas.width / 2,
-      experimentalCanvas.height / 2,
-      Math.max(experimentalCanvas.width, experimentalCanvas.height) * 0.7
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
-    ctx.fillStyle = gradient;
+    // Use cached gradient
+    ctx.fillStyle = updateGradient();
     ctx.fillRect(0, 0, experimentalCanvas.width, experimentalCanvas.height);
     
     // Get time-domain data from the underlying analyser for proper waveform oscillation
-    const underlyingAnalyser = analyser.analyser || analyser;
-    const bufferLength = underlyingAnalyser.frequencyBinCount || 256;
-    const timeData = new Uint8Array(bufferLength);
-    
-    // Try to get time domain data, fallback to frequency data if not available
     if (underlyingAnalyser.getByteTimeDomainData) {
       underlyingAnalyser.getByteTimeDomainData(timeData);
     } else {
@@ -666,45 +705,29 @@ function startExperimentalVisualizerLoop() {
     }
     
     const centerY = experimentalCanvas.height / 2;
-    
-    // Vintage white line with slight glow
-    ctx.strokeStyle = '#f5f5f5';
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 2;
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
-    
     const sliceWidth = experimentalCanvas.width / bufferLength;
-    const maxAmplitude = centerY * 0.7; // Increased range - can go higher and lower
+    const maxAmplitude = centerY * 0.7;
     
-    // Draw multiple layered lines for depth effect
-    const numLayers = 3;
-    const layerOpacities = [1.0, 0.6, 0.4];
-    const layerOffsets = [0, 2, 4]; // Slight horizontal offset for layers
-    
-    // Pre-calculate smooth points with consistent smoothing
-    const rawPoints = [];
+    // Pre-calculate raw points (reuse array)
     for (let i = 0; i < bufferLength; i++) {
       const v = timeData[i] / 128.0;
       const normalized = (v - 1.0);
-      // Remove random multiplier for consistent behavior
       const amplitude = normalized * maxAmplitude;
-      const x = i * sliceWidth;
-      const y = centerY + amplitude;
-      rawPoints.push({ x, y });
+      rawPoints[i] = { x: i * sliceWidth, y: centerY + amplitude };
     }
     
-    // Strong multi-pass smoothing for ultra-smooth movement
-    let smoothedPoints = [...rawPoints];
+    // Reduced smoothing passes (5 -> 3) for better performance while maintaining smoothness
+    // Copy rawPoints to smoothedPoints
+    for (let i = 0; i < bufferLength; i++) {
+      smoothedPoints[i] = { x: rawPoints[i].x, y: rawPoints[i].y };
+    }
     
-    // Apply stronger smoothing multiple times
-    for (let pass = 0; pass < 5; pass++) {
-      const tempPoints = [];
-      for (let i = 0; i < smoothedPoints.length; i++) {
+    // Apply smoothing (reduced from 5 to 3 passes)
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < bufferLength; i++) {
         let smoothY = smoothedPoints[i].y;
         let weight = 1;
         
-        // Strong weighted average with neighbors for smoother curves
-        // Immediate neighbors get more weight
         if (i > 0) {
           smoothY += smoothedPoints[i - 1].y * 0.8;
           weight += 0.8;
@@ -713,39 +736,36 @@ function startExperimentalVisualizerLoop() {
           smoothY += smoothedPoints[i - 2].y * 0.4;
           weight += 0.4;
         }
-        if (i < smoothedPoints.length - 1) {
+        if (i < bufferLength - 1) {
           smoothY += smoothedPoints[i + 1].y * 0.8;
           weight += 0.8;
         }
-        if (i < smoothedPoints.length - 2) {
+        if (i < bufferLength - 2) {
           smoothY += smoothedPoints[i + 2].y * 0.4;
           weight += 0.4;
         }
         
-        tempPoints.push({
-          x: smoothedPoints[i].x,
-          y: smoothY / weight
-        });
+        tempPoints[i] = { x: smoothedPoints[i].x, y: smoothY / weight };
       }
+      // Swap arrays
+      const swap = smoothedPoints;
       smoothedPoints = tempPoints;
+      tempPoints = swap;
     }
     
-    // Draw each layer with vintage styling
+    // Draw each layer with vintage styling (using cached rgba strings)
     for (let layer = 0; layer < numLayers; layer++) {
       ctx.beginPath();
-      // Slightly warm white tones for vintage feel
-      const whiteTone = layer === 0 ? 245 : layer === 1 ? 235 : 225;
-      ctx.strokeStyle = `rgba(${whiteTone}, ${whiteTone}, ${whiteTone}, ${layerOpacities[layer]})`;
+      ctx.strokeStyle = rgbaCache[layer];
       ctx.lineWidth = layer === 0 ? 1.5 : 1;
       ctx.shadowBlur = layer === 0 ? 2 : 1;
-      ctx.shadowColor = `rgba(255, 255, 255, ${0.2 * layerOpacities[layer]})`;
+      ctx.shadowColor = shadowColorCache[layer];
       
       const offset = layerOffsets[layer];
+      const layerOffset = layer * 1.5;
       
-      for (let i = 0; i < smoothedPoints.length; i++) {
+      for (let i = 0; i < bufferLength; i++) {
         const x = smoothedPoints[i].x + offset;
-        // Use consistent offset per layer instead of random variation
-        const layerOffset = layer * 1.5;
         const y = smoothedPoints[i].y + layerOffset;
         
         if (i === 0) {
@@ -1601,6 +1621,7 @@ function preloadAssets() {
     discAudio: false,
     firstTrack: false,
     skyboxShaders: false,
+    uiSounds: false,
     overlayVideos: false,
     popupVideos: false
   };
@@ -1720,11 +1741,21 @@ function preloadAssets() {
     }
   };
   
-  // Helper function to preload a video from either folder (video folder first, then PopUps as fallback)
-  const preloadPopupVideoFromBothFolders = async (videoFile) => {
-    // Try video folder first (shared videos)
-    const videoPath = `./video/${videoFile}`;
-    const popupsPath = `./PopUps/${videoFile}`;
+  // Helper function to preload a video from the correct folder based on folder map
+  const preloadPopupVideoFromCorrectFolder = async (videoFile) => {
+    // Get folder map from multimedia.js or use fallback logic
+    let folder = 'video'; // default
+    try {
+      const folderMap = typeof popupVideoFolderMap !== 'undefined' ? popupVideoFolderMap : 
+                       (typeof window !== 'undefined' ? window.popupVideoFolderMap : null);
+      if (folderMap && folderMap[videoFile]) {
+        folder = folderMap[videoFile];
+      }
+    } catch (e) {
+      // Fallback to video folder if map not available
+    }
+    
+    const videoPath = `./${folder}/${videoFile}`;
     
     return new Promise((resolve) => {
       const video = document.createElement('video');
@@ -1757,22 +1788,11 @@ function preloadAssets() {
       };
       
       const handleError = () => {
-        // If video folder fails, try PopUps folder
-        video.removeEventListener('canplaythrough', handleSuccess);
-        video.removeEventListener('error', handleError);
-        video.removeEventListener('progress', handleProgress);
-        video.src = popupsPath;
-        video.load();
-        
-        video.addEventListener('canplaythrough', handleSuccess, { once: true });
-        video.addEventListener('error', () => {
-          if (!resolved) {
-            resolved = true;
-            console.warn(`Failed to preload popup video from both folders: ${videoFile}`);
-            resolve(null);
-          }
-        }, { once: true });
-        video.addEventListener('progress', handleProgress);
+        if (!resolved) {
+          resolved = true;
+          console.warn(`Failed to preload popup video: ${videoFile} from ${folder}`);
+          resolve(null);
+        }
       };
       
       video.addEventListener('canplaythrough', handleSuccess, { once: true });
@@ -1782,7 +1802,7 @@ function preloadAssets() {
       video.src = videoPath;
       video.load();
       
-      // Timeout for both attempts
+      // Timeout
       setTimeout(() => {
         if (!resolved && video.readyState < 4) {
           if (video.readyState >= 2) {
@@ -1823,7 +1843,7 @@ function preloadAssets() {
     console.log(`Preloading ${videos.length} popup videos from both folders (FULL preload - ensuring complete readiness)...`);
     
     try {
-      // Load in batches - each video tries video folder first, then PopUps
+      // Load in batches - each video loads from its correct folder
       const batches = [];
       const batchSize = 8;
       for (let i = 0; i < videos.length; i += batchSize) {
@@ -1831,7 +1851,7 @@ function preloadAssets() {
       }
       
       for (const batch of batches) {
-        await Promise.all(batch.map(videoFile => preloadPopupVideoFromBothFolders(videoFile)));
+        await Promise.all(batch.map(videoFile => preloadPopupVideoFromCorrectFolder(videoFile)));
       }
       
       console.log("✅ All popup videos fully preloaded and ready");
@@ -3007,26 +3027,24 @@ function startErrorWindowLoop() {
     }, 500);
     
     // Popups can use videos from both video and PopUps folders
-    // Check video folder first (shared videos), then PopUps folder (unique popup videos)
-    // This optimizes loading by using the video folder when available
+    // Use folder map to determine correct folder (no 404 errors)
     errorWindowVideoEl.loop = false; // Don't loop - play once and close
     
-    // Try loading from video folder first, then PopUps as fallback
-    let triedFallback = false;
-    const tryLoadVideo = (useFallback = false) => {
-      if (useFallback) {
-        errorWindowVideoEl.src = `./PopUps/${choice}`;
-        triedFallback = true;
-      } else {
-        errorWindowVideoEl.src = `./video/${choice}`;
+    // Determine which folder this video is in
+    let folder = 'video'; // default
+    try {
+      const folderMap = typeof popupVideoFolderMap !== 'undefined' ? popupVideoFolderMap : 
+                       (typeof window !== 'undefined' ? window.popupVideoFolderMap : null);
+      if (folderMap && folderMap[choice]) {
+        folder = folderMap[choice];
       }
-      errorWindowVideoEl.currentTime = 0;
-      
-      // Re-attach error handler for fallback attempt
-      if (useFallback) {
-        errorWindowVideoEl.addEventListener("error", handleVideoError, { once: true });
-      }
-    };
+    } catch (e) {
+      // Fallback to video folder if map not available
+    }
+    
+    // Load from the correct folder directly (no need to try both)
+    errorWindowVideoEl.src = `./${folder}/${choice}`;
+    errorWindowVideoEl.currentTime = 0;
     
     // Add event listeners for this video instance
     const handleVideoEnd = () => {
@@ -3034,17 +3052,10 @@ function startErrorWindowLoop() {
     };
     
     const handleVideoError = () => {
-      // If video folder failed and we haven't tried PopUps yet, try PopUps folder
-      if (!triedFallback) {
-        tryLoadVideo(true);
-        return; // Don't close window yet, wait for PopUps attempt
-      }
-      // Both folders failed, close the window
+      // Video failed to load - close the window
+      console.warn(`Failed to load popup video: ${choice} from ${folder}`);
       concludeErrorWindow();
     };
-    
-    // Start with video folder
-    tryLoadVideo(false);
     
     errorWindowVideoEl.addEventListener("ended", handleVideoEnd, { once: true });
     errorWindowVideoEl.addEventListener("error", handleVideoError, { once: true });
@@ -3438,12 +3449,14 @@ function animate() {
   requestAnimationFrame(animate);
   const data = analyser.getFrequencyData();
   
+  // Cache time once per frame for all calculations
+  const currentTime = clock.getElapsedTime();
+  const dateNow = Date.now();
+  
   // Check if warning sound should be playing - stop it if neither popup nor hacked screen is visible
   if (warningSound && !warningSound.paused) {
-    const warningPopup = document.getElementById('warning-popup');
-    const hackedScreen = document.getElementById('hacked-screen');
-    const isWarningVisible = warningPopup && !warningPopup.classList.contains('warning-popup-hidden');
-    const isHackedVisible = hackedScreen && !hackedScreen.classList.contains('hacked-screen-hidden');
+    const isWarningVisible = warningPopupEl && !warningPopupEl.classList.contains('warning-popup-hidden');
+    const isHackedVisible = hackedScreenEl && !hackedScreenEl.classList.contains('hacked-screen-hidden');
     const shouldPlay = isWarningVisible || isHackedVisible;
     
     if (!shouldPlay) {
@@ -3459,7 +3472,14 @@ function animate() {
   // Better beat detection using bass frequencies (better for rhythm)
   const bassAvg = (data[0] + data[1] + data[2] + data[3] + data[4]) / 5 / 255;
 
-  const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+  // Optimize average calculation - cache data.length
+  const dataLength = data.length;
+  const dataLength255 = dataLength * 255;
+  let sum = 0;
+  for (let i = 0; i < dataLength; i++) {
+    sum += data[i];
+  }
+  const avg = sum / dataLength255;
   
   // Rotate camera if rotation is active (with smooth acceleration/deceleration)
   // Skip rotation if split view, mirror mode, or experimental+ is active (camera is locked)
@@ -3478,7 +3498,16 @@ function animate() {
       controls.target.set(0, 0, 0);
     }
   }
-  const midAvg = data.reduce((a, b, idx) => idx > 4 && idx < data.length * 0.5 ? a + b : a, 0) / (Math.floor(data.length * 0.5) - 5) / 255;
+  // Optimize mid average calculation
+  const midStart = 5;
+  const midEnd = Math.floor(dataLength * 0.5);
+  let midSum = 0;
+  let midCount = 0;
+  for (let i = midStart; i < midEnd; i++) {
+    midSum += data[i];
+    midCount++;
+  }
+  const midAvg = midCount > 0 ? midSum / (midCount * 255) : 0;
   
   // Moderate beat sensitivity enhancement - more noticeable but not extreme
   const beatBoost = bassAvg > 0.22 ? 1.0 + bassAvg * 0.5 : 1.0;
@@ -3509,12 +3538,12 @@ function animate() {
     camera.updateProjectionMatrix();
   }
 
-  skyUniforms.uTime.value = clock.getElapsedTime();
+  skyUniforms.uTime.value = currentTime;
   skyUniforms.uAudio.value = avg;
 
   // Bars animation - moderate rhythm response enhancement
   for (let i = 0; i < bars.length; i++) {
-    const freq = data[i % data.length];
+    const freq = data[i % dataLength];
     const normalized = freq / 255;
     // Moderate boost for more noticeable beats
     const scale = normalized * 10.0 * beatBoost + 0.5;
@@ -3524,7 +3553,7 @@ function animate() {
   }
 
   for (let i = 0; i < bars2.length; i++) {
-    const freq = data[(i * 2) % data.length];
+    const freq = data[(i * 2) % dataLength];
     const inverted = 1.0 - freq / 255;
     // Moderate response enhancement to rhythm changes
     const scale = inverted * 10.0 * beatBoost + 0.5;
@@ -3534,9 +3563,9 @@ function animate() {
   }
 
   for (let i = 0; i < bars3.length; i++) {
-    const freq = data[(i * 3) % data.length];
+    const freq = data[(i * 3) % dataLength];
     const normalized = freq / 255;
-    const smooth = (Math.sin(Date.now() * 0.002 + i * 0.1) + 1) / 2;
+    const smooth = (Math.sin(dateNow * 0.002 + i * 0.1) + 1) / 2;
     // Moderate mid-frequency response enhancement
     const scale = (normalized * 8.0 * beatBoost + 0.5) * (0.8 + 0.2 * smooth);
     bars3[i].scale.y = scale;
@@ -3550,7 +3579,7 @@ function animate() {
     const bassFreq = data[bassIndex] || 0;
     const normalized = bassFreq / 255;
     // Pulse effect that syncs with bass
-    const pulse = (Math.sin(Date.now() * 0.003 + i * 0.15) + 1) / 2;
+    const pulse = (Math.sin(dateNow * 0.003 + i * 0.15) + 1) / 2;
     const scale = normalized * 9.0 * beatBoost * (0.9 + 0.2 * pulse) + 0.5;
     bars4[i].scale.y = scale;
     bars4[i].position.y = scale / 2;
@@ -3559,12 +3588,12 @@ function animate() {
 
   // Ring 5 - Reacts to high frequencies with inverted wave
   for (let i = 0; i < bars5.length; i++) {
-    const highIndex = data.length - 1 - (i % 16); // Use last 16 frequencies
+    const highIndex = dataLength - 1 - (i % 16); // Use last 16 frequencies
     const highFreq = data[Math.max(0, highIndex)] || 0;
     const normalized = highFreq / 255;
     const inverted = 1.0 - normalized;
     // Wave pattern that moves opposite to frequency
-    const wave = (Math.cos(Date.now() * 0.004 + i * 0.12) + 1) / 2;
+    const wave = (Math.cos(dateNow * 0.004 + i * 0.12) + 1) / 2;
     const scale = inverted * 8.2 * beatBoost * (0.85 + 0.25 * wave) + 0.5;
     bars5[i].scale.y = scale;
     bars5[i].position.y = scale / 2;
@@ -3573,10 +3602,10 @@ function animate() {
 
   // Ring 6 - Wave reaction that travels around the circle
   for (let i = 0; i < bars6.length; i++) {
-    const freq = data[(i * 4) % data.length];
+    const freq = data[(i * 4) % dataLength];
     const normalized = freq / 255;
     // Traveling wave effect
-    const wavePhase = (i / bars6.length) * Math.PI * 2 + Date.now() * 0.001;
+    const wavePhase = (i / bars6.length) * Math.PI * 2 + dateNow * 0.001;
     const wave = (Math.sin(wavePhase * 3) + 1) / 2;
     // Combines frequency with traveling wave - moderate enhancement
     const scale = normalized * 8.5 * beatBoost * (0.7 + 0.4 * wave) + 0.5;
@@ -3588,12 +3617,12 @@ function animate() {
   // Ring 7 - Complex 3D tumbling with mid-frequency response and wobble effect
   for (let i = 0; i < bars7.length; i++) {
     // Focus on mid frequencies for this ring
-    const midIndex = Math.floor(data.length * 0.3) + (i % Math.floor(data.length * 0.4));
+    const midIndex = Math.floor(dataLength * 0.3) + (i % Math.floor(dataLength * 0.4));
     const freq = data[midIndex] || 0;
     const normalized = freq / 255;
     
     // Complex multi-layered phase for tumbling motion
-    const time = Date.now() * 0.002;
+    const time = dateNow * 0.002;
     const angle = (i / bars7.length) * Math.PI * 2;
     const tumblingPhase = angle + time * 1.8;
     
@@ -3627,11 +3656,11 @@ function animate() {
   // Ring 8 - Enhanced multi-layered spiral with radial expansion/contraction and high-frequency response
   for (let i = 0; i < bars8.length; i++) {
     // Focus on high frequencies for this ring
-    const highIndex = Math.max(0, data.length - 1 - (i % 20));
+    const highIndex = Math.max(0, dataLength - 1 - (i % 20));
     const freq = data[highIndex] || 0;
     const normalized = freq / 255;
     
-    const time = Date.now() * 0.0018;
+    const time = dateNow * 0.0018;
     const angle = (i / bars8.length) * Math.PI * 2;
     // Multi-turn spiral phase for complex flow
     const spiralPhase = angle * 6 + time * 2.2;
@@ -3678,7 +3707,7 @@ function animate() {
     const bassFreq = data[bassIndex] || 0;
     const normalized = bassFreq / 255;
     
-    const time = Date.now() * 0.0015; // Smooth wave speed
+    const time = dateNow * 0.0015; // Smooth wave speed
     const angle = (i / bars9.length) * Math.PI * 2;
     
     // Smooth traveling wave that moves around the circle
@@ -3711,7 +3740,7 @@ function animate() {
 
   for (let k = 0; k < innerBuildings.length; k++) {
     const { mesh, t, i } = innerBuildings[k];
-    const index = Math.floor((i / radialCount) * data.length);
+    const index = Math.floor((i / radialCount) * dataLength);
     const freq = data[index];
     const intensity = freq / 255;
     const baseHeight = THREE.MathUtils.lerp(2.2, 0.1, t);
@@ -3721,7 +3750,8 @@ function animate() {
     mesh.material.emissiveIntensity = 0.3 + intensity * 1.1 * beatBoost;
   }
 
-  const avg2 = data.reduce((a, b) => a + b, 0) / data.length;
+  // Reuse already calculated sum for avg2
+  const avg2 = sum / dataLength;
   const normalizedAvg2 = avg2 / 255;
   // Moderate outline response enhancement to rhythm
   outlinePass.edgeStrength = 6 + normalizedAvg2 * 4.0 * beatBoost;
@@ -3738,8 +3768,8 @@ function animate() {
 
   // Check for random experimental+ mode trigger (can trigger when others are active, but not when already active or manual experimental mode is on)
   if (experimentalPlusEnabled && sound.isPlaying && !experimentalPlusActive && !experimentalModeEnabled) {
-    const timeSinceLastExperimental = Date.now() - experimentalPlusLastTriggered;
-    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    const timeSinceLastExperimental = dateNow - experimentalPlusLastTriggered;
+    const timeSinceLastSpecialEffect = dateNow - lastSpecialEffectTriggered;
     if (timeSinceLastExperimental > EXPERIMENTAL_PLUS_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < EXPERIMENTAL_PLUS_CHANCE) {
         activateExperimentalPlus();
@@ -3749,8 +3779,8 @@ function animate() {
 
   // Check for random split view trigger (cannot trigger when experimental+ or mirror mode is active)
   if (splitViewEnabled && sound.isPlaying && !splitViewActive && !experimentalModeEnabled && !experimentalPlusActive && !mirrorModeActive) {
-    const timeSinceLastSplit = Date.now() - splitViewLastTriggered;
-    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    const timeSinceLastSplit = dateNow - splitViewLastTriggered;
+    const timeSinceLastSpecialEffect = dateNow - lastSpecialEffectTriggered;
     if (timeSinceLastSplit > SPLIT_VIEW_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < SPLIT_VIEW_CHANCE) {
         activateSplitView();
@@ -3760,8 +3790,8 @@ function animate() {
 
   // Check for random mirror mode trigger (cannot trigger when experimental+ or split view is active)
   if (mirrorModeEnabled && sound.isPlaying && !mirrorModeActive && !experimentalModeEnabled && !experimentalPlusActive && !splitViewActive) {
-    const timeSinceLastMirror = Date.now() - mirrorModeLastTriggered;
-    const timeSinceLastSpecialEffect = Date.now() - lastSpecialEffectTriggered;
+    const timeSinceLastMirror = dateNow - mirrorModeLastTriggered;
+    const timeSinceLastSpecialEffect = dateNow - lastSpecialEffectTriggered;
     if (timeSinceLastMirror > MIRROR_MODE_COOLDOWN && timeSinceLastSpecialEffect > SPECIAL_EFFECT_GLOBAL_COOLDOWN) {
       if (Math.random() < MIRROR_MODE_CHANCE) {
         activateMirrorMode();
@@ -4352,17 +4382,26 @@ function renderSplitView() {
 
 animate();
 
-// === Resize ===
+// === Resize (debounced for performance) ===
+let resizeTimeout = null;
 window.addEventListener("resize", () => {
+  // Debounce resize to avoid excessive updates during window dragging
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout);
+  }
+  
+  resizeTimeout = setTimeout(() => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
-
   
   // Resize experimental canvas
   if (experimentalCanvas) {
     experimentalCanvas.width = window.innerWidth;
     experimentalCanvas.height = window.innerHeight;
   }
+    
+    resizeTimeout = null;
+  }, 150); // 150ms debounce - smooth but efficient
 });
