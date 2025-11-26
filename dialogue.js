@@ -51,8 +51,8 @@ const experimentalTabDialogueLines = [
   { text: "As its name implies it makes pop ups show up using videos tho you can close them", expression: "glad" },
   { text: "Experimental and Experimental+", expression: "confused" },
   { text: "It changes visuals entirely the regular one is inmediate, the + makes it a random chance of change", expression: "happy" },
-  { text: "Mirror mode activates the chance to split the screen in half and duplicate visuals temporarily", expression: "glad" },
-  { text: "And Split screen is the same thing but horizontally and a different visual", expression: "happy" },
+  { text: "Split screen activates the chance to split the screen in half and duplicate visuals temporarily", expression: "glad" },
+  { text: "And Mirror mode is the same thing but horizontally and a different visual", expression: "happy" },
   { text: "most of these are temporary and chance based", expression: "glad" },
   { text: "DO NOT SPAM USE THESE", expression: "angry" },
   { text: "ITS UNSTABLE", expression: "angry" },
@@ -62,7 +62,7 @@ const experimentalTabDialogueLines = [
 // Extras popup dialogue - triggers 2 seconds after extras popup closes
 const extrasPopupDialogueLines = [
   { text: "Ok quickly the extras tab", expression: "sassy" },
-  { text: "Hacked is an incredibly rare scree that has a chance to show up 1/10000 clicks on the experimental tab", expression: "confused" },
+  { text: "Hacked is an incredibly rare screen that has a chance to show up 1/10000 clicks on the experimental tab", expression: "confused" },
   { text: "Its also a soft lock so you will have to reload the page if you use it", expression: "worried" },
   { text: "Last but not least", expression: "sassy" },
   { text: "EXTRA TEXT", expression: "exited" },

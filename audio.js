@@ -1661,7 +1661,7 @@ function preloadAssets() {
           if (video.readyState >= 2) {
             console.log(`Video ${src} partially loaded (readyState: ${video.readyState}), proceeding...`);
             handleCanPlayThrough();
-          } else {
+      } else {
             handleError(new Error('Timeout'));
           }
         }
@@ -1720,7 +1720,86 @@ function preloadAssets() {
     }
   };
   
-  // Preload all popup videos (optimized)
+  // Helper function to preload a video from either folder (video folder first, then PopUps as fallback)
+  const preloadPopupVideoFromBothFolders = async (videoFile) => {
+    // Try video folder first (shared videos)
+    const videoPath = `./video/${videoFile}`;
+    const popupsPath = `./PopUps/${videoFile}`;
+    
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      
+      let resolved = false;
+      
+      const handleSuccess = () => {
+        if (resolved) return;
+        resolved = true;
+        video.removeEventListener('canplaythrough', handleSuccess);
+        video.removeEventListener('error', handleError);
+        video.removeEventListener('progress', handleProgress);
+        resolve(video);
+      };
+      
+      let lastProgress = 0;
+      const handleProgress = () => {
+        if (video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          const duration = video.duration;
+          if (duration > 0) {
+            const progress = (bufferedEnd / duration) * 100;
+            if (progress - lastProgress > 10) {
+              lastProgress = progress;
+            }
+          }
+        }
+      };
+      
+      const handleError = () => {
+        // If video folder fails, try PopUps folder
+        video.removeEventListener('canplaythrough', handleSuccess);
+        video.removeEventListener('error', handleError);
+        video.removeEventListener('progress', handleProgress);
+        video.src = popupsPath;
+        video.load();
+        
+        video.addEventListener('canplaythrough', handleSuccess, { once: true });
+        video.addEventListener('error', () => {
+          if (!resolved) {
+            resolved = true;
+            console.warn(`Failed to preload popup video from both folders: ${videoFile}`);
+            resolve(null);
+          }
+        }, { once: true });
+        video.addEventListener('progress', handleProgress);
+      };
+      
+      video.addEventListener('canplaythrough', handleSuccess, { once: true });
+      video.addEventListener('error', handleError, { once: true });
+      video.addEventListener('progress', handleProgress);
+      
+      video.src = videoPath;
+      video.load();
+      
+      // Timeout for both attempts
+      setTimeout(() => {
+        if (!resolved && video.readyState < 4) {
+          if (video.readyState >= 2) {
+            handleSuccess();
+          } else {
+            if (!resolved) {
+              resolved = true;
+              console.warn(`Popup video preload timeout: ${videoFile}`);
+              resolve(null);
+            }
+          }
+        }
+      }, 60000);
+    });
+  };
+  
+  // Preload all popup videos (optimized - tries video folder first, then PopUps)
   const preloadPopupVideos = async () => {
     // Try to access popupVideos - it should be available from multimedia.js
     let videos;
@@ -1741,11 +1820,20 @@ function preloadAssets() {
       return;
     }
     
-    console.log(`Preloading ${videos.length} popup videos (FULL preload - ensuring complete readiness)...`);
+    console.log(`Preloading ${videos.length} popup videos from both folders (FULL preload - ensuring complete readiness)...`);
     
     try {
-      // Load in smaller batches to avoid overwhelming the browser with full video loads
-      await preloadVideosInBatches(videos, './PopUps', 8);
+      // Load in batches - each video tries video folder first, then PopUps
+      const batches = [];
+      const batchSize = 8;
+      for (let i = 0; i < videos.length; i += batchSize) {
+        batches.push(videos.slice(i, i + batchSize));
+      }
+      
+      for (const batch of batches) {
+        await Promise.all(batch.map(videoFile => preloadPopupVideoFromBothFolders(videoFile)));
+      }
+      
       console.log("✅ All popup videos fully preloaded and ready");
       loadingProgress.popupVideos = true;
       updateLoadingBar();
@@ -2918,9 +3006,27 @@ function startErrorWindowLoop() {
       errorWindowEl.classList.remove("error-window-glitching");
     }, 500);
     
-    errorWindowVideoEl.src = `./PopUps/${choice}`;
-    errorWindowVideoEl.currentTime = 0;
+    // Popups can use videos from both video and PopUps folders
+    // Check video folder first (shared videos), then PopUps folder (unique popup videos)
+    // This optimizes loading by using the video folder when available
     errorWindowVideoEl.loop = false; // Don't loop - play once and close
+    
+    // Try loading from video folder first, then PopUps as fallback
+    let triedFallback = false;
+    const tryLoadVideo = (useFallback = false) => {
+      if (useFallback) {
+        errorWindowVideoEl.src = `./PopUps/${choice}`;
+        triedFallback = true;
+      } else {
+        errorWindowVideoEl.src = `./video/${choice}`;
+      }
+      errorWindowVideoEl.currentTime = 0;
+      
+      // Re-attach error handler for fallback attempt
+      if (useFallback) {
+        errorWindowVideoEl.addEventListener("error", handleVideoError, { once: true });
+      }
+    };
     
     // Add event listeners for this video instance
     const handleVideoEnd = () => {
@@ -2928,8 +3034,17 @@ function startErrorWindowLoop() {
     };
     
     const handleVideoError = () => {
+      // If video folder failed and we haven't tried PopUps yet, try PopUps folder
+      if (!triedFallback) {
+        tryLoadVideo(true);
+        return; // Don't close window yet, wait for PopUps attempt
+      }
+      // Both folders failed, close the window
       concludeErrorWindow();
     };
+    
+    // Start with video folder
+    tryLoadVideo(false);
     
     errorWindowVideoEl.addEventListener("ended", handleVideoEnd, { once: true });
     errorWindowVideoEl.addEventListener("error", handleVideoError, { once: true });
