@@ -110,9 +110,28 @@ function startDialogueSequence() {
   }, 3000);
 }
 
+function showDialogueOverlay() {
+  const overlay = document.getElementById('dialogue-overlay');
+  if (overlay) {
+    overlay.classList.remove('dialogue-overlay-hidden');
+    overlay.classList.add('dialogue-overlay-visible');
+  }
+}
+
+function hideDialogueOverlay() {
+  const overlay = document.getElementById('dialogue-overlay');
+  if (overlay) {
+    overlay.classList.remove('dialogue-overlay-visible');
+    overlay.classList.add('dialogue-overlay-hidden');
+  }
+}
+
 function showDialogueBox() {
   const dialogueBox = document.getElementById('dialogue-box');
   if (!dialogueBox) return;
+  
+  // Show overlay (this is the main tutorial dialogue - one of the 3 main dialogues)
+  showDialogueOverlay();
   
   // Slide down from top
   dialogueBox.classList.remove('dialogue-hidden');
@@ -157,6 +176,9 @@ function hideDialogueBox() {
   
   // Stop talk sound
   stopTalkSound();
+  
+  // Hide overlay
+  hideDialogueOverlay();
   
   // Slide back up off screen
   dialogueBox.classList.remove('dialogue-visible');
@@ -433,6 +455,9 @@ function showExperimentalTabDialogue() {
   currentDialogueArray = experimentalTabDialogueLines;
   currentDialogueIndex = 0;
   
+  // Show overlay (this is one of the 3 main dialogues)
+  showDialogueOverlay();
+  
   // Show dialogue box if it's hidden
   if (dialogueBox.classList.contains('dialogue-hidden')) {
     dialogueBox.classList.remove('dialogue-hidden');
@@ -488,6 +513,9 @@ function showExtrasPopupDialogue() {
   // Set the extras popup dialogue as the current array
   currentDialogueArray = extrasPopupDialogueLines;
   currentDialogueIndex = 0;
+  
+  // Show overlay (this is one of the 3 main dialogues)
+  showDialogueOverlay();
   
   // Show dialogue box if it's hidden
   if (dialogueBox.classList.contains('dialogue-hidden')) {

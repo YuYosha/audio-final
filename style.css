@@ -5872,6 +5872,29 @@ body {
     1px 1px 2px rgba(0, 0, 0, 0.8);
 }
 
+/* === Dialogue Overlay (blocks interaction during dialogue) === */
+#dialogue-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10002;
+  pointer-events: all;
+  transition: opacity 0.3s ease;
+}
+
+#dialogue-overlay.dialogue-overlay-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#dialogue-overlay.dialogue-overlay-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
 /* === Dialogue Box (Persona 3 Reload Style - Slides from Top) === */
 #dialogue-box {
   position: fixed;
