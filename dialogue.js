@@ -244,7 +244,7 @@ function typeWriterWord(element, text, index, expression, dialogueArray = dialog
   element.textContent = currentText;
   
   // Slightly longer pause after spaces (between words)
-  const delay = char === ' ' ? 40 : 25;
+  const delay = char === ' ' ? 30 : 18;
   
   // Continue typing letter by letter
   currentTypingTimeout = setTimeout(() => {

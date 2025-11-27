@@ -1,6 +1,6 @@
 const tracks = [
 
-  { label: "Jump UP", file: "JumpUp.mp3" },
+  { label: "Terminal Velocity Act1", file: "TerminalVelocityAct1.mp3" },
   { label: "Live and Learn", file: "LiveAndLearn.mp3" },
   { label: "I Feel So Alive", file: "IFeelSoAlive.mp3" },
   { label: "Citrus", file: "Citrus.mp3" },
@@ -9,7 +9,7 @@ const tracks = [
   { label: "Egg Dragoon", file: "EggDragoon.mp3" },
   { label: "Cracked Empire", file: "CrackedEmpire.mp3" },
   { label: "Running The Bassline", file: "RunningTheBassline.mp3" },
-  { label: "Terminal Velocity Act1", file: "TerminalVelocityAct1.mp3" },
+  { label: "Jump Up", file: "JumpUp.mp3" },
   { label: "Forever Imperfect", file: "ForeverImperfect.mp3" },
   { label: "Break Free", file: "BreakFree.mp3" },
   { label: "Eg Megalovania", file: "EgMegalovania.mp3" },
