@@ -1626,7 +1626,13 @@ function preloadAssets() {
     popupVideos: false
   };
   
-  // Helper function to preload a single video (FULL preload for complete readiness)
+  // Retry queue for failed videos
+  const videoRetryQueue = {
+    overlayVideos: [],
+    popupVideos: []
+  };
+  
+  // Helper function to preload a single video (returns success status and video)
   const preloadVideo = (src) => {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -1639,7 +1645,7 @@ function preloadAssets() {
         video.removeEventListener('canplaythrough', handleCanPlayThrough);
         video.removeEventListener('error', handleError);
         video.removeEventListener('progress', handleProgress);
-        resolve(video);
+        resolve({ success: true, video: video, src: src });
       };
       
       // Track progress for large videos
@@ -1663,8 +1669,8 @@ function preloadAssets() {
         video.removeEventListener('error', handleError);
         video.removeEventListener('progress', handleProgress);
         console.warn(`Failed to preload video: ${src}`, error);
-        // Still resolve even on error to not block loading
-        resolve(null);
+        // Return failure status so it can be queued for retry
+        resolve({ success: false, video: null, src: src, error: error });
       };
       
       video.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
@@ -1690,20 +1696,30 @@ function preloadAssets() {
     });
   };
   
-  // Preload videos in batches for better performance
+  // Preload videos in batches for better performance - returns failed videos for retry
   const preloadVideosInBatches = async (videoList, folder, batchSize = 10) => {
     const batches = [];
+    const failedVideos = [];
+    
     for (let i = 0; i < videoList.length; i += batchSize) {
       batches.push(videoList.slice(i, i + batchSize));
     }
     
     // Load batches in parallel but limit concurrent batches to avoid overwhelming
     for (const batch of batches) {
-      await Promise.all(batch.map(videoFile => preloadVideo(`${folder}/${videoFile}`)));
+      const results = await Promise.all(batch.map(videoFile => preloadVideo(`${folder}/${videoFile}`)));
+      // Track failed videos for retry queue
+      results.forEach((result, index) => {
+        if (!result.success) {
+          failedVideos.push(batch[index]); // Push the video file name, not the result object
+        }
+      });
     }
+    
+    return failedVideos;
   };
   
-  // Preload all overlay videos (optimized)
+  // Preload overlay videos - only load half initially, rest in background
   const preloadOverlayVideos = async () => {
     // Try to access overlayVideos - it should be available from multimedia.js
     let videos;
@@ -1724,15 +1740,38 @@ function preloadAssets() {
       return;
     }
     
-    console.log(`Preloading ${videos.length} overlay videos (FULL preload - ensuring complete readiness)...`);
+    // Split videos in half - load first half initially
+    const halfPoint = Math.ceil(videos.length / 2);
+    const initialVideos = videos.slice(0, halfPoint);
+    const remainingVideos = videos.slice(halfPoint);
+    
+    console.log(`Preloading ${initialVideos.length} of ${videos.length} overlay videos initially (rest will load in background)...`);
     
     try {
-      // Load in smaller batches to avoid overwhelming the browser with full video loads
-      await preloadVideosInBatches(videos, './video', 8);
-      console.log("✅ All overlay videos fully preloaded and ready");
+      // Load first half in smaller batches
+      const failedInitial = await preloadVideosInBatches(initialVideos, './video', 8);
+      if (failedInitial.length > 0) {
+        videoRetryQueue.overlayVideos.push(...failedInitial.map(v => `./video/${v}`));
+        console.log(`⚠️ ${failedInitial.length} overlay videos failed initial load, queued for retry`);
+      }
+      console.log(`✅ Initial ${initialVideos.length} overlay videos preloaded`);
       loadingProgress.overlayVideos = true;
       updateLoadingBar();
       checkAllLoaded();
+      
+      // Load remaining videos in background (non-blocking)
+      if (remainingVideos.length > 0) {
+        console.log(`Loading remaining ${remainingVideos.length} overlay videos in background...`);
+        preloadVideosInBatches(remainingVideos, './video', 5).then(failedRemaining => {
+          if (failedRemaining.length > 0) {
+            videoRetryQueue.overlayVideos.push(...failedRemaining.map(v => `./video/${v}`));
+            console.log(`⚠️ ${failedRemaining.length} remaining overlay videos failed, queued for retry`);
+          }
+          console.log("✅ All remaining overlay videos loaded in background");
+        }).catch(err => {
+          console.warn("Error loading remaining overlay videos in background:", err);
+        });
+      }
     } catch (error) {
       console.error("Error preloading overlay videos:", error);
       loadingProgress.overlayVideos = true; // Mark as done even on error
@@ -1741,7 +1780,7 @@ function preloadAssets() {
     }
   };
   
-  // Helper function to preload a video from the correct folder based on folder map
+  // Helper function to preload a video from the correct folder based on folder map - returns success status
   const preloadPopupVideoFromCorrectFolder = async (videoFile) => {
     // Get folder map from multimedia.js or use fallback logic
     let folder = 'video'; // default
@@ -1770,7 +1809,7 @@ function preloadAssets() {
         video.removeEventListener('canplaythrough', handleSuccess);
         video.removeEventListener('error', handleError);
         video.removeEventListener('progress', handleProgress);
-        resolve(video);
+        resolve({ success: true, video: video, videoFile: videoFile, videoPath: videoPath });
       };
       
       let lastProgress = 0;
@@ -1791,7 +1830,7 @@ function preloadAssets() {
         if (!resolved) {
           resolved = true;
           console.warn(`Failed to preload popup video: ${videoFile} from ${folder}`);
-          resolve(null);
+          resolve({ success: false, video: null, videoFile: videoFile, videoPath: videoPath });
         }
       };
       
@@ -1811,7 +1850,7 @@ function preloadAssets() {
             if (!resolved) {
               resolved = true;
               console.warn(`Popup video preload timeout: ${videoFile}`);
-              resolve(null);
+              resolve({ success: false, video: null, videoFile: videoFile, videoPath: videoPath });
             }
           }
         }
@@ -1819,7 +1858,7 @@ function preloadAssets() {
     });
   };
   
-  // Preload all popup videos (optimized - tries video folder first, then PopUps)
+  // Preload popup videos - only load half initially, rest in background
   const preloadPopupVideos = async () => {
     // Try to access popupVideos - it should be available from multimedia.js
     let videos;
@@ -1840,24 +1879,67 @@ function preloadAssets() {
       return;
     }
     
-    console.log(`Preloading ${videos.length} popup videos from both folders (FULL preload - ensuring complete readiness)...`);
+    // Split videos in half - load first half initially
+    const halfPoint = Math.ceil(videos.length / 2);
+    const initialVideos = videos.slice(0, halfPoint);
+    const remainingVideos = videos.slice(halfPoint);
+    
+    console.log(`Preloading ${initialVideos.length} of ${videos.length} popup videos initially (rest will load in background)...`);
     
     try {
-      // Load in batches - each video loads from its correct folder
+      // Load first half in batches - each video loads from its correct folder
       const batches = [];
       const batchSize = 8;
-      for (let i = 0; i < videos.length; i += batchSize) {
-        batches.push(videos.slice(i, i + batchSize));
+      for (let i = 0; i < initialVideos.length; i += batchSize) {
+        batches.push(initialVideos.slice(i, i + batchSize));
       }
       
+      const failedInitial = [];
       for (const batch of batches) {
-        await Promise.all(batch.map(videoFile => preloadPopupVideoFromCorrectFolder(videoFile)));
+        const results = await Promise.all(batch.map(videoFile => preloadPopupVideoFromCorrectFolder(videoFile)));
+        results.forEach(result => {
+          if (!result.success) {
+            failedInitial.push({ videoFile: result.videoFile, videoPath: result.videoPath });
+          }
+        });
       }
       
-      console.log("✅ All popup videos fully preloaded and ready");
+      if (failedInitial.length > 0) {
+        videoRetryQueue.popupVideos.push(...failedInitial);
+        console.log(`⚠️ ${failedInitial.length} popup videos failed initial load, queued for retry`);
+      }
+      
+      console.log(`✅ Initial ${initialVideos.length} popup videos preloaded`);
       loadingProgress.popupVideos = true;
       updateLoadingBar();
       checkAllLoaded();
+      
+      // Load remaining videos in background (non-blocking)
+      if (remainingVideos.length > 0) {
+        console.log(`Loading remaining ${remainingVideos.length} popup videos in background...`);
+        const remainingBatches = [];
+        for (let i = 0; i < remainingVideos.length; i += 5) {
+          remainingBatches.push(remainingVideos.slice(i, i + 5));
+        }
+        
+        // Load batches with small delays to not overwhelm
+        for (const batch of remainingBatches) {
+          const results = await Promise.all(batch.map(videoFile => preloadPopupVideoFromCorrectFolder(videoFile)));
+          results.forEach(result => {
+            if (!result.success) {
+              videoRetryQueue.popupVideos.push({ videoFile: result.videoFile, videoPath: result.videoPath });
+            }
+          });
+          // Small delay between batches to not overwhelm the browser
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        const failedRemaining = videoRetryQueue.popupVideos.length - failedInitial.length;
+        if (failedRemaining > 0) {
+          console.log(`⚠️ ${failedRemaining} remaining popup videos failed, queued for retry`);
+        }
+        console.log("✅ All remaining popup videos loaded in background");
+      }
     } catch (error) {
       console.error("Error preloading popup videos:", error);
       loadingProgress.popupVideos = true; // Mark as done even on error
@@ -2056,11 +2138,11 @@ function preloadAssets() {
     checkAllLoaded();
   });
   
-  // Extended fallback timeout (5 minutes) for full video preloading
-  // This ensures we give enough time for large video files to fully load
+  // Reduced fallback timeout (2 minutes) since we're only loading half the videos initially
+  // Remaining videos load in background and don't block the app
   setTimeout(() => {
     if (!assetsLoaded) {
-      console.warn("Loading timeout reached (5 minutes) - forcing completion");
+      console.warn("Loading timeout reached (2 minutes) - forcing completion");
       // Mark everything as loaded to proceed (some videos may be partially loaded)
       loadingProgress.discAudio = true;
       loadingProgress.uiSounds = true;
@@ -2070,7 +2152,80 @@ function preloadAssets() {
       loadingProgress.popupVideos = true;
       checkAllLoaded();
     }
-  }, 300000); // 5 minutes = 300000ms for full video preloading
+  }, 120000); // 2 minutes = 120000ms (reduced since we're only loading half initially)
+  
+  // Retry function for failed videos - runs after initial load completes
+  const retryFailedVideos = async () => {
+    // Wait a bit before starting retries to let the app stabilize
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const maxRetries = 3;
+    let retryAttempt = 0;
+    
+    const attemptRetry = async () => {
+      retryAttempt++;
+      console.log(`🔄 Retry attempt ${retryAttempt}/${maxRetries} for failed videos...`);
+      
+      // Retry overlay videos
+      if (videoRetryQueue.overlayVideos.length > 0) {
+        console.log(`Retrying ${videoRetryQueue.overlayVideos.length} failed overlay videos...`);
+        const failedToRetry = [...videoRetryQueue.overlayVideos];
+        videoRetryQueue.overlayVideos = [];
+        
+        for (const videoSrc of failedToRetry) {
+          const result = await preloadVideo(videoSrc);
+          if (!result.success) {
+            videoRetryQueue.overlayVideos.push(videoSrc);
+          }
+        }
+        
+        if (videoRetryQueue.overlayVideos.length === 0) {
+          console.log("✅ All overlay video retries succeeded!");
+        } else {
+          console.log(`⚠️ ${videoRetryQueue.overlayVideos.length} overlay videos still failed after retry ${retryAttempt}`);
+        }
+      }
+      
+      // Retry popup videos
+      if (videoRetryQueue.popupVideos.length > 0) {
+        console.log(`Retrying ${videoRetryQueue.popupVideos.length} failed popup videos...`);
+        const failedToRetry = [...videoRetryQueue.popupVideos];
+        videoRetryQueue.popupVideos = [];
+        
+        for (const videoInfo of failedToRetry) {
+          const result = await preloadPopupVideoFromCorrectFolder(videoInfo.videoFile);
+          if (!result.success) {
+            videoRetryQueue.popupVideos.push(videoInfo);
+          }
+        }
+        
+        if (videoRetryQueue.popupVideos.length === 0) {
+          console.log("✅ All popup video retries succeeded!");
+        } else {
+          console.log(`⚠️ ${videoRetryQueue.popupVideos.length} popup videos still failed after retry ${retryAttempt}`);
+        }
+      }
+      
+      // If there are still failed videos and we haven't hit max retries, retry again
+      if ((videoRetryQueue.overlayVideos.length > 0 || videoRetryQueue.popupVideos.length > 0) && retryAttempt < maxRetries) {
+        // Wait longer between retries (5 seconds * retry attempt)
+        await new Promise(resolve => setTimeout(resolve, 5000 * retryAttempt));
+        await attemptRetry();
+      } else if (retryAttempt >= maxRetries && (videoRetryQueue.overlayVideos.length > 0 || videoRetryQueue.popupVideos.length > 0)) {
+        console.warn(`⚠️ Some videos failed after ${maxRetries} retry attempts - they will load on-demand when needed`);
+      }
+    };
+    
+    // Only start retries if there are failed videos
+    if (videoRetryQueue.overlayVideos.length > 0 || videoRetryQueue.popupVideos.length > 0) {
+      attemptRetry();
+    }
+  };
+  
+  // Start retry process after a short delay (non-blocking)
+  setTimeout(() => {
+    retryFailedVideos();
+  }, 5000);
 }
 
 // === Welcome Popup Management ===
