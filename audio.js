@@ -178,6 +178,13 @@ let waitDataArray = null;
 let visualizerAnimationId = null;
 let menuAudio = null;
 
+// Runtime background loading queues (for videos not loaded initially)
+let runtimeVideoQueue = {
+  overlayVideos: [],
+  popupVideos: []
+};
+let runtimeVideoLoaderActive = false;
+
 function updateTrackLabel(state = "ready") {
   if (!trackNameEl) return;
   const track = tracks[currentTrackIndex];
@@ -1491,6 +1498,9 @@ startOverlayVideoLoop();
     if (popupsEnabled) {
       startErrorWindowLoop();
     }
+    
+    // Start runtime background video loader to continue loading remaining videos
+    startRuntimeBackgroundVideoLoader();
   } else if (!loadingScreenEl) {
     console.warn("Loading screen element not found");
   } else if (assetsLoaded) {
@@ -1740,12 +1750,15 @@ function preloadAssets() {
       return;
     }
     
-    // Split videos in half - load first half initially
-    const halfPoint = Math.ceil(videos.length / 2);
-    const initialVideos = videos.slice(0, halfPoint);
-    const remainingVideos = videos.slice(halfPoint);
+    // Split videos into thirds - load first third initially, rest during runtime
+    const thirdPoint = Math.ceil(videos.length / 3);
+    const initialVideos = videos.slice(0, thirdPoint);
+    const remainingVideos = videos.slice(thirdPoint);
     
-    console.log(`Preloading ${initialVideos.length} of ${videos.length} overlay videos initially (rest will load in background)...`);
+    // Store remaining videos in runtime queue for background loading
+    runtimeVideoQueue.overlayVideos = remainingVideos.map(v => ({ videoFile: v, folder: './video' }));
+    
+    console.log(`Preloading ${initialVideos.length} of ${videos.length} overlay videos initially (${remainingVideos.length} will load during runtime)...`);
     
     try {
       // Load first half in smaller batches
@@ -1759,19 +1772,8 @@ function preloadAssets() {
       updateLoadingBar();
       checkAllLoaded();
       
-      // Load remaining videos in background (non-blocking)
-      if (remainingVideos.length > 0) {
-        console.log(`Loading remaining ${remainingVideos.length} overlay videos in background...`);
-        preloadVideosInBatches(remainingVideos, './video', 5).then(failedRemaining => {
-          if (failedRemaining.length > 0) {
-            videoRetryQueue.overlayVideos.push(...failedRemaining.map(v => `./video/${v}`));
-            console.log(`⚠️ ${failedRemaining.length} remaining overlay videos failed, queued for retry`);
-          }
-          console.log("✅ All remaining overlay videos loaded in background");
-        }).catch(err => {
-          console.warn("Error loading remaining overlay videos in background:", err);
-        });
-      }
+      // Remaining videos will be loaded during runtime by background loader
+      // (not blocking initial load completion)
     } catch (error) {
       console.error("Error preloading overlay videos:", error);
       loadingProgress.overlayVideos = true; // Mark as done even on error
@@ -1846,7 +1848,7 @@ function preloadAssets() {
         if (!resolved && video.readyState < 4) {
           if (video.readyState >= 2) {
             handleSuccess();
-          } else {
+  } else {
             if (!resolved) {
               resolved = true;
               console.warn(`Popup video preload timeout: ${videoFile}`);
@@ -1879,12 +1881,27 @@ function preloadAssets() {
       return;
     }
     
-    // Split videos in half - load first half initially
-    const halfPoint = Math.ceil(videos.length / 2);
-    const initialVideos = videos.slice(0, halfPoint);
-    const remainingVideos = videos.slice(halfPoint);
+    // Split videos into thirds - load first third initially, rest during runtime
+    const thirdPoint = Math.ceil(videos.length / 3);
+    const initialVideos = videos.slice(0, thirdPoint);
+    const remainingVideos = videos.slice(thirdPoint);
     
-    console.log(`Preloading ${initialVideos.length} of ${videos.length} popup videos initially (rest will load in background)...`);
+    // Store remaining videos in runtime queue for background loading
+    runtimeVideoQueue.popupVideos = remainingVideos.map(videoFile => {
+      let folder = 'video'; // default
+      try {
+        const folderMap = typeof popupVideoFolderMap !== 'undefined' ? popupVideoFolderMap : 
+                         (typeof window !== 'undefined' ? window.popupVideoFolderMap : null);
+        if (folderMap && folderMap[videoFile]) {
+          folder = folderMap[videoFile];
+        }
+      } catch (e) {
+        // Fallback to video folder if map not available
+      }
+      return { videoFile: videoFile, folder: `./${folder}` };
+    });
+    
+    console.log(`Preloading ${initialVideos.length} of ${videos.length} popup videos initially (${remainingVideos.length} will load during runtime)...`);
     
     try {
       // Load first half in batches - each video loads from its correct folder
@@ -1914,32 +1931,8 @@ function preloadAssets() {
       updateLoadingBar();
       checkAllLoaded();
       
-      // Load remaining videos in background (non-blocking)
-      if (remainingVideos.length > 0) {
-        console.log(`Loading remaining ${remainingVideos.length} popup videos in background...`);
-        const remainingBatches = [];
-        for (let i = 0; i < remainingVideos.length; i += 5) {
-          remainingBatches.push(remainingVideos.slice(i, i + 5));
-        }
-        
-        // Load batches with small delays to not overwhelm
-        for (const batch of remainingBatches) {
-          const results = await Promise.all(batch.map(videoFile => preloadPopupVideoFromCorrectFolder(videoFile)));
-          results.forEach(result => {
-            if (!result.success) {
-              videoRetryQueue.popupVideos.push({ videoFile: result.videoFile, videoPath: result.videoPath });
-            }
-          });
-          // Small delay between batches to not overwhelm the browser
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        const failedRemaining = videoRetryQueue.popupVideos.length - failedInitial.length;
-        if (failedRemaining > 0) {
-          console.log(`⚠️ ${failedRemaining} remaining popup videos failed, queued for retry`);
-        }
-        console.log("✅ All remaining popup videos loaded in background");
-      }
+      // Remaining videos will be loaded during runtime by background loader
+      // (not blocking initial load completion)
     } catch (error) {
       console.error("Error preloading popup videos:", error);
       loadingProgress.popupVideos = true; // Mark as done even on error
@@ -2226,6 +2219,135 @@ function preloadAssets() {
   setTimeout(() => {
     retryFailedVideos();
   }, 5000);
+}
+
+// === Runtime Background Video Loader ===
+// Continuously loads remaining videos during runtime (aggressive background loading)
+function startRuntimeBackgroundVideoLoader() {
+  if (runtimeVideoLoaderActive) {
+    console.log("Runtime video loader already active");
+    return;
+  }
+  
+  runtimeVideoLoaderActive = true;
+  console.log("🚀 Starting runtime background video loader...");
+  
+  // Helper function to preload a video (runtime version)
+  const preloadVideoRuntime = (src) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.preload = 'auto';
+      video.muted = true;
+      
+      let resolved = false;
+      
+      const handleSuccess = () => {
+        if (resolved) return;
+        resolved = true;
+        video.removeEventListener('canplaythrough', handleSuccess);
+        video.removeEventListener('error', handleError);
+        resolve({ success: true });
+      };
+      
+      const handleError = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve({ success: false });
+        }
+      };
+      
+      video.addEventListener('canplaythrough', handleSuccess, { once: true });
+      video.addEventListener('error', handleError, { once: true });
+      
+      video.src = src;
+      video.load();
+      
+      // Timeout after 60 seconds
+      setTimeout(() => {
+        if (!resolved && video.readyState >= 2) {
+          handleSuccess();
+        } else if (!resolved) {
+          handleError();
+    }
+  }, 60000);
+    });
+  };
+  
+  // Helper to load overlay videos from runtime queue
+  const loadOverlayVideosFromQueue = async () => {
+    if (runtimeVideoQueue.overlayVideos.length === 0) return;
+    
+    // Load in smaller batches to not overwhelm (5 videos at a time)
+    const batchSize = 5;
+    const batch = runtimeVideoQueue.overlayVideos.splice(0, batchSize);
+    
+    console.log(`📥 Loading batch of ${batch.length} overlay videos in background...`);
+    
+    for (const videoInfo of batch) {
+      try {
+        const videoSrc = videoInfo.folder ? `${videoInfo.folder}/${videoInfo.videoFile}` : `./video/${videoInfo.videoFile}`;
+        await preloadVideoRuntime(videoSrc);
+        console.log(`✅ Loaded overlay video: ${videoInfo.videoFile}`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to load overlay video ${videoInfo.videoFile}:`, error);
+      }
+      // Small delay between videos to not overwhelm
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    // Schedule next batch if more videos remain
+    if (runtimeVideoQueue.overlayVideos.length > 0) {
+      setTimeout(loadOverlayVideosFromQueue, 2000); // Wait 2 seconds before next batch
+    } else {
+      console.log("✅ All overlay videos loaded during runtime");
+    }
+  };
+  
+  // Helper to load popup videos from runtime queue
+  const loadPopupVideosFromQueue = async () => {
+    if (runtimeVideoQueue.popupVideos.length === 0) return;
+    
+    // Load in smaller batches (4 videos at a time for popups)
+    const batchSize = 4;
+    const batch = runtimeVideoQueue.popupVideos.splice(0, batchSize);
+    
+    console.log(`📥 Loading batch of ${batch.length} popup videos in background...`);
+    
+    for (const videoInfo of batch) {
+      try {
+        const videoSrc = videoInfo.folder ? `${videoInfo.folder}/${videoInfo.videoFile}` : `./video/${videoInfo.videoFile}`;
+        await preloadVideoRuntime(videoSrc);
+        console.log(`✅ Loaded popup video: ${videoInfo.videoFile}`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to load popup video ${videoInfo.videoFile}:`, error);
+      }
+      // Small delay between videos
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    // Schedule next batch if more videos remain
+    if (runtimeVideoQueue.popupVideos.length > 0) {
+      setTimeout(loadPopupVideosFromQueue, 2000); // Wait 2 seconds before next batch
+    } else {
+      console.log("✅ All popup videos loaded during runtime");
+    }
+  };
+  
+  // Start loading overlay videos after a short delay (2 seconds)
+  setTimeout(() => {
+    if (runtimeVideoQueue.overlayVideos.length > 0) {
+      console.log(`📋 ${runtimeVideoQueue.overlayVideos.length} overlay videos queued for runtime loading`);
+      loadOverlayVideosFromQueue();
+    }
+  }, 2000);
+  
+  // Start loading popup videos after a slightly longer delay (3 seconds)
+  setTimeout(() => {
+    if (runtimeVideoQueue.popupVideos.length > 0) {
+      console.log(`📋 ${runtimeVideoQueue.popupVideos.length} popup videos queued for runtime loading`);
+      loadPopupVideosFromQueue();
+    }
+  }, 3000);
 }
 
 // === Welcome Popup Management ===
