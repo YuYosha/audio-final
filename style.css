@@ -618,7 +618,7 @@ body {
 }
 
 #video-overlay.visible {
-  opacity: 0.18;
+  opacity: 0.22;
 }
 
 #overlay-video {
@@ -627,7 +627,7 @@ body {
   object-fit: cover;
   filter: saturate(1.2) contrast(1.1);
   mix-blend-mode: screen;
-  opacity: 0.65;
+  opacity: 0.7;
 }
 
 #video-overlay::before,

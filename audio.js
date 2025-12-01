@@ -87,8 +87,8 @@ const audioLoader = new THREE.AudioLoader();
 const analyser = new THREE.AudioAnalyser(sound, 256);
 
 
-const VIDEO_CHECK_INTERVAL = 25000; // Increased to 25s - triggers less frequently, more separation
-const VIDEO_APPEAR_CHANCE = 0.5; // 50% chance per interval - equal chance between video and color swap
+const VIDEO_CHECK_INTERVAL = 15000; // 15s - frequent checks for more video overlays
+const VIDEO_APPEAR_CHANCE = 0.7; // 70% chance per interval - video overlays are very common
 const COLOR_SWAP_DURATION = 7000; // 7 seconds
 let videoIntervalId = null;
 let overlayIsActive = false;
